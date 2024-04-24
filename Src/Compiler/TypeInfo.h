@@ -1,5 +1,5 @@
 #pragma once
-
+#include "../PrimitiveTypes.h"
 #include "../Util/FixedCharSpan.h"
 #include "../Parsing/ParseTypes.h"
 #include "../Collections/CheckedArray.h"
@@ -56,8 +56,7 @@ namespace Alchemy::Compilation {
 
     bool TypeInfoIsIndexable(TypeInfo* pInfo);
 
-    enum class TypeInfoFlags : uint8 {
-
+    DEFINE_ENUM(TypeInfoFlags, uint8, {
         None = 0,
         IsGeneric = 1 << 0, // this is for a T
         IsGenericTypeDefinition = 1 << 1, // this is for a List<T>
@@ -67,9 +66,7 @@ namespace Alchemy::Compilation {
         InstantiatedGeneric = 1 << 5,
         ContainsOpenGenericTypes = 1 << 6,
         IsPrimitive = 1 << 7
-    };
-
-    IMPL_ENUM_FLAGS_OPERATORS(TypeInfoFlags);
+    });
 
     struct GenericArgument;
     struct GenericConstraint;

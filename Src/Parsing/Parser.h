@@ -2,7 +2,7 @@
 
 #include "../Parsing/ParseResult.h"
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
 
     struct Parser {
 

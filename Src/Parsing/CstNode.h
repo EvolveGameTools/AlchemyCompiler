@@ -2,7 +2,7 @@
 
 #include "../PrimitiveTypes.h"
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
 
     struct CstNodeIndex {
 

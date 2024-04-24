@@ -1,11 +1,6 @@
 #include "LongBoolMap.h"
 #include <cstring>
 
-#if _MSC_VER
-#include <intrin.h>
-#  define __builtin_popcountll __popcnt64
-#endif
-
 namespace Alchemy {
 
     bool LongBoolMap::Get(int32 idx) {
@@ -121,43 +116,56 @@ namespace Alchemy {
         }
     }
 
-    void LongBoolMap::Combine(LongBoolMap other) {
-        for (int32 i = 0; i < size; i++) {
-            map[i] |= other.map[i];
-        }
-    }
-
-    bool LongBoolMap::ContainsAny(LongBoolMap other) {
-        int32 min = size < other.size ? size : other.size;
-
-        for (int32 i = 0; i < min; i++) {
-            if((map[i] & other.map[i]) != 0) {
+    bool LongBoolMapEnumerator::MoveNext() {
+        while (index < maxIndex) {
+            if (currentPtrValue != 0) {
+                int32 result = (index * 64) + tzcnt64(currentPtrValue);
+                currentPtrValue ^= currentPtrValue & -currentPtrValue;
+                current = result;
                 return true;
             }
+
+            index++;
+            currentPtrValue = ptr[index];
         }
 
         return false;
     }
 
-//    leaving this here for posterity
-//    #include <atomic>
-//    void LongBoolMap::AtomicOr(LongBoolMap a, LongBoolMap b) {
-//
-//        // we want to atomically update our map, convert our map memory to atomics.
-//        // this only works if we allocated the map with an 8 byte alignment (but we always so)
-//        std::atomic<uint64_t> * atomicValues = reinterpret_cast<std::atomic<uint64_t>*>(a.map);
-//
-//        for (int32 i = 0; i < a.size; i++) {
-//            uint64_t expected = atomicValues[i].load(); // get the current value of the map at [i]
-//            uint64_t newValue = expected | b.map[i]; // compute the new value of the map at [i]
-//
-//            // keep trying to atomically update to new_value until successful
-//            while (!atomicValues[i].compare_exchange_weak(expected, newValue)) {
-//                expected = atomicValues[i].load(); // if update fails, get the current value of a[i] again
-//                newValue = expected | b.map[i]; // recompute the new value
-//            }
-//        }
-//
-//    }
+    bool LongBoolMapEnumerator::MoveNext(int32* outValue) {
+        while (index < maxIndex) {
+            if (currentPtrValue != 0) {
+                int32 x = (index * 64);
+                int32 tzcnt = tzcnt64(currentPtrValue);
+                int32 result = x + tzcnt; // (index * 64) + tzcnt64(currentPtrValue);
+                currentPtrValue ^= currentPtrValue & -currentPtrValue;
+                *outValue = result;
+                return true;
+            }
 
+            index++;
+            currentPtrValue = ptr[index];
+        }
+
+        return false;
+    }
+
+    int LongBoolMapEnumerator::Current() const {
+        return current;
+    }
+
+    LongBoolMapEnumerator::LongBoolMapEnumerator(uint64* map, int32 size) {
+        index = 0;
+        if (size == 0) {
+            ptr = nullptr;
+            currentPtrValue = 0;
+        }
+        else {
+            ptr = (int64*) map;
+            currentPtrValue = ptr[0];
+        }
+
+        maxIndex = size;
+        current = 0;
+    }
 }

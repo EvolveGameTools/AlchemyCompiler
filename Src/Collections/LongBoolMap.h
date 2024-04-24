@@ -13,58 +13,13 @@ namespace Alchemy {
         int64 currentPtrValue;
         int32 current;
 
-        LongBoolMapEnumerator(uint64* map, int32 size) {
-            index = 0;
-            if (size == 0) {
-                ptr = nullptr;
-                currentPtrValue = 0;
-            }
-            else {
-                ptr = (int64*) map;
-                currentPtrValue = ptr[0];
-            }
+        LongBoolMapEnumerator(uint64* map, int32 size);
 
-            maxIndex = size;
-            current = 0;
-        }
+        int32 Current() const;
 
-        int Current() const {
-            return current;
-        }
+        bool MoveNext();
 
-        bool MoveNext() {
-            while (index < maxIndex) {
-                if (currentPtrValue != 0) {
-                    int32 result = (index * 64) + tzcnt64(currentPtrValue);
-                    currentPtrValue ^= currentPtrValue & -currentPtrValue;
-                    current = result;
-                    return true;
-                }
-
-                index++;
-                currentPtrValue = ptr[index];
-            }
-
-            return false;
-        }
-
-        bool MoveNext(int32 * outValue) {
-            while (index < maxIndex) {
-                if (currentPtrValue != 0) {
-                    int32 x = (index * 64);
-                    int32 tzcnt = tzcnt64(currentPtrValue);
-                    int32 result = x + tzcnt; // (index * 64) + tzcnt64(currentPtrValue);
-                    currentPtrValue ^= currentPtrValue & -currentPtrValue;
-                    *outValue = result;
-                    return true;
-                }
-
-                index++;
-                currentPtrValue = ptr[index];
-            }
-
-            return false;
-        }
+        bool MoveNext(int32 * outValue);
 
     };
 

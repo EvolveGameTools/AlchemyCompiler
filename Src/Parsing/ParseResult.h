@@ -1,12 +1,10 @@
 #pragma once
 
 #include "./Token.h"
+#include "./Nodes.h"
 #include "../Collections/CheckedArray.h"
-#include "./Nodes.generated.h"
 
-namespace Alchemy {
-
-    using namespace Alchemy;
+namespace Alchemy::Parsing {
 
     struct LineColumn {
         int32 line {};
@@ -37,64 +35,15 @@ namespace Alchemy {
         bool hasUnmatchedDelimiters {};
         bool hasNonTrivialContent {};
 
-        inline bool HasValidParse() const {
-            return !(hasUnmatchedDelimiters || hasBadCharacters || hasUnmatchedDelimiters);
-        }
+        bool HasValidParse() const;
 
-        inline FileNode * GetRootNode() {
-            if(psiNodes.size >= 1) {
-                AbstractPsiNode * pNode = psiNodes.GetPointer(1);
-                if(pNode->nodeBase.nodeType != NodeType::File) {
-                    return nullptr;
-                }
-                return (FileNode*)pNode;
-            }
-            return nullptr;
-        }
+        FileNode * GetRootNode();
 
-        inline LineColumn GetLocationFromToken(int32 token) {
-            return GetLocationFromByteOffset(tokens[token].position);
-        }
+        LineColumn GetLocationFromToken(int32 token);
+        LineColumn GetLocationFromNodeIndex(int32 nodeIndex);
+        LineColumn GetLocationFromByteOffset(int32 position) const;
 
-        inline LineColumn GetLocationFromNodeIndex(int32 nodeIndex) {
-            int32 token =  psiNodes[nodeIndex].nodeBase.tokenStart;
-            return GetLocationFromByteOffset(tokens[token].position);
-        }
-
-        inline LineColumn GetLocationFromByteOffset(int32 position) const {
-            LineColumn retn;
-            retn.line = 1;
-            retn.column = 1;
-            for (int32 i = 0; i < position; i++) {
-                char c = src[i];
-                if (c == '\n') {
-                    retn.line++;
-                    retn.column = 1; // Reset column number for new line
-                }
-                else if(c == '\r') {
-                    if(i + 1 < position && src[i + 1] == '\n') {
-                        i++;
-                        retn.line++;
-                        retn.column = 1; // Reset column number for new line
-                    }
-                }
-                else {
-                    retn.column++;
-                }
-            }
-
-            return retn;
-        }
-
-        inline void PrintErrors() {
-
-            for (int32 i = 0; i < errors.size; i++) {
-                ParseError* error = errors.GetPointer(i);
-                LineColumn lineColumn = GetLocationFromByteOffset(error->sourceStart);
-                printf("Error: %.*s (%d:%d)", error->messageLength, error->message, lineColumn.line, lineColumn.column);
-            }
-
-        }
+        void PrintErrors();
 
     };
 

@@ -2,7 +2,6 @@
 #include "./Writer.h"
 #include "../Compiler/StringUtil.h"
 #include "../Compiler/MemberInfo.h"
-#include "../Allocation/LinearAllocator.h"
 
 namespace Alchemy::Compilation {
 

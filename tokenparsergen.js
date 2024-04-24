@@ -377,7 +377,7 @@ namespace {
 
     constexpr size_t kMaxNodeSize = MaxStructSize<
 $REPLACE    
-    >() - sizeof(Alchemy::NodeBase);
+    >() - sizeof(Alchemy::Parsing::NodeBase);
     
 $REPLACE_SIZE_ASSERTS
 
@@ -404,7 +404,7 @@ namespace Alchemy {
 `;
         var structOutput = "";
         for (var i = 0; i < structNames.length; i++) {
-            structOutput += '        Alchemy::' + structNames[i];
+            structOutput += '        Alchemy::Parsing' + structNames[i];
             if (i !== structNames.length - 1) {
                 structOutput += ',\n'
             }
@@ -413,7 +413,7 @@ namespace Alchemy {
 
         var assertOutput = "";
         for( i = 0; i< structNames.length; i++) {
-            assertOutput += '        static_assert(sizeof(Alchemy::' + structNames[i] + ") <= 32);\n";
+            assertOutput += '        static_assert(sizeof(Alchemy::Parsing::' + structNames[i] + ") <= 32);\n";
         }
         output = output.replace('$REPLACE_SIZE_ASSERTS', assertOutput);
 
@@ -427,9 +427,9 @@ namespace Alchemy {
     });
 }
 
-generateKeywordMatchingCode('Src/Parsing/Keyword.h', 'Src/Parsing/MatchKeyword_Generated2.h');
+generateKeywordMatchingCode('Src/Parsing/Keyword.h', 'Src/Parsing/impl/MatchKeyword_Generated.cpp');
 
-generateKeywordToString('Src/Parsing/Keyword.h', 'Src/Parsing/KeywordString.h');
+generateKeywordToString('Src/Parsing/Keyword.h', 'Src/Parsing/impl/Keyword.cpp');
 
 generateNodeType('Src/Parsing/Nodes.h', 'Src/Parsing/Nodes.generated.h')
 

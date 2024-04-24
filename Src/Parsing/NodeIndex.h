@@ -1,19 +1,19 @@
 #pragma once
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
 
     struct TokenRange {
 
         uint16 start;
         uint16 end;
 
-        TokenRange() : start(0), end(0) {}
+        inline TokenRange() : start(0), end(0) {}
 
-        TokenRange(uint16 start, uint16 end)
+        inline TokenRange(uint16 start, uint16 end)
             : start(start)
             , end(end) {}
 
-        bool IsValid() const {
+        inline bool IsValid() const {
             return start != end;
         }
 
@@ -46,7 +46,7 @@ namespace Alchemy {
             return index != 0;
         }
 
-        operator UntypedNodeIndex() const {
+        inline operator UntypedNodeIndex() const {
             return UntypedNodeIndex(index);
         }
 

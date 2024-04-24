@@ -7,12 +7,11 @@
 #include "./AstNode.h"
 #include "./ParseResult.h"
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
 
     using namespace Alchemy;
 
     struct SyntaxTreeBuilder {
-
 
     private:
 

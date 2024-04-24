@@ -5,20 +5,32 @@
 #include "./NodeIndex.h"
 #include "./ParseTypes.h"
 #include "../Util/FixedCharSpan.h"
+#include "./LiteralType.h"
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
+
 
     struct NodeBase {
         NodeType nodeType;
-        uint8 padding;
-        uint16 nodeIndex;
-        uint16 tokenStart;
-        uint16 tokenEnd;
+        uint8 padding {};
+        uint16 nodeIndex {};
+        uint16 tokenStart {};
+        uint16 tokenEnd {};
 
-        explicit NodeBase(NodeType nodeType) : nodeType(nodeType) {}
+        explicit NodeBase(NodeType nodeType);
 
-        TokenRange GetTokenRange() const {
-            return TokenRange(tokenStart, tokenEnd);
+        TokenRange GetTokenRange() const;
+
+    };
+
+    struct AbstractPsiNode {
+
+        NodeBase nodeBase;
+
+        char bytes[24] { };
+
+        TokenRange GetTokenRange() {
+            return nodeBase.GetTokenRange();
         }
 
     };
@@ -27,16 +39,14 @@ namespace Alchemy {
 
         NodeIndex<DeclarationNode> next;
 
-        explicit DeclarationNode(NodeType nodeType) : NodeBase(nodeType) {}
+        explicit DeclarationNode(NodeType nodeType);
 
     };
 
     struct ExpressionNode : NodeBase {
         NodeIndex<ExpressionNode> next;
 
-        explicit ExpressionNode(NodeType nodeType)
-            : NodeBase(nodeType)
-            , next(NodeIndex<ExpressionNode>(0)) {}
+        explicit ExpressionNode(NodeType nodeType);
 
     };
 
@@ -44,9 +54,7 @@ namespace Alchemy {
 
         NodeIndex<DeclarationNode> firstDeclaration;
 
-        FileNode()
-            : NodeBase(NodeType::File)
-            , firstDeclaration(0) {}
+        FileNode();
 
     };
 
@@ -54,7 +62,7 @@ namespace Alchemy {
 
         bool isNullable;
 
-        explicit ArrayRankNode(bool isNullable) : NodeBase(NodeType::ArrayRank), isNullable(isNullable) {}
+        explicit ArrayRankNode(bool isNullable);
 
     };
 
@@ -71,14 +79,7 @@ namespace Alchemy {
         NodeIndex<TypeArgumentListNode> typeArguments;
         NodeIndex<TypePathNode> next;
 
-        explicit TypePathNode(NodeIndex<IdentifierNode> namePath, BuiltInTypeName builtInTypeName, NodeIndex<TypeArgumentListNode> typeArguments, NodeIndex<ArrayRankNode> arrayRank, bool isNullable)
-            : NodeBase(NodeType::TypePath)
-            , namePath(namePath)
-            , builtInTypeName(builtInTypeName)
-            , typeArguments(typeArguments)
-            , arrayRank(arrayRank)
-            , isNullable(isNullable)
-            , next(0) {}
+        explicit TypePathNode(NodeIndex<IdentifierNode> namePath, BuiltInTypeName builtInTypeName, NodeIndex<TypeArgumentListNode> typeArguments, NodeIndex<ArrayRankNode> arrayRank, bool isNullable);
 
     };
 
@@ -86,9 +87,7 @@ namespace Alchemy {
 
         NodeIndex<TypePathNode> first;
 
-        explicit TypeListNode(NodeIndex<TypePathNode> first)
-            : NodeBase(NodeType::TypeList)
-            , first(first) {}
+        explicit TypeListNode(NodeIndex<TypePathNode> first);
 
     };
 
@@ -97,7 +96,7 @@ namespace Alchemy {
         char* message;
         int32 messageLength;
 
-        explicit ErrorNode(char* message, int32 messageLength) : NodeBase(NodeType::Error), message(message), messageLength(messageLength) {}
+        explicit ErrorNode(char* message, int32 messageLength);
 
     };
 
@@ -107,11 +106,7 @@ namespace Alchemy {
         AssignmentOperator op;
         NodeIndex<ExpressionNode> lhs;
 
-        explicit AssignmentExpressionNode(NodeIndex<ExpressionNode> rhs, AssignmentOperator op, NodeIndex<ExpressionNode> lhs)
-            : ExpressionNode(NodeType::AssignmentExpression)
-            , op(op)
-            , lhs(lhs)
-            , rhs(rhs) {}
+        explicit AssignmentExpressionNode(NodeIndex<ExpressionNode> rhs, AssignmentOperator op, NodeIndex<ExpressionNode> lhs);
     };
 
     struct FormalParameterNode : NodeBase {
@@ -123,13 +118,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> defaultValue;
         NodeIndex<FormalParameterNode> next;
 
-        explicit FormalParameterNode(StorageClass storage, ArgumentPassByModifier passByModifier, NodeIndex<TypePathNode> type, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> defaultValue)
-            : NodeBase(NodeType::FormalParameter)
-            , storage(storage)
-            , passByModifier(passByModifier)
-            , type(type)
-            , identifier(identifier)
-            , defaultValue(defaultValue) {}
+        explicit FormalParameterNode(StorageClass storage, ArgumentPassByModifier passByModifier, NodeIndex<TypePathNode> type, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> defaultValue);
 
     };
 
@@ -137,9 +126,7 @@ namespace Alchemy {
 
         NodeIndex<FormalParameterNode> listStart;
 
-        explicit FormalParameterListNode(NodeIndex<FormalParameterNode> listStart)
-            : NodeBase(NodeType::FormalParameterList)
-            , listStart(listStart) {}
+        explicit FormalParameterListNode(NodeIndex<FormalParameterNode> listStart);
 
     };
 
@@ -147,7 +134,7 @@ namespace Alchemy {
 
         NodeIndex<StatementNode> next;
 
-        explicit StatementNode(NodeType nodeType) : NodeBase(nodeType) {}
+        explicit StatementNode(NodeType nodeType);
 
     };
 
@@ -155,34 +142,31 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> expression;
 
-        explicit ReturnStatementNode(NodeIndex<ExpressionNode> expression) : StatementNode(NodeType::ReturnStatement), expression(expression) {}
+        explicit ReturnStatementNode(NodeIndex<ExpressionNode> expression);
 
     };
 
     struct ContinueStatementNode : StatementNode {
 
-        explicit ContinueStatementNode() : StatementNode(NodeType::ContinueStatement) {}
+        explicit ContinueStatementNode();
 
     };
 
     struct BreakStatementNode : StatementNode {
 
-        explicit BreakStatementNode() : StatementNode(NodeType::BreakStatement) {}
+        explicit BreakStatementNode();
 
     };
 
     struct EmptyStatementNode : StatementNode {
-        explicit EmptyStatementNode() : StatementNode(NodeType::EmptyStatement) {}
+        explicit EmptyStatementNode();
     };
-
 
     struct BlockNode : StatementNode {
 
         NodeIndex<StatementNode> firstStatement;
 
-        explicit BlockNode(NodeIndex<StatementNode> firstStatement)
-            : StatementNode(NodeType::BlockStatement)
-            , firstStatement(firstStatement) {}
+        explicit BlockNode(NodeIndex<StatementNode> firstStatement);
 
     };
 
@@ -192,9 +176,7 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> first;
 
-        explicit ExpressionListNode(NodeIndex<ExpressionNode> first)
-            : NodeBase(NodeType::ExpressionList)
-            , first(first) {}
+        explicit ExpressionListNode(NodeIndex<ExpressionNode> first);
 
     };
 
@@ -202,9 +184,7 @@ namespace Alchemy {
 
         NodeIndex<IdentifierNode> first;
 
-        explicit ContextListNode(NodeIndex<IdentifierNode> first)
-            : NodeBase(NodeType::ContextList)
-            , first(first) {}
+        explicit ContextListNode(NodeIndex<IdentifierNode> first);
 
     };
 
@@ -212,9 +192,7 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> first;
 
-        explicit ForLoopIteratorNode(NodeIndex<ExpressionNode> first)
-            : NodeBase(NodeType::ForLoopIterator)
-            , first(first) {}
+        explicit ForLoopIteratorNode(NodeIndex<ExpressionNode> first);
 
     };
 
@@ -222,10 +200,7 @@ namespace Alchemy {
         NodeIndex<BlockNode> block;
         NodeIndex<ContextListNode> contextList;
 
-        CatchClauseNode(NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> blockNode)
-            : NodeBase(NodeType::CatchClause)
-            , contextList(contextList)
-            , block(blockNode) {}
+        CatchClauseNode(NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> blockNode);
 
     };
 
@@ -235,11 +210,7 @@ namespace Alchemy {
         NodeIndex<CatchClauseNode> catchClause;
         NodeIndex<BlockNode> finallyBlock;
 
-        explicit TryBlockNode(NodeIndex<BlockNode> block, NodeIndex<CatchClauseNode> catchClause, NodeIndex<BlockNode> finallyBlock)
-            : StatementNode(NodeType::TryBlock)
-            , block(block)
-            , catchClause(catchClause)
-            , finallyBlock(finallyBlock) {}
+        explicit TryBlockNode(NodeIndex<BlockNode> block, NodeIndex<CatchClauseNode> catchClause, NodeIndex<BlockNode> finallyBlock);
 
     };
 
@@ -248,10 +219,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<CatchClauseNode> catchClause;
 
-        explicit TryExpressionNode(NodeIndex<ExpressionNode> expression, NodeIndex<CatchClauseNode> catchClause)
-            : StatementNode(NodeType::TryExpression)
-            , expression(expression)
-            , catchClause(catchClause) {}
+        explicit TryExpressionNode(NodeIndex<ExpressionNode> expression, NodeIndex<CatchClauseNode> catchClause);
 
     };
 
@@ -262,18 +230,9 @@ namespace Alchemy {
         bool isDefault;
         NodeIndex<SwitchSectionLabelNode> next;
 
-        explicit SwitchSectionLabelNode(NodeIndex<ExpressionNode> expression, NodeIndex<ExpressionNode> caseGuard)
-            : NodeBase(NodeType::SwitchLabel)
-            , isDefault(false)
-            , expression(expression)
-            , caseGuard(caseGuard) {}
+        explicit SwitchSectionLabelNode(NodeIndex<ExpressionNode> expression, NodeIndex<ExpressionNode> caseGuard);
 
-        explicit SwitchSectionLabelNode(bool isDefault)
-            : NodeBase(NodeType::SwitchLabel)
-            , isDefault(isDefault)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , caseGuard(NodeIndex<ExpressionNode>(0)) {}
-
+        explicit SwitchSectionLabelNode(bool isDefault);
 
     };
 
@@ -282,10 +241,7 @@ namespace Alchemy {
         NodeIndex<SwitchSectionLabelNode> firstLabel;
         NodeIndex<StatementNode> firstStatement;
 
-        explicit SwitchSectionNode(NodeIndex<SwitchSectionLabelNode> firstLabel, NodeIndex<StatementNode> firstStatement)
-            : NodeBase(NodeType::SwitchSection)
-            , firstLabel(firstLabel)
-            , firstStatement(firstStatement) {}
+        explicit SwitchSectionNode(NodeIndex<SwitchSectionLabelNode> firstLabel, NodeIndex<StatementNode> firstStatement);
 
     };
 
@@ -295,11 +251,7 @@ namespace Alchemy {
         NodeIndex<ContextListNode> contextList;
         NodeIndex<SwitchSectionNode> firstSection;
 
-        explicit SwitchStatementNode(NodeIndex<ExpressionNode> expression, NodeIndex<ContextListNode> contextList, NodeIndex<SwitchSectionNode> firstSection)
-            : StatementNode(NodeType::SwitchStatement)
-            , expression(expression)
-            , contextList(contextList)
-            , firstSection(firstSection) {}
+        explicit SwitchStatementNode(NodeIndex<ExpressionNode> expression, NodeIndex<ContextListNode> contextList, NodeIndex<SwitchSectionNode> firstSection);
 
     };
 
@@ -309,11 +261,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<StatementNode> body;
 
-        explicit ForEachLoopStatementNode(NodeIndex<ExpressionNode> expression, NodeIndex<ContextListNode> context, NodeIndex<StatementNode> body)
-            : StatementNode(NodeType::ForEachLoopStatement)
-            , expression(expression)
-            , context(context)
-            , body(body) {}
+        explicit ForEachLoopStatementNode(NodeIndex<ExpressionNode> expression, NodeIndex<ContextListNode> context, NodeIndex<StatementNode> body);
 
     };
 
@@ -325,12 +273,7 @@ namespace Alchemy {
         NodeIndex<ForLoopIteratorNode> iterator;
         NodeIndex<StatementNode> body;
 
-        explicit ForLoopStatementNode(NodeIndex<ForInitializerListNode> initializer, NodeIndex<ExpressionNode> condition, NodeIndex<ForLoopIteratorNode> iterator, NodeIndex<StatementNode> body)
-            : StatementNode(NodeType::ForLoopStatement)
-            , initializer(initializer)
-            , condition(condition)
-            , iterator(iterator)
-            , body(body) {}
+        explicit ForLoopStatementNode(NodeIndex<ForInitializerListNode> initializer, NodeIndex<ExpressionNode> condition, NodeIndex<ForLoopIteratorNode> iterator, NodeIndex<StatementNode> body);
 
     };
 
@@ -339,11 +282,7 @@ namespace Alchemy {
         NodeIndex<ContextListNode> context;
         NodeIndex<StatementNode> body;
 
-        explicit WhileStatementNode(NodeIndex<ExpressionListNode> conditions, NodeIndex<ContextListNode> context, NodeIndex<StatementNode> body)
-            : StatementNode(NodeType::WhileStatement)
-            , conditions(conditions)
-            , context(context)
-            , body(body) {}
+        explicit WhileStatementNode(NodeIndex<ExpressionListNode> conditions, NodeIndex<ContextListNode> context, NodeIndex<StatementNode> body);
 
     };
 
@@ -351,10 +290,7 @@ namespace Alchemy {
         NodeIndex<StatementNode> body;
         NodeIndex<ExpressionNode> condition;
 
-        explicit DoWhileStatementNode(NodeIndex<StatementNode> body, NodeIndex<ExpressionNode> condition)
-            : StatementNode(NodeType::DoWhileStatement)
-            , body(body)
-            , condition(condition) {}
+        explicit DoWhileStatementNode(NodeIndex<StatementNode> body, NodeIndex<ExpressionNode> condition);
 
     };
 
@@ -365,12 +301,7 @@ namespace Alchemy {
         NodeIndex<StatementNode> body;
         NodeIndex<StatementNode> elseCase;
 
-        IfStatementNode(NodeIndex<ExpressionListNode> conditions, NodeIndex<ContextListNode> context, NodeIndex<StatementNode> body, NodeIndex<StatementNode> elseCase)
-            : StatementNode(NodeType::IfStatement)
-            , conditions(conditions)
-            , context(context)
-            , body(body)
-            , elseCase(elseCase) {}
+        IfStatementNode(NodeIndex<ExpressionListNode> conditions, NodeIndex<ContextListNode> context, NodeIndex<StatementNode> body, NodeIndex<StatementNode> elseCase);
 
     };
 
@@ -380,11 +311,7 @@ namespace Alchemy {
         NodeIndex<ExpressionListNode> expressions;
         NodeIndex<ContextListNode> contextList;
 
-        explicit UsingStatementBlockNode(NodeIndex<ExpressionListNode> expressions, NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> block)
-            : StatementNode(NodeType::UsingStatementBlock)
-            , expressions(expressions)
-            , block(block)
-            , contextList(contextList) {}
+        explicit UsingStatementBlockNode(NodeIndex<ExpressionListNode> expressions, NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> block);
 
     };
 
@@ -392,9 +319,7 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> expression;
 
-        explicit UsingStatementScopeNode(NodeIndex<ExpressionNode> expression)
-            : StatementNode(NodeType::UsingStatementScope)
-            , expression(expression) {}
+        explicit UsingStatementScopeNode(NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -404,11 +329,7 @@ namespace Alchemy {
         NodeIndex<ExpressionListNode> expressions;
         NodeIndex<ContextListNode> contextList;
 
-        explicit UsingStatementNode(NodeIndex<ExpressionListNode> expressions, NodeIndex<BlockNode> block, NodeIndex<ContextListNode> contextList)
-            : StatementNode(NodeType::UsingStatementBlock)
-            , expressions(expressions)
-            , block(block)
-            , contextList(contextList) {}
+        explicit UsingStatementNode(NodeIndex<ExpressionListNode> expressions, NodeIndex<BlockNode> block, NodeIndex<ContextListNode> contextList);
 
     };
 
@@ -418,11 +339,7 @@ namespace Alchemy {
         NodeIndex<ExpressionListNode> expressionList;
         NodeIndex<ContextListNode> contextList;
 
-        explicit WithStatementNode(NodeIndex<ExpressionListNode> expressionList, NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> block)
-            : StatementNode(NodeType::WithStatement)
-            , expressionList(expressionList)
-            , contextList(contextList)
-            , block(block) {}
+        explicit WithStatementNode(NodeIndex<ExpressionListNode> expressionList, NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> block);
 
     };
 
@@ -431,10 +348,7 @@ namespace Alchemy {
         bool isByRef;
         NodeIndex<ExpressionNode> expression;
 
-        explicit LocalVariableInitializerNode(bool isByRef, NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::LocalVariableDeclaration)
-            , isByRef(isByRef)
-            , expression(expression) {}
+        explicit LocalVariableInitializerNode(bool isByRef, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -445,12 +359,7 @@ namespace Alchemy {
         bool isByRef;
         bool isVarTyped;
 
-        explicit LocalVariableTypeNode(StorageClass storageClass, bool isByRef, bool isVarTyped, NodeIndex<TypePathNode> typePath)
-            : NodeBase(NodeType::LocalVariableType)
-            , storageClass(storageClass)
-            , isByRef(isByRef)
-            , isVarTyped(isVarTyped)
-            , typePath(typePath) {}
+        explicit LocalVariableTypeNode(StorageClass storageClass, bool isByRef, bool isVarTyped, NodeIndex<TypePathNode> typePath);
 
     };
 
@@ -459,26 +368,16 @@ namespace Alchemy {
         NodeIndex<StatementNode> variableDeclaration;
         NodeIndex<ExpressionNode> expression;
 
-        explicit ForInitializerNode(NodeIndex<StatementNode> variableDeclaration)
-            : NodeBase(NodeType::ForLoopInitializer)
-            , variableDeclaration(variableDeclaration)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , next(NodeIndex<ForInitializerNode>(0)) {}
+        explicit ForInitializerNode(NodeIndex<StatementNode> variableDeclaration);
 
-        explicit ForInitializerNode(NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::ForLoopInitializer)
-            , variableDeclaration(NodeIndex<StatementNode>(0))
-            , expression(expression)
-            , next(NodeIndex<ForInitializerNode>(0)) {}
+        explicit ForInitializerNode(NodeIndex<ExpressionNode> expression);
 
     };
 
     struct ForInitializerListNode : NodeBase {
         NodeIndex<ForInitializerNode> first;
 
-        explicit ForInitializerListNode(NodeIndex<ForInitializerNode> first)
-            : NodeBase(NodeType::ForInitializerList)
-            , first(first) {}
+        explicit ForInitializerListNode(NodeIndex<ForInitializerNode> first);
 
     };
 
@@ -488,11 +387,7 @@ namespace Alchemy {
         NodeIndex<IdentifierNode> identifier;
         NodeIndex<LocalVariableInitializerNode> initializer;
 
-        explicit LocalVariableDeclarationNode(NodeIndex<LocalVariableTypeNode> variableType, NodeIndex<IdentifierNode> identifier, NodeIndex<LocalVariableInitializerNode> initializer)
-            : StatementNode(NodeType::LocalVariableDeclaration)
-            , variableType(variableType)
-            , identifier(identifier)
-            , initializer(initializer) {}
+        explicit LocalVariableDeclarationNode(NodeIndex<LocalVariableTypeNode> variableType, NodeIndex<IdentifierNode> identifier, NodeIndex<LocalVariableInitializerNode> initializer);
 
     };
 
@@ -502,11 +397,7 @@ namespace Alchemy {
         NodeIndex<IdentifierNode> identifier;
         NodeIndex<ExpressionNode> expression;
 
-        explicit LocalConstantDeclarationNode(NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> expression)
-            : StatementNode(NodeType::LocalConstantDeclaration)
-            , typePath(typePath)
-            , identifier(identifier)
-            , expression(expression) {}
+        explicit LocalConstantDeclarationNode(NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -514,9 +405,7 @@ namespace Alchemy {
 
         DeclarationModifier modifiers;
 
-        explicit ModifierListNode(DeclarationModifier modifiers)
-            : NodeBase(NodeType::ModifierList)
-            , modifiers(modifiers) {}
+        explicit ModifierListNode(DeclarationModifier modifiers);
 
     };
 
@@ -527,12 +416,7 @@ namespace Alchemy {
         NodeIndex<IdentifierNode> identifier;
         NodeIndex<ExpressionNode> expression;
 
-        explicit ConstantDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> expression)
-            : DeclarationNode(NodeType::ConstantDeclaration)
-            , modifiers(modifiers)
-            , typePath(typePath)
-            , identifier(identifier)
-            , expression(expression) {}
+        explicit ConstantDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -543,12 +427,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> action;
         NodeIndex<SwitchExpressionArmNode> next;
 
-        explicit SwitchExpressionArmNode(NodeIndex<ExpressionNode> condition, NodeIndex<ExpressionNode> caseGuard, NodeIndex<ExpressionNode> action)
-            : NodeBase(NodeType::SwitchExpressionArm)
-            , condition(condition)
-            , caseGuard(caseGuard)
-            , action(action)
-            , next(NodeIndex<SwitchExpressionArmNode>(0)) {}
+        explicit SwitchExpressionArmNode(NodeIndex<ExpressionNode> condition, NodeIndex<ExpressionNode> caseGuard, NodeIndex<ExpressionNode> action);
 
     };
 
@@ -557,10 +436,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> switchValue;
         NodeIndex<SwitchExpressionArmNode> firstArm;
 
-        explicit SwitchExpressionNode(NodeIndex<ExpressionNode> switchValue, NodeIndex<SwitchExpressionArmNode> firstArm)
-            : ExpressionNode(NodeType::SwitchExpression)
-            , switchValue(switchValue)
-            , firstArm(firstArm) {}
+        explicit SwitchExpressionNode(NodeIndex<ExpressionNode> switchValue, NodeIndex<SwitchExpressionArmNode> firstArm);
 
     };
 
@@ -569,10 +445,7 @@ namespace Alchemy {
         NodeIndex<TypePathNode> type;
         bool panicOnFailure;
 
-        explicit AsExpressionNode(bool panicOnFailure, NodeIndex<TypePathNode> type)
-            : ExpressionNode(NodeType::AsExpression)
-            , panicOnFailure(panicOnFailure)
-            , type(type) {}
+        explicit AsExpressionNode(bool panicOnFailure, NodeIndex<TypePathNode> type);
 
     };
 
@@ -581,10 +454,7 @@ namespace Alchemy {
         NodeIndex<TypePathNode> type;
         FixedCharSpan name;
 
-        explicit IsExpressionNode(NodeIndex<TypePathNode> type, FixedCharSpan name)
-            : ExpressionNode(NodeType::IsExpression)
-            , type(type)
-            , name(name) {}
+        explicit IsExpressionNode(NodeIndex<TypePathNode> type, FixedCharSpan name);
 
 
     };
@@ -592,9 +462,7 @@ namespace Alchemy {
     struct ExpressionStatementNode : StatementNode {
         NodeIndex<ExpressionNode> expression;
 
-        explicit ExpressionStatementNode(NodeIndex<ExpressionNode> expression)
-            : StatementNode(NodeType::ExpressionStatement)
-            , expression(expression) {}
+        explicit ExpressionStatementNode(NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -602,7 +470,7 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> expression;
 
-        explicit ThrowStatementNode(NodeIndex<ExpressionNode> expression) : StatementNode(NodeType::ThrowStatement), expression(expression) {}
+        explicit ThrowStatementNode(NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -610,9 +478,7 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> expression;
 
-        explicit ThrowExpressionNode(NodeIndex<ExpressionNode> expression)
-            : ExpressionNode(NodeType::ThrowExpression)
-            , expression(expression) {}
+        explicit ThrowExpressionNode(NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -626,11 +492,7 @@ namespace Alchemy {
             NodeIndex<ExpressionNode> conditionNodeIndex,
             NodeIndex<ExpressionNode> trueNodeIndex,
             NodeIndex<ExpressionNode> falseNodeIndex
-        )
-            : ExpressionNode(NodeType::TernaryExpression)
-            , conditionNodeIndex(conditionNodeIndex)
-            , trueNodeIndex(trueNodeIndex)
-            , falseNodeIndex(falseNodeIndex) {}
+        );
 
     };
 
@@ -639,10 +501,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> lhs;
         NodeIndex<ExpressionNode> rhs;
 
-        explicit NullCoalescingExpressionNode(NodeIndex<ExpressionNode> lhs, NodeIndex<ExpressionNode> rhs)
-            : ExpressionNode(NodeType::NullCoalescingExpression)
-            , lhs(lhs)
-            , rhs(rhs) {}
+        explicit NullCoalescingExpressionNode(NodeIndex<ExpressionNode> lhs, NodeIndex<ExpressionNode> rhs);
 
     };
 
@@ -651,9 +510,7 @@ namespace Alchemy {
 
         NodeIndex<TypePathNode> first;
 
-        explicit TypeArgumentListNode(NodeIndex<TypePathNode> first)
-            : NodeBase(NodeType::TypeArgumentList)
-            , first(first) {}
+        explicit TypeArgumentListNode(NodeIndex<TypePathNode> first);
 
     };
 
@@ -665,13 +522,7 @@ namespace Alchemy {
         NodeIndex<TypeArgumentListNode> typeArguments;
         NodeIndex<NamespaceOrTypeNameNode> next;
 
-        explicit NamespaceOrTypeNameNode(FixedCharSpan name, BuiltInTypeName builtInTypeName, NodeIndex<TypeArgumentListNode> typeArguments, NodeIndex<NamespaceOrTypeNameNode> next)
-            : NodeBase(NodeType::NamespaceOrTypeName)
-            , name(name.ptr)
-            , nameLength(name.size)
-            , builtInTypeName(builtInTypeName)
-            , typeArguments(typeArguments)
-            , next(next) {}
+        explicit NamespaceOrTypeNameNode(FixedCharSpan name, BuiltInTypeName builtInTypeName, NodeIndex<TypeArgumentListNode> typeArguments, NodeIndex<NamespaceOrTypeNameNode> next);
 
     };
 
@@ -684,9 +535,7 @@ namespace Alchemy {
     struct RefExpressionNode : ExpressionNode {
         NodeIndex<ExpressionNode> expression;
 
-        explicit RefExpressionNode(NodeIndex<ExpressionNode> expression)
-            : ExpressionNode(NodeType::RefExpression)
-            , expression(expression) {}
+        explicit RefExpressionNode(NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -704,12 +553,7 @@ namespace Alchemy {
             ArgumentPassByModifier passByModifier,
             NodeIndex<TypePathNode> typePath,
             NodeIndex<IdentifierNode> identifier
-        )
-            : NodeBase(NodeType::LambdaParameter)
-            , storageClass(storageClass)
-            , passByModifier(passByModifier)
-            , typePath(typePath)
-            , identifier(identifier) {}
+        );
 
 
     };
@@ -720,11 +564,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<LambdaParameterNode> firstParameter;
 
-        LambdaExpressionNode(NodeIndex<LambdaParameterNode> firstParameter, NodeIndex<BlockNode> block, NodeIndex<ExpressionNode> expression)
-            : ExpressionNode(NodeType::LambdaExpression)
-            , firstParameter(firstParameter)
-            , block(block)
-            , expression(expression) {}
+        LambdaExpressionNode(NodeIndex<LambdaParameterNode> firstParameter, NodeIndex<BlockNode> block, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -734,14 +574,9 @@ namespace Alchemy {
         NodeIndex<TypeArgumentListNode> typeArguments;
         NodeIndex<IdentifierNode> next;
 
-        explicit IdentifierNode(FixedCharSpan identifier, NodeIndex<TypeArgumentListNode> typeArguments)
-            : ExpressionNode(NodeType::Identifier)
-            , name(identifier.ptr)
-            , nameLength(identifier.size)
-            , typeArguments(typeArguments)
-            , next(0) {}
+        explicit IdentifierNode(FixedCharSpan identifier, NodeIndex<TypeArgumentListNode> typeArguments);
 
-        FixedCharSpan GetIdentifier() const {
+        inline FixedCharSpan GetIdentifier() const {
             return FixedCharSpan(name, nameLength);
         }
 
@@ -751,9 +586,7 @@ namespace Alchemy {
 
         NodeIndex<IdentifierNode> first;
 
-        explicit TypeParameterListNode(NodeIndex<IdentifierNode> first)
-            : NodeBase(NodeType::TypeParameterListNode)
-            , first(first) {}
+        explicit TypeParameterListNode(NodeIndex<IdentifierNode> first);
 
     };
 
@@ -764,26 +597,11 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<IdentifierNode> valueIdentifier;
 
-        explicit PropertySetterNode(DefinitionVisibility visibility)
-            : NodeBase(NodeType::PropertySetter)
-            , visibility(visibility)
-            , valueIdentifier(NodeIndex<IdentifierNode>(0))
-            , expression(NodeIndex<ExpressionNode>(0))
-            , block(NodeIndex<BlockNode>(0)) {}
+        explicit PropertySetterNode(DefinitionVisibility visibility);
 
-        PropertySetterNode(DefinitionVisibility visibility, NodeIndex<IdentifierNode> valueIdentifier, NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::PropertySetter)
-            , visibility(visibility)
-            , valueIdentifier(valueIdentifier)
-            , expression(expression)
-            , block(NodeIndex<BlockNode>(0)) {}
+        PropertySetterNode(DefinitionVisibility visibility, NodeIndex<IdentifierNode> valueIdentifier, NodeIndex<ExpressionNode> expression);
 
-        PropertySetterNode(DefinitionVisibility visibility, NodeIndex<IdentifierNode> valueIdentifier, NodeIndex<BlockNode> block)
-            : NodeBase(NodeType::PropertySetter)
-            , visibility(visibility)
-            , valueIdentifier(valueIdentifier)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , block(block) {}
+        PropertySetterNode(DefinitionVisibility visibility, NodeIndex<IdentifierNode> valueIdentifier, NodeIndex<BlockNode> block);
 
     };
 
@@ -793,21 +611,11 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<BlockNode> block;
 
-        explicit PropertyGetterNode(DefinitionVisibility visibility)
-            : NodeBase(NodeType::PropertyGetter)
-            , visibility(visibility)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , block(NodeIndex<BlockNode>(0)) {}
+        explicit PropertyGetterNode(DefinitionVisibility visibility);
 
-        explicit PropertyGetterNode(DefinitionVisibility visibility, NodeIndex<BlockNode> block)
-            : NodeBase(NodeType::PropertyGetter)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , block(block) {}
+        explicit PropertyGetterNode(DefinitionVisibility visibility, NodeIndex<BlockNode> block);
 
-        explicit PropertyGetterNode(DefinitionVisibility visibility, NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::PropertyGetter)
-            , expression(expression)
-            , block(NodeIndex<BlockNode>(0)) {}
+        explicit PropertyGetterNode(DefinitionVisibility visibility, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -825,13 +633,7 @@ namespace Alchemy {
             NodeIndex<IdentifierNode> identifier,
             NodeIndex<PropertyGetterNode> getterNode,
             NodeIndex<PropertySetterNode> setterNode
-        )
-            : DeclarationNode(NodeType::PropertyDeclaration)
-            , modifiers(modifiers)
-            , typePath(typePathNode)
-            , identifier(identifier)
-            , getterNode(getterNode)
-            , setterNode(setterNode) {}
+        );
 
     };
 
@@ -841,11 +643,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<EnumMemberDeclarationNode> next;
 
-        EnumMemberDeclarationNode(NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> expression)
-            : DeclarationNode(NodeType::EnumMemberDeclaration)
-            , identifier(identifier)
-            , expression(expression)
-            , next(0) {}
+        EnumMemberDeclarationNode(NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -853,9 +651,7 @@ namespace Alchemy {
 
         NodeIndex<EnumMemberDeclarationNode> first;
 
-        explicit EnumMemberListNode(NodeIndex<EnumMemberDeclarationNode> first)
-            : NodeBase(NodeType::EnumMemberList)
-            , first(first) {}
+        explicit EnumMemberListNode(NodeIndex<EnumMemberDeclarationNode> first);
 
     };
 
@@ -866,12 +662,7 @@ namespace Alchemy {
         NodeIndex<TypePathNode> baseType;
         NodeIndex<EnumMemberListNode> members;
 
-        EnumDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<TypePathNode> baseType, NodeIndex<EnumMemberListNode> members)
-            : DeclarationNode(NodeType::EnumDeclaration)
-            , modifiers(modifiers)
-            , identifier(identifier)
-            , baseType(baseType)
-            , members(members) {}
+        EnumDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<TypePathNode> baseType, NodeIndex<EnumMemberListNode> members);
 
     };
 
@@ -894,15 +685,7 @@ namespace Alchemy {
             NodeIndex<FormalParameterListNode> parameters,
             NodeIndex<BlockNode> body,
             NodeIndex<ExpressionNode> arrowBody
-        )
-            : DeclarationNode(NodeType::MethodDeclaration)
-            , modifiers(modifiers)
-            , returnType(typePathNode)
-            , identifier(identifier)
-            , typeParameters(typeParameters)
-            , parameters(parameters)
-            , body(body)
-            , arrowBody(arrowBody) {}
+        );
 
 
     };
@@ -911,7 +694,7 @@ namespace Alchemy {
 
         NodeIndex<TypeConstraintNode> next;
 
-        explicit TypeConstraintNode() : NodeBase(NodeType::TypeConstraint) {}
+        explicit TypeConstraintNode();
 
     };
 
@@ -921,11 +704,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> rhs;
         BinaryExpressionType type;
 
-        explicit BinaryExpressionNode(BinaryExpressionType type, NodeIndex<ExpressionNode> lhs, NodeIndex<ExpressionNode> rhs)
-            : ExpressionNode(NodeType::BinaryExpression)
-            , lhs(lhs)
-            , rhs(rhs)
-            , type(type) {}
+        explicit BinaryExpressionNode(BinaryExpressionType type, NodeIndex<ExpressionNode> lhs, NodeIndex<ExpressionNode> rhs);
 
     };
 
@@ -934,10 +713,7 @@ namespace Alchemy {
         UnaryExpressionType type;
         NodeIndex<ExpressionNode> expression;
 
-        explicit UnaryExpressionNode(UnaryExpressionType type, NodeIndex<ExpressionNode> expression)
-            : ExpressionNode(NodeType::UnaryExpression)
-            , type(type)
-            , expression(expression) {}
+        explicit UnaryExpressionNode(UnaryExpressionType type, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -946,10 +722,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         NodeIndex<TypePathNode> type;
 
-        explicit TypeCastExpressionNode(NodeIndex<TypePathNode> type, NodeIndex<ExpressionNode> expression)
-            : ExpressionNode(NodeType::TypeCast)
-            , type(type)
-            , expression(expression) {}
+        explicit TypeCastExpressionNode(NodeIndex<TypePathNode> type, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -959,11 +732,7 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         bool isNullable;
 
-        explicit BracketExpressionNode(bool isNullable, NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::BracketExpression)
-            , isNullable(isNullable)
-            , expression(expression)
-            , next(NodeIndex<BracketExpressionNode>(0)) {}
+        explicit BracketExpressionNode(bool isNullable, NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -973,19 +742,13 @@ namespace Alchemy {
         NodeIndex<BracketExpressionNode> bracketListStart;
         UntypedNodeIndex part;
 
-        explicit PrimaryExpressionTailNode(UntypedNodeIndex part, NodeIndex<BracketExpressionNode> bracketListStart)
-            : NodeBase(NodeType::PrimaryExpressionTail)
-            , part(part)
-            , bracketListStart(bracketListStart)
-            , next(0) // assigned later
-        {}
+        explicit PrimaryExpressionTailNode(UntypedNodeIndex part, NodeIndex<BracketExpressionNode> bracketListStart);
 
     };
 
     struct NullableDereferenceNode : NodeBase {
 
-        NullableDereferenceNode()
-            : NodeBase(NodeType::NullableDereference) {}
+        NullableDereferenceNode();
 
     };
 
@@ -993,7 +756,7 @@ namespace Alchemy {
 
         bool isIncrement;
 
-        explicit IncrementDecrementNode(bool isIncrement) : NodeBase(NodeType::IncrementDecrement), isIncrement(isIncrement) {}
+        explicit IncrementDecrementNode(bool isIncrement);
 
     };
 
@@ -1010,9 +773,7 @@ namespace Alchemy {
 
         NodeIndex<InitializerNode> next;
 
-        explicit InitializerNode(NodeType nodeType)
-            : NodeBase(nodeType)
-            , next(NodeIndex<InitializerNode>(0)) {}
+        explicit InitializerNode(NodeType nodeType);
 
     };
 
@@ -1022,10 +783,7 @@ namespace Alchemy {
         NodeIndex<ArgumentListNode> argumentList;
         NodeIndex<ExpressionNode> value;
 
-        explicit IndexedInitializerNode(NodeIndex<ArgumentListNode> argumentList, NodeIndex<ExpressionNode> value)
-            : InitializerNode(NodeType::IndexedInitializer)
-            , argumentList(argumentList)
-            , value(value) {}
+        explicit IndexedInitializerNode(NodeIndex<ArgumentListNode> argumentList, NodeIndex<ExpressionNode> value);
 
     };
 
@@ -1033,16 +791,14 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> first;
 
-        explicit CollectionInitializerNode(NodeIndex<ExpressionNode> first)
-            : InitializerNode(NodeType::CollectionInitializer)
-            , first(first) {}
+        explicit CollectionInitializerNode(NodeIndex<ExpressionNode> first);
 
     };
 
     struct ListInitializerNode : InitializerNode {
         NodeIndex<ExpressionNode> value;
 
-        explicit ListInitializerNode(NodeIndex<ExpressionNode> value) : InitializerNode(NodeType::ListInitializer) {}
+        explicit ListInitializerNode(NodeIndex<ExpressionNode> value);
 
     };
 
@@ -1052,13 +808,9 @@ namespace Alchemy {
         uint16 memberNameLength;
         NodeIndex<ExpressionNode> value;
 
-        explicit MemberInitializerNode(FixedCharSpan memberName, NodeIndex<ExpressionNode> value)
-            : InitializerNode(NodeType::MemberInitializer)
-            , memberName(memberName.ptr)
-            , memberNameLength(memberName.size)
-            , value(value) {}
+        explicit MemberInitializerNode(FixedCharSpan memberName, NodeIndex<ExpressionNode> value);
 
-        FixedCharSpan GetMemberName() const {
+        inline FixedCharSpan GetMemberName() const {
             return FixedCharSpan(memberName, memberNameLength);
         }
 
@@ -1074,29 +826,11 @@ namespace Alchemy {
         NodeIndex<ArgumentNode> next;
         uint16 variableNameLength;
 
-        explicit ArgumentNode(ArgumentPassByModifier passBy, bool isVarType, NodeIndex<TypePathNode> typePath, NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::Argument)
-            , passBy(passBy)
-            , isVarType(isVarType)
-            , typePath(typePath)
-            , expression(expression)
-            , variableName(nullptr)
-            , variableNameLength(0)
-            , next(NodeIndex<ArgumentNode>(0)) // set explicitly later
-        {}
+        explicit ArgumentNode(ArgumentPassByModifier passBy, bool isVarType, NodeIndex<TypePathNode> typePath, NodeIndex<ExpressionNode> expression);
 
-        explicit ArgumentNode(ArgumentPassByModifier passBy, bool isVarType, NodeIndex<TypePathNode> typePath, FixedCharSpan variableName)
-            : NodeBase(NodeType::Argument)
-            , passBy(passBy)
-            , isVarType(isVarType)
-            , typePath(typePath)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , variableName(variableName.ptr)
-            , variableNameLength(variableName.size)
-            , next(NodeIndex<ArgumentNode>(0)) // set explicitly later
-        {}
+        explicit ArgumentNode(ArgumentPassByModifier passBy, bool isVarType, NodeIndex<TypePathNode> typePath, FixedCharSpan variableName);
 
-        FixedCharSpan GetVariableName() {
+        inline FixedCharSpan GetVariableName() {
             return FixedCharSpan(variableName, variableNameLength);
         }
 
@@ -1107,9 +841,7 @@ namespace Alchemy {
 
         NodeIndex<ArgumentNode> first;
 
-        explicit ArgumentListNode(NodeIndex<ArgumentNode> first)
-            : NodeBase(NodeType::ArgumentList)
-            , first(first) {}
+        explicit ArgumentListNode(NodeIndex<ArgumentNode> first);
 
     };
 
@@ -1119,11 +851,7 @@ namespace Alchemy {
         NodeIndex<ContextListNode> contextList;
         NodeIndex<BlockNode> block;
 
-        explicit TrailingLambdaStatementNode(NodeIndex<ExpressionNode> expression, NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> block)
-            : StatementNode(NodeType::TrailingLambdaStatement)
-            , expression(expression)
-            , contextList(contextList)
-            , block(block) {}
+        explicit TrailingLambdaStatementNode(NodeIndex<ExpressionNode> expression, NodeIndex<ContextListNode> contextList, NodeIndex<BlockNode> block);
 
     };
 
@@ -1131,9 +859,7 @@ namespace Alchemy {
 
         NodeIndex<ArgumentListNode> arguments;
 
-        explicit MethodInvocationNode(NodeIndex<ArgumentListNode> arguments)
-            : NodeBase(NodeType::MethodInvocation)
-            , arguments(arguments) {}
+        explicit MethodInvocationNode(NodeIndex<ArgumentListNode> arguments);
 
     };
 
@@ -1142,10 +868,7 @@ namespace Alchemy {
         NodeIndex<ArgumentListNode> arguments;
         NodeIndex<IdentifierNode> identifier;
 
-        explicit PrimaryMethodInvocationNode(NodeIndex<IdentifierNode> identifier, NodeIndex<ArgumentListNode> arguments)
-            : NodeBase(NodeType::PrimaryMethodInvocation)
-            , identifier(identifier)
-            , arguments(arguments) {}
+        explicit PrimaryMethodInvocationNode(NodeIndex<IdentifierNode> identifier, NodeIndex<ArgumentListNode> arguments);
 
     };
 
@@ -1155,11 +878,7 @@ namespace Alchemy {
         NodeIndex<BracketExpressionNode> startBracketExpression;
         NodeIndex<PrimaryExpressionTailNode> tail;
 
-        explicit PrimaryExpressionNode(NodeIndex<ExpressionNode> start, NodeIndex<BracketExpressionNode> startBracketExpression, NodeIndex<PrimaryExpressionTailNode> tail)
-            : ExpressionNode(NodeType::PrimaryExpression)
-            , start(start)
-            , startBracketExpression(startBracketExpression)
-            , tail(tail) {}
+        explicit PrimaryExpressionNode(NodeIndex<ExpressionNode> start, NodeIndex<BracketExpressionNode> startBracketExpression, NodeIndex<PrimaryExpressionTailNode> tail);
 
     };
 
@@ -1167,9 +886,7 @@ namespace Alchemy {
 
         NodeIndex<IdentifierNode> identifier;
 
-        explicit ScopeMemberAccessNode(NodeIndex<IdentifierNode> identifier)
-            : NodeBase(NodeType::ScopeMemberAccess)
-            , identifier(identifier) {}
+        explicit ScopeMemberAccessNode(NodeIndex<IdentifierNode> identifier);
 
 
     };
@@ -1178,9 +895,7 @@ namespace Alchemy {
 
         NodeIndex<IdentifierNode> identifier;
 
-        explicit ConditionalMemberAccessNode(NodeIndex<IdentifierNode> identifier)
-            : NodeBase(NodeType::ConditionalMemberAccess)
-            , identifier(identifier) {}
+        explicit ConditionalMemberAccessNode(NodeIndex<IdentifierNode> identifier);
 
     };
 
@@ -1188,30 +903,26 @@ namespace Alchemy {
 
         NodeIndex<IdentifierNode> identifier;
 
-        explicit MemberAccessNode(NodeIndex<IdentifierNode> identifier)
-            : NodeBase(NodeType::MemberAccess)
-            , identifier(identifier) {}
+        explicit MemberAccessNode(NodeIndex<IdentifierNode> identifier);
 
     };
 
     struct ThisReferenceExpressionNode : ExpressionNode {
 
-        explicit ThisReferenceExpressionNode() : ExpressionNode(NodeType::ThisReferenceExpression) {}
+        explicit ThisReferenceExpressionNode();
 
     };
 
     struct BaseReferenceExpressionNode : ExpressionNode {
 
-        explicit BaseReferenceExpressionNode() : ExpressionNode(NodeType::BaseReferenceExpression) {}
+        explicit BaseReferenceExpressionNode();
 
     };
 
     struct ParenExpressionNode : ExpressionNode {
         NodeIndex<ExpressionNode> expression;
 
-        explicit ParenExpressionNode(NodeIndex<ExpressionNode> expression)
-            : ExpressionNode(NodeType::ParenExpression)
-            , expression(expression) {}
+        explicit ParenExpressionNode(NodeIndex<ExpressionNode> expression);
 
     };
 
@@ -1219,9 +930,7 @@ namespace Alchemy {
 
         BuiltInTypeName typeName;
 
-        explicit BuiltInTypeAccessExpressionNode(BuiltInTypeName typeName)
-            : ExpressionNode(NodeType::BuiltInTypeAccess)
-            , typeName(typeName) {}
+        explicit BuiltInTypeAccessExpressionNode(BuiltInTypeName typeName);
 
     };
 
@@ -1230,9 +939,7 @@ namespace Alchemy {
 
         NodeIndex<TypePathNode> type;
 
-        explicit TypeOfExpressionNode(NodeIndex<TypePathNode> type)
-            : ExpressionNode(NodeType::TypeOfExpression)
-            , type(type) {}
+        explicit TypeOfExpressionNode(NodeIndex<TypePathNode> type);
 
     };
 
@@ -1244,23 +951,11 @@ namespace Alchemy {
         NodeIndex<ExpressionNode> expression;
         StringPartType partType;
 
-        explicit StringPartNode(StringPartType partType, NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::StringPart)
-            , partType(partType)
-            , expression(expression)
-            , source(nullptr)
-            , sourceLength(0)
-            , next(NodeIndex<StringPartNode>(0)) {}
+        explicit StringPartNode(StringPartType partType, NodeIndex<ExpressionNode> expression);
 
-        explicit StringPartNode(StringPartType partType, FixedCharSpan source)
-            : NodeBase(NodeType::StringPart)
-            , partType(partType)
-            , source(source.ptr)
-            , sourceLength(source.size)
-            , expression(NodeIndex<ExpressionNode>(0))
-            , next(NodeIndex<StringPartNode>(0)) {}
+        explicit StringPartNode(StringPartType partType, FixedCharSpan source);
 
-        FixedCharSpan GetSource() const {
+        inline FixedCharSpan GetSource() const {
             return FixedCharSpan(source, sourceLength);
         }
 
@@ -1271,9 +966,7 @@ namespace Alchemy {
 
         NodeIndex<ExpressionNode> firstExpression;
 
-        explicit DynamicArrayLiteralNode(NodeIndex<ExpressionNode> firstExpression)
-            : ExpressionNode(NodeType::DynamicArrayLiteral)
-            , firstExpression(firstExpression) {}
+        explicit DynamicArrayLiteralNode(NodeIndex<ExpressionNode> firstExpression);
 
     };
 
@@ -1282,23 +975,15 @@ namespace Alchemy {
         FixedCharSpan identifier;
         NodeIndex<ExpressionNode> expression;
 
-        explicit DynamicKeyNode(FixedCharSpan identifier)
-            : NodeBase(NodeType::DynamicKey)
-            , identifier(identifier)
-            , expression(NodeIndex<ExpressionNode>(0)) {}
+        explicit DynamicKeyNode(FixedCharSpan identifier);
 
-
-        explicit DynamicKeyNode(NodeIndex<ExpressionNode> expression)
-            : NodeBase(NodeType::DynamicKey)
-            , identifier(FixedCharSpan())
-            , expression(expression) {}
+        explicit DynamicKeyNode(NodeIndex<ExpressionNode> expression);
 
     };
 
     struct DynamicValueNode : NodeBase {
 
-        explicit DynamicValueNode(NodeType nodeType)
-            : NodeBase(nodeType) {}
+        explicit DynamicValueNode(NodeType nodeType);
 
     };
 
@@ -1308,10 +993,7 @@ namespace Alchemy {
         NodeIndex<DynamicKeyNode> key;
         NodeIndex<ExpressionNode> value;
 
-        explicit DynamicKeyValueNode(NodeIndex<DynamicKeyNode> key, NodeIndex<ExpressionNode> value)
-            : NodeBase(NodeType::DynamicKeyValue)
-            , key(key)
-            , value(value) {}
+        explicit DynamicKeyValueNode(NodeIndex<DynamicKeyNode> key, NodeIndex<ExpressionNode> value);
 
     };
 
@@ -1319,10 +1001,7 @@ namespace Alchemy {
 
         NodeIndex<DynamicKeyValueNode> first;
 
-        explicit DynamicObjectLiteralNode(NodeIndex<DynamicKeyValueNode> first)
-            : ExpressionNode(NodeType::DynamicObjectLiteral)
-            , first(first) {
-        }
+        explicit DynamicObjectLiteralNode(NodeIndex<DynamicKeyValueNode> first);
 
     };
 
@@ -1331,10 +1010,7 @@ namespace Alchemy {
         AllocatorType allocatorType;
         NodeIndex<DynamicObjectLiteralNode> objectLiteral;
 
-        explicit NewDynamicObjectLiteralNode(AllocatorType allocatorType, NodeIndex<DynamicObjectLiteralNode> objectLiteral)
-            : ExpressionNode(NodeType::NewDynamicObjectLiteralExpression)
-            , allocatorType(allocatorType)
-            , objectLiteral(objectLiteral) {}
+        explicit NewDynamicObjectLiteralNode(AllocatorType allocatorType, NodeIndex<DynamicObjectLiteralNode> objectLiteral);
 
     };
 
@@ -1343,10 +1019,7 @@ namespace Alchemy {
         AllocatorType allocatorType;
         NodeIndex<DynamicArrayLiteralNode> arrayLiteral;
 
-        explicit NewDynamicArrayLiteralNode(AllocatorType allocatorType, NodeIndex<DynamicArrayLiteralNode> arrayLiteral)
-            : ExpressionNode(NodeType::NewDynamicArrayLiteralExpression)
-            , allocatorType(allocatorType)
-            , arrayLiteral(arrayLiteral) {}
+        explicit NewDynamicArrayLiteralNode(AllocatorType allocatorType, NodeIndex<DynamicArrayLiteralNode> arrayLiteral);
 
     };
 
@@ -1354,9 +1027,7 @@ namespace Alchemy {
 
         NodeIndex<InitializerNode> first;
 
-        explicit InitializerListNode(NodeIndex<InitializerNode> first)
-            : NodeBase(NodeType::InitializerList)
-            , first(first) {}
+        explicit InitializerListNode(NodeIndex<InitializerNode> first);
 
     };
 
@@ -1367,12 +1038,7 @@ namespace Alchemy {
         NodeIndex<ArgumentListNode> argumentList;
         NodeIndex<InitializerListNode> initializerList;
 
-        explicit NewExpressionNode(NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> constructorName, NodeIndex<ArgumentListNode> argumentList, NodeIndex<InitializerListNode> initializerList)
-            : ExpressionNode(NodeType::NewExpression)
-            , constructorName(constructorName)
-            , typePath(typePath)
-            , argumentList(argumentList)
-            , initializerList(initializerList) {}
+        explicit NewExpressionNode(NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> constructorName, NodeIndex<ArgumentListNode> argumentList, NodeIndex<InitializerListNode> initializerList);
 
     };
 
@@ -1382,23 +1048,11 @@ namespace Alchemy {
         LiteralValue literalValue;
         NodeIndex<TypePathNode> defaultType;
 
-        explicit LiteralExpressionNode(LiteralType literalType, LiteralValue literalValue)
-            : ExpressionNode(NodeType::Literal)
-            , literalType(literalType)
-            , literalValue(literalValue)
-            , defaultType(0) {}
+        explicit LiteralExpressionNode(LiteralType literalType, LiteralValue literalValue);
 
-        explicit LiteralExpressionNode(LiteralType literalType, NodeIndex<TypePathNode> defaultType)
-            : ExpressionNode(NodeType::Literal)
-            , literalType(literalType)
-            , literalValue()
-            , defaultType(defaultType) {}
+        explicit LiteralExpressionNode(LiteralType literalType, NodeIndex<TypePathNode> defaultType);
 
-        explicit LiteralExpressionNode(LiteralType literalType)
-            : ExpressionNode(NodeType::Literal)
-            , literalType(literalType)
-            , literalValue()
-            , defaultType(0) {}
+        explicit LiteralExpressionNode(LiteralType literalType);
 
     };
 
@@ -1407,12 +1061,9 @@ namespace Alchemy {
         char* namespaceName;
         int32 namespaceNameLength;
 
-        explicit NamespacePathNode(FixedCharSpan namespacePath)
-            : NodeBase(NodeType::NamespacePath)
-            , namespaceName(namespacePath.ptr)
-            , namespaceNameLength(namespacePath.size) {}
+        explicit NamespacePathNode(FixedCharSpan namespacePath);
 
-        FixedCharSpan GetNamespacePath() const {
+        inline FixedCharSpan GetNamespacePath() const {
             return FixedCharSpan(namespaceName, namespaceNameLength);
         }
 
@@ -1422,9 +1073,7 @@ namespace Alchemy {
 
         NodeIndex<NamespacePathNode> namespacePath;
 
-        explicit UsingNamespaceNode(NodeIndex<NamespacePathNode> namespacePath)
-            : DeclarationNode(NodeType::UsingNamespaceDeclaration)
-            , namespacePath(namespacePath) {}
+        explicit UsingNamespaceNode(NodeIndex<NamespacePathNode> namespacePath);
 
 
     };
@@ -1433,9 +1082,7 @@ namespace Alchemy {
 
         NodeIndex<TypePathNode> type;
 
-        explicit UsingStaticNode(NodeIndex<TypePathNode> type)
-            : DeclarationNode(NodeType::UsingStaticDeclaration)
-            , type(type) {}
+        explicit UsingStaticNode(NodeIndex<TypePathNode> type);
 
     };
 
@@ -1445,13 +1092,9 @@ namespace Alchemy {
         int32 length;
         NodeIndex<TypePathNode> type;
 
-        UsingAliasNode(FixedCharSpan alias, NodeIndex<TypePathNode> type)
-            : DeclarationNode(NodeType::UsingAliasDeclaration)
-            , alias(alias.ptr)
-            , length(alias.size)
-            , type(type) {}
+        UsingAliasNode(FixedCharSpan alias, NodeIndex<TypePathNode> type);
 
-        FixedCharSpan GetAliasName() const {
+        inline FixedCharSpan GetAliasName() const {
             return FixedCharSpan(alias, length);
         }
 
@@ -1461,9 +1104,7 @@ namespace Alchemy {
 
         NodeIndex<DeclarationNode> first;
 
-        explicit ClassBodyNode(NodeIndex<DeclarationNode> first)
-            : NodeBase(NodeType::ClassBody)
-            , first(first) {}
+        explicit ClassBodyNode(NodeIndex<DeclarationNode> first);
 
     };
 
@@ -1475,13 +1116,7 @@ namespace Alchemy {
         NodeIndex<TypeParameterListNode> typeParameters;
         NodeIndex<ClassBodyNode> classBody;
 
-        StructDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<TypeParameterListNode> typeParameters, NodeIndex<TypeListNode> baseType, NodeIndex<ClassBodyNode> classBody)
-            : DeclarationNode(NodeType::StructDeclaration)
-            , modifiers(modifiers)
-            , identifier(identifier)
-            , typeParameters(typeParameters)
-            , baseType(baseType)
-            , classBody(classBody) {}
+        StructDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<TypeParameterListNode> typeParameters, NodeIndex<TypeListNode> baseType, NodeIndex<ClassBodyNode> classBody);
 
     };
 
@@ -1493,8 +1128,7 @@ namespace Alchemy {
         NodeIndex<TypeParameterListNode> typeParameters;
         NodeIndex<ClassBodyNode> classBody;
 
-        explicit InterfaceDeclarationNode()
-            : DeclarationNode(NodeType::InterfaceDeclaration) {}
+        explicit InterfaceDeclarationNode();
 
     };
 
@@ -1505,13 +1139,9 @@ namespace Alchemy {
 
         NodeIndex<DeclarationNode> firstDeclaration;
 
-        explicit NamespaceDeclarationNode(FixedCharSpan name, NodeIndex<DeclarationNode> firstDeclaration)
-            : DeclarationNode(NodeType::NamespaceDeclaration)
-            , name(name.ptr)
-            , nameLength(name.size)
-            , firstDeclaration(firstDeclaration) {}
+        explicit NamespaceDeclarationNode(FixedCharSpan name, NodeIndex<DeclarationNode> firstDeclaration);
 
-        FixedCharSpan GetName() const {
+        inline FixedCharSpan GetName() const {
             return FixedCharSpan(name, nameLength);
         }
 
@@ -1525,13 +1155,7 @@ namespace Alchemy {
         NodeIndex<TypeParameterListNode> typeParameters;
         NodeIndex<ClassBodyNode> classBody;
 
-        ClassDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<TypeParameterListNode> typeParameters, NodeIndex<TypeListNode> baseType, NodeIndex<ClassBodyNode> classBody)
-            : DeclarationNode(NodeType::ClassDeclaration)
-            , modifiers(modifiers)
-            , identifier(identifier)
-            , typeParameters(typeParameters)
-            , baseType(baseType)
-            , classBody(classBody) {}
+        ClassDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<TypeParameterListNode> typeParameters, NodeIndex<TypeListNode> baseType, NodeIndex<ClassBodyNode> classBody);
 
     };
 
@@ -1539,15 +1163,13 @@ namespace Alchemy {
 
         NodeIndex<BlockNode> block;
 
-        explicit InvalidDeclarationNode(NodeIndex<BlockNode> block)
-            : DeclarationNode(NodeType::InvalidDeclaration)
-            , block(block) {}
+        explicit InvalidDeclarationNode(NodeIndex<BlockNode> block);
 
     };
 
     struct ErrorDeclarationNode : DeclarationNode {
 
-        ErrorDeclarationNode() : DeclarationNode(NodeType::Error) {}
+        ErrorDeclarationNode();
 
     };
 
@@ -1555,9 +1177,7 @@ namespace Alchemy {
 
         NodeIndex<FormalParameterNode> first;
 
-        explicit IndexerParameterListNode(NodeIndex<FormalParameterNode> first)
-            : NodeBase(NodeType::IndexerParameterList)
-            , first(first) {}
+        explicit IndexerParameterListNode(NodeIndex<FormalParameterNode> first);
 
     };
 
@@ -1569,13 +1189,7 @@ namespace Alchemy {
         NodeIndex<PropertyGetterNode> getter;
         NodeIndex<PropertySetterNode> setter;
 
-        IndexerDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<TypePathNode> typePath, NodeIndex<IndexerParameterListNode> parameterList, NodeIndex<PropertyGetterNode> getter, NodeIndex<PropertySetterNode> setter)
-            : DeclarationNode(NodeType::IndexerDeclaration)
-            , modifiers(modifiers)
-            , typePath(typePath)
-            , parameterList(parameterList)
-            , setter(setter)
-            , getter(getter) {}
+        IndexerDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<TypePathNode> typePath, NodeIndex<IndexerParameterListNode> parameterList, NodeIndex<PropertyGetterNode> getter, NodeIndex<PropertySetterNode> setter);
 
     };
 
@@ -1588,14 +1202,7 @@ namespace Alchemy {
         NodeIndex<TypeParameterListNode> typeParameters;
         NodeIndex<FormalParameterListNode> parameters;
 
-        DelegateDeclarationNode(NodeIndex<ModifierListNode> modifiers, bool isVoid, NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<TypeParameterListNode> typeParameters, NodeIndex<FormalParameterListNode> parameters)
-            : DeclarationNode(NodeType::DelegateDeclaration)
-            , modifiers(modifiers)
-            , isVoid(isVoid)
-            , typePath(typePath)
-            , identifier(identifier)
-            , typeParameters(typeParameters)
-            , parameters(parameters) {}
+        DelegateDeclarationNode(NodeIndex<ModifierListNode> modifiers, bool isVoid, NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<TypeParameterListNode> typeParameters, NodeIndex<FormalParameterListNode> parameters);
 
     };
 
@@ -1606,12 +1213,7 @@ namespace Alchemy {
         NodeIndex<FormalParameterListNode> parameters;
         NodeIndex<BlockNode> body;
 
-        ConstructorDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<FormalParameterListNode> parameters, NodeIndex<BlockNode> body)
-            : DeclarationNode(NodeType::ConstructorDeclaration)
-            , modifiers(modifiers)
-            , identifier(identifier)
-            , parameters(parameters)
-            , body(body) {}
+        ConstructorDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<IdentifierNode> identifier, NodeIndex<FormalParameterListNode> parameters, NodeIndex<BlockNode> body);
 
     };
 
@@ -1622,12 +1224,7 @@ namespace Alchemy {
         NodeIndex<IdentifierNode> identifier;
         NodeIndex<ExpressionNode> initExpression;
 
-        FieldDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> initExpression)
-            : DeclarationNode(NodeType::FieldDeclaration)
-            , modifiers(modifiers)
-            , typePath(typePath)
-            , identifier(identifier)
-            , initExpression(initExpression) {}
+        FieldDeclarationNode(NodeIndex<ModifierListNode> modifiers, NodeIndex<TypePathNode> typePath, NodeIndex<IdentifierNode> identifier, NodeIndex<ExpressionNode> initExpression);
 
     };
 

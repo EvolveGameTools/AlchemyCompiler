@@ -1,14 +1,12 @@
 #pragma once
 
-#include "../PrimitiveTypes.h"
-#include "../Collections/PodList.h"
-#include "../Unicode/Unicode.h"
-#include "./Keyword.h"
-#include "./Token.h"
-#include "MatchKeyword_Generated2.h"
-#include "../Collections/FixedPodList.h"
-
-using namespace Alchemy;
+#include "../../PrimitiveTypes.h"
+#include "../../Collections/PodList.h"
+#include "../../Collections/FixedPodList.h"
+#include "../../Unicode/Unicode.h"
+#include "../Keyword.h"
+#include "../Token.h"
+#include "./MatchKeyword_Generated2.h"
 
 char32 PeekUtf32_FromUtf8(const char* buffer, int32* byteWidth) {
     char32 result = 0;
@@ -42,7 +40,7 @@ char32 PeekUtf32_FromUtf8(const char* buffer, int32* byteWidth) {
     return result;
 }
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
 
     struct Tokenizer {
 

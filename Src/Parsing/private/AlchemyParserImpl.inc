@@ -1,11 +1,12 @@
 #pragma once
 
 #include "./PsiBuilder2.h"
-#include "KeywordString.h"
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
 
     struct ParserImpl {
+
+        PsiBuilder2 b;
 
         typedef bool (* TryParseExpressionFn)(ParserImpl* p, NodeIndex<ExpressionNode>* lhs, bool* recovery);
 
@@ -15,7 +16,6 @@ namespace Alchemy {
             const char* failureMessage;
         };
 
-        PsiBuilder2 b;
 
         bool ExpectSemicolon() {
             if (b.GetTokenType() != TokenType::SemiColon) {

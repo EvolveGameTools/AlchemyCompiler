@@ -1,8 +1,7 @@
-#pragma once
-#include "../PrimitiveTypes.h"
-#include "Keyword.h"
+#include "../Keyword.h"
 
-namespace Alchemy {
+namespace Alchemy::Parsing {
+
     const char * KeywordToString(Keyword keyword) {
         switch(keyword) {
             case Keyword::As: return "as";
@@ -109,4 +108,5 @@ namespace Alchemy {
             default: return "Invalid";
         }
     }
+
 }
