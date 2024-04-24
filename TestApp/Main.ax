@@ -1,0 +1,26 @@
+using System;
+using System::Collections;
+
+private class Thing {}
+
+export class Program {
+
+    public SomeVector xyz;
+
+    void OverloadMe(int32 x = 0, int32 y = 0, int32 z = 0) {}
+
+    void TestMethod(float x) { }
+
+    void TestMethod(int32 y) {}
+
+    export void Main(Thing t, SomeVector v, float xyz, int value) {
+        TestMethod(10f);
+    }
+
+    // method count = 5
+    // void OverloadMe() {}
+    // void OverloadMe(int32 x) {}
+    // void OverloadMe(int32 x, int32 y) {}
+    // void OverloadMe(int32 x, int32 y, int32 z) {}
+}
+

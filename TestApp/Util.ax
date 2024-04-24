@@ -1,0 +1,17 @@
+
+
+public struct SomeVector {
+
+    public float x;
+    public float y;
+    public float z;
+
+}
+
+public struct SomeVector2 {
+
+     public float x;
+     public float y;
+     public float z;
+
+ }

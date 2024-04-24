@@ -1,0 +1,18 @@
+// namespace Collections {
+
+    public class List<T> {
+
+        private T[] items;
+        private int size;
+
+        public void Add(T item) {
+           // if(size + 1 >= items.Length) {
+           //     System::Array.Resize(ref items, items.Length * 2);
+           // }
+           // items[size] = item;
+           // size++;
+        }
+
+    }
+
+//}

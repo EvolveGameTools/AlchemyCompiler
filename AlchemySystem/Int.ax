@@ -1,0 +1,51 @@
+
+public struct Int64 {
+
+    private long value;
+
+}
+
+
+public struct Int32 {
+
+    private int value;
+
+}
+
+public struct Int16 {
+
+    private short value;
+
+}
+
+
+public struct Int8 {
+
+    private sbyte value;
+
+}
+
+public struct UInt64 {
+
+    private ulong value;
+
+}
+
+public struct UInt32 {
+
+    private uint value;
+
+}
+
+public struct UInt16 {
+
+    private ushort value;
+
+}
+
+
+public struct UInt8 {
+
+    private byte value;
+
+}

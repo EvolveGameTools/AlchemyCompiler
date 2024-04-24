@@ -1,0 +1,31 @@
+
+public struct Float {
+
+    private float value;
+
+}
+
+public struct Double {
+
+    private double value;
+
+}
+
+public struct Float2 {
+
+    private float2 value;
+
+}
+
+
+public struct Float3 {
+
+    private float3 value;
+
+}
+
+public struct Float4 {
+
+    private float4 value;
+
+}
