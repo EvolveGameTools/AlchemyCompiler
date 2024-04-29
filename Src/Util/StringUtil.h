@@ -2,7 +2,7 @@
 
 #include "../PrimitiveTypes.h"
 
-namespace Alchemy::Compilation {
+namespace Alchemy {
 
     constexpr int32 kBase32PointerLength = 13;
 
@@ -10,7 +10,7 @@ namespace Alchemy::Compilation {
     void EncodePointerBase32(void * ptr, char * output) {
         static const char sBase32Chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
-        uint64_t ptr_val = (uint64_t)ptr;
+        uint64 ptr_val = (uint64)ptr;
 
         for (int32 i = 0; i < kBase32PointerLength; ++i) { // 64-bit pointer divided into 13 groups of 5 bits for Base32 encoding
             output[i] = sBase32Chars[(ptr_val >> (i * 5)) & 0x1F]; // Extract 5 bits and map to corresponding Base32 character

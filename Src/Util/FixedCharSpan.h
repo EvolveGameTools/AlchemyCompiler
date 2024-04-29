@@ -7,8 +7,8 @@ namespace Alchemy {
 
     struct FixedCharSpan {
 
-        int32 size;
         char* ptr;
+        int32 size;
 
         FixedCharSpan() : ptr(nullptr), size(0) {}
 

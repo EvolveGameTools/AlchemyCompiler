@@ -1,0 +1,20 @@
+command script import ./project.py
+
+type summary add -x "Alchemy::IntKey" -F project.IntKey_SummaryProvider
+type summary add "Alchemy::FixedCharSpan" -F project.FixedCharSpan_SummaryProvider
+type summary add -x "Alchemy::StringKey" -F project.FixedCharSpan_SummaryProvider
+
+type synthetic add -x "Alchemy::CheckedArray<.+>$" -l project.Array_SyntheticProvider
+type summary add -x "Alchemy::CheckedArray<.+>$" -F project.List_Summary
+
+type synthetic add -x "Alchemy::PodList<.+>$" -l project.List_SyntheticProvider
+type summary add -x "Alchemy::PodList<.+>$" -F project.List_Summary
+
+type summary add -x "Alchemy::FixedPodList<.+>$" -F project.List_Summary
+type synthetic add -x "Alchemy::FixedPodList<.+>$" -l project.List_SyntheticProvider
+
+type summary add -x "Alchemy::AllocatedArray<.+>$" -F project.List_Summary
+type synthetic add -x "Alchemy::AllocatedArray<.+>$" -l project.Array_SyntheticProvider
+
+type synthetic add -x "Alchemy::MSIDictionary<.+>$" -l project.Map_SyntheticProvider
+type summary add -x "Alchemy::MSIDictionary<.+>$" -F project.List_Summary

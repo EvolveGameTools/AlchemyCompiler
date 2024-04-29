@@ -48,7 +48,6 @@ namespace Alchemy::Compilation {
 
     };
 
-
     struct ConstructExpressionTrees : Alchemy::Jobs::IJob {
 
         CheckedArray<FileInfo*> fileList;

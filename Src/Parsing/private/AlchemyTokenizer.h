@@ -6,7 +6,7 @@
 #include "../../Unicode/Unicode.h"
 #include "../Keyword.h"
 #include "../Token.h"
-#include "./MatchKeyword_Generated2.h"
+#include "./MatchKeyword.generated.inc"
 
 char32 PeekUtf32_FromUtf8(const char* buffer, int32* byteWidth) {
     char32 result = 0;
@@ -1101,7 +1101,6 @@ namespace Alchemy::Parsing {
 
                         goto loop;
                     }
-
 
                     case TokenizerState::Character: {
                         // we just eat everything and let the parser validate it

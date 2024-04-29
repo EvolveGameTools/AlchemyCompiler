@@ -11,12 +11,9 @@ namespace Alchemy {
 
         static_assert(std::is_trivially_copyable<T>());
 
-
-    private:
-        int32 capacity;
-    public:
-        int32 size;
         T* array;
+        int32 size;
+        int32 capacity;
 
         PodList() : array(nullptr), size(0), capacity(0) {}
 
@@ -97,10 +94,10 @@ namespace Alchemy {
             }
             newCapacity = newCapacity < 8 ? 8 : newCapacity;
 
-            T* newArray = (T*) MallocByteArray(sizeof(T) * newCapacity, alignof(T));
+            T* newArray = MallocateTypedUncleared(T, newCapacity);
             if (array != nullptr) {
                 std::memcpy(newArray, array, sizeof(T) * size);
-                FreeByteArray(array, alignof(T));
+                Mfree(array, capacity);
             }
             array = newArray;
             capacity = newCapacity;
@@ -190,7 +187,7 @@ namespace Alchemy {
 
         void Dispose() {
             if (array != nullptr) {
-                FreeByteArray(array, alignof(T));
+                Mfree(array, capacity * sizeof(T));
                 array = nullptr;
             }
         }

@@ -20,7 +20,7 @@ namespace Alchemy {
 
         ~PodQueue() {
             if(array != nullptr) {
-                FreeByteArray(array, alignof(T));
+                Mfree(array, capacity * sizeof(T));
             }
             array = nullptr;
             head = 0;

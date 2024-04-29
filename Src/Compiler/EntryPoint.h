@@ -22,5 +22,4 @@ namespace Alchemy::Compilation {
 
     };
 
-
 }

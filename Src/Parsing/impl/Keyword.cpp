@@ -1,7 +1,7 @@
+#pragma once
 #include "../Keyword.h"
 
 namespace Alchemy::Parsing {
-
     const char * KeywordToString(Keyword keyword) {
         switch(keyword) {
             case Keyword::As: return "as";
@@ -108,5 +108,4 @@ namespace Alchemy::Parsing {
             default: return "Invalid";
         }
     }
-
 }

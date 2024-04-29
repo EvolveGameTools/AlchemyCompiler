@@ -1,6 +1,5 @@
 #pragma once
 #include <algorithm> // for std::max
-#include "../Nodes.h"
 
 namespace {
 
@@ -11,6 +10,7 @@ namespace {
 
     constexpr size_t kMaxNodeSize = MaxStructSize<
         Alchemy::Parsing::NodeBase,
+        Alchemy::Parsing::AbstractPsiNode,
         Alchemy::Parsing::DeclarationNode,
         Alchemy::Parsing::ExpressionNode,
         Alchemy::Parsing::FileNode,
@@ -130,10 +130,11 @@ namespace {
         Alchemy::Parsing::IndexerDeclarationNode,
         Alchemy::Parsing::DelegateDeclarationNode,
         Alchemy::Parsing::ConstructorDeclarationNode,
-        Alchemy::Parsing::FieldDeclarationNode
+        Alchemy::Parsing::FieldDeclarationNode    
     >() - sizeof(Alchemy::Parsing::NodeBase);
     
         static_assert(sizeof(Alchemy::Parsing::NodeBase) <= 32);
+        static_assert(sizeof(Alchemy::Parsing::AbstractPsiNode) <= 32);
         static_assert(sizeof(Alchemy::Parsing::DeclarationNode) <= 32);
         static_assert(sizeof(Alchemy::Parsing::ExpressionNode) <= 32);
         static_assert(sizeof(Alchemy::Parsing::FileNode) <= 32);
@@ -254,6 +255,7 @@ namespace {
         static_assert(sizeof(Alchemy::Parsing::DelegateDeclarationNode) <= 32);
         static_assert(sizeof(Alchemy::Parsing::ConstructorDeclarationNode) <= 32);
         static_assert(sizeof(Alchemy::Parsing::FieldDeclarationNode) <= 32);
+
 
 }
     

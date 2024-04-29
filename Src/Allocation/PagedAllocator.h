@@ -13,14 +13,14 @@ namespace Alchemy {
             , currentPageAlloc(0)
             , baseItemsPerPage(basePageSize)
         {
-            T* alloc = (T*) MallocByteArray(sizeof(T) * basePageSize, alignof(T));
+            T* alloc = MallocateTyped(T, basePageSize);
             memset((void*) alloc, 0, sizeof(T) * basePageSize);
             pages.Add(Page(alloc, basePageSize, 0));
         }
 
         ~PagedAllocator() {
             for (int32 i = 0; i < pages.size; i++) {
-                FreeByteArray(pages[i].buffer, alignof(T));
+                Mfree(pages[i].buffer, pages[i].capacity);
             }
         };
 
@@ -80,7 +80,7 @@ namespace Alchemy {
 
             if (pageIndex == -1) {
                 int32 pageSize = baseItemsPerPage > count ? baseItemsPerPage : count;
-                T* alloc = (T*) MallocByteArray(sizeof(T) * pageSize, alignof(T));
+                T* alloc = MallocateTyped(T, 1);
                 pages.Add(Page(alloc, pageSize, count));
                 UpdateCurrentPage();
                 return alloc;
@@ -108,7 +108,7 @@ namespace Alchemy {
 
             if (pageIndex == -1) {
                 int32 pageSize = baseItemsPerPage > count ? baseItemsPerPage : count;
-                T* alloc = (T*) MallocByteArray(sizeof(T) * pageSize, alignof(T));
+                T* alloc = MallocateTyped(T, pageSize);
                 memset((void*) alloc, 0, sizeof(T) * pageSize);
                 pages.Add(Page(alloc, pageSize, count));
                 UpdateCurrentPage();

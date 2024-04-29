@@ -4,19 +4,22 @@
 #include <type_traits>
 #include <cstring>
 #include "../Allocation/PodAllocation.h"
+#include "./CheckedArray.h"
 
 namespace Alchemy {
 
+    // Doesn't delete itself, has no destructor, requires an explicit resize if desired
     template<class T>
-    struct CheckedArray {
-        T* array;
-        int32 size;
+    struct AllocatedArray {
+
+        T* array {};
+        int32 size {};
 
         static_assert(std::is_trivially_copyable<T>());
 
-        CheckedArray() : array(nullptr), size(0) {}
+        AllocatedArray() : array(nullptr), size(0) {}
 
-        CheckedArray(T* array, int32 size) : array(array), size(size) {}
+        AllocatedArray(T * array, int32 size) : array(array), size(size) {}
 
         void Set(int32 index, const T& value) {
             assert(index >= 0 && index < size && "out of bounds");
@@ -24,11 +27,6 @@ namespace Alchemy {
         }
 
         T& Get(int32 index) {
-            assert(index >= 0 && index < size && "out of bounds");
-            return array[index];
-        }
-
-        T GetValue(int32 index) {
             assert(index >= 0 && index < size && "out of bounds");
             return array[index];
         }
@@ -43,16 +41,8 @@ namespace Alchemy {
             return array[index];
         }
 
-        void CopyFrom(CheckedArray<T> other) {
-            memcpy(array, other.array, sizeof(T) * size);
-        }
-
-        CheckedArray<T> SliceStartEnd(int32 start, int32 end) {
-            return CheckedArray<T>(array + start, end - start);
-        }
-
-        CheckedArray<T> SliceCount(int32 start, int32 count) {
-            return CheckedArray<T>(array + start, count);
+        CheckedArray<T> ToCheckedArray() {
+            return CheckedArray<T>(array, size);
         }
 
         void Clear() {
@@ -60,5 +50,4 @@ namespace Alchemy {
         }
 
     };
-
 }

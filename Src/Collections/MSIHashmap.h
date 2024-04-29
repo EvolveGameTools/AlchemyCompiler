@@ -78,7 +78,7 @@
 //
 //        static constexpr size_t k_Alignment = 16;
 //
-//        static int32 InitBuffers(int32 exponent, uint64** pNewMap, uint64** pNewGravestones, uint8** pNewKeys, uint8** pNewValues, size_t keyTypeSize, size_t valueTypeSize) {
+//        static int32 InitBuffers(int32 exponent, uint64** pNewMap, uint64** pNewGravestones, uint8** pNewKeys, uint8** pNewValues, size_t keyTypeSize, size_t valueTypeSize) { xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 //            int32 shiftedExponent = 1 << exponent;
 //
 //            uint64 mapSize = (int64) Align(sizeof(uint64) * LongBoolMap::GetMapSize(shiftedExponent), 8);
@@ -734,6 +734,7 @@
 #include "../Collections/LongBoolMap.h"
 #include "../Collections/PodList.h"
 #include "../Allocation/PodAllocation.h"
+#include "../Util/MathUtil.h"
 
 namespace Alchemy {
 
@@ -890,6 +891,7 @@ namespace Alchemy {
             FreeByteArray(memory, 16);
         }
 
+        // todo -- thread_local temp buffer to store hash codes then this doesn't need to be a templated method
         template<typename TKey, typename TValue>
         static void Resize(int32* exponent, int32* threshold, uint64** pMap, TKey** pKeys, TValue** pValues) {
 

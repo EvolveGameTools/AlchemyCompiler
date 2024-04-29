@@ -10,7 +10,7 @@ add_executable(AlchemyCompiler
         Src/Collections/LongBoolMap.cpp
         Src/Allocation/LinearAllocator.cpp
 #        Src/Util/Writer.cpp
-#        Src/JobSystem/Job.cpp
+    Src/JobSystem/Job.cpp
     Src/Parsing/impl/AlchemyParsing.cpp
     Src/Parsing/impl/TokenType.cpp
     Src/Parsing/impl/Keyword.cpp
@@ -18,9 +18,43 @@ add_executable(AlchemyCompiler
     Src/Parsing/impl/BuiltInTypeName.cpp
     Src/Parsing/impl/NodeType.cpp
     Src/Parsing/impl/Nodes.cpp
+    Src/Allocation/ThreadLocalTemp.cpp
+    Src/Parsing2/Tokenizer.cpp
+    Src/Parsing2/SyntaxFacts.cpp
+    Src/Panic.cpp
+    Src/Parsing2/TextWindow.cpp
+    Src/Parsing2/Scanning.cpp
+    Src/Parsing2/MatchKeyword.generated.cpp
 )
 
-#-gsplit-dwarf (gcc/clang) /DEBUG:FASTLINK (MSVC)
+include(FetchContent)
+FetchContent_Declare(
+    cpptrace
+    GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
+    GIT_TAG        v0.5.2 # <HASH or TAG>
+)
+FetchContent_MakeAvailable(cpptrace)
+target_link_libraries(AlchemyCompiler cpptrace::cpptrace)
+
+# On windows copy cpptrace.dll to the same directory as the executable for your_target
+if(WIN32)
+    add_custom_command(
+        TARGET AlchemyCompiler POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:cpptrace::cpptrace>
+        $<TARGET_FILE_DIR:AlchemyCompiler>
+    )
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(AlchemyCompiler PUBLIC ALCHEMY_DEBUG=1 ALCHEMY_MALLOC_DEBUG=1)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(AlchemyCompiler PRIVATE "-gsplit-dwarf")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(AlchemyCompiler PRIVATE "/DEBUG:FASTLINK")
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     # Enable Link Time Optimization for GCC or Clang
@@ -38,3 +72,28 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     endif()
 
 endif()
+
+Include(FetchContent)
+
+FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.4.0 # or a later release
+)
+
+FetchContent_MakeAvailable(Catch2)
+
+
+
+add_executable(tests
+    Tests/Test.cpp
+    Src/Parsing2/TextWindow.cpp
+    Src/Parsing2/Tokenizer.cpp
+    Src/Parsing2/SyntaxFacts.cpp
+    Src/Parsing2/Scanning.cpp
+    Src/Unicode/Unicode.cpp
+    Src/Parsing2/MatchKeyword.generated.cpp
+
+)
+
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)

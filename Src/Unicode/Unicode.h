@@ -60,4 +60,6 @@ namespace Alchemy::Unicode {
 
     bool IsHexDigit(uint32 c);
 
+    bool IsLetterChar(UnicodeCategory cat);
+
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "./DLLExport.h"
+#include "./Panic.h"
 
 typedef unsigned char			byte;
 typedef char16_t                char16;
@@ -82,3 +83,5 @@ typedef x___ size_t;
 #define GIGABYTES(x) (1073741824ll * ((int64)x))
 #define MEGABYTES(x) (1048576ll * ((int64)x))
 #define KILOBYTES(x) (1024ll * ((int64)x))
+
+#define NOT_IMPLEMENTED(x) Panic(PanicType::NotImplemented, (void*)(x))

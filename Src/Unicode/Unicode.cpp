@@ -1406,6 +1406,43 @@ namespace Alchemy::Unicode {
         return CheckLetter(GetUnicodeCategory(c));
     }
 
+    bool IsDecimalDigitChar(UnicodeCategory cat) {
+        // decimal-digit-character:
+        //   A Unicode character of the class Nd
+        //   A unicode-escape-sequence representing a character of the class Nd
+        return cat == UnicodeCategory::DecimalDigitNumber;
+    }
+
+    bool IsFormattingChar(UnicodeCategory cat) {
+        return cat == UnicodeCategory::Format;
+    }
+
+    bool IsConnectingChar(UnicodeCategory cat) {
+        // connecting-character:
+        //   A Unicode character of the class Pc
+        //   A unicode-escape-sequence representing a character of the class Pc
+
+        return cat == UnicodeCategory::ConnectorPunctuation;
+    }
+
+    bool IsLetterChar(UnicodeCategory cat) {
+        // letter-character:
+        //   A Unicode character of classes Lu, Ll, Lt, Lm, Lo, or Nl
+        //   A Unicode-escape-sequence representing a character of classes Lu, Ll, Lt, Lm, Lo, or Nl
+
+        switch (cat) {
+            case UnicodeCategory::UppercaseLetter:
+            case UnicodeCategory::LowercaseLetter:
+            case UnicodeCategory::TitlecaseLetter:
+            case UnicodeCategory::ModifierLetter:
+            case UnicodeCategory::OtherLetter:
+            case UnicodeCategory::LetterNumber:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     bool GetIsWhiteSpace(uint32 ch) {
         // We don't need a (string, int) overload because all current white space chars are in the BMP.
 
@@ -1497,7 +1534,8 @@ namespace Alchemy::Unicode {
             case 'E':
             case 'F':
                 return true;
-            default: return false;
+            default:
+                return false;
         }
 
     }
