@@ -1,16 +1,18 @@
-#include "TextWindow.h"
-#include "SyntaxDiagnosticInfo.h"
-#include "SyntaxFacts.h"
+#include "./TextWindow.h"
+#include "./SyntaxDiagnosticInfo.h"
+#include "./SyntaxFacts.h"
 #include "../Util/FixedCharSpan.h"
 #include "../Unicode/Unicode.h"
-#include "Scanning.h"
+#include "./Scanning.h"
 #include "../Collections/FixedPodList.h"
 #include "../Allocation/ThreadLocalTemp.h"
+#include "../Allocation/BytePoolAllocator.h"
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
 
     SyntaxDiagnosticInfo CreateIllegalEscapeDiagnostic(TextWindow* window, char* start) {
-        return {window->start, start, window->ptr, ErrorCode::IllegalEscape};
+        NOT_IMPLEMENTED("CreateIllegalEscapeDiagnostic -- figure out error storage");
+        return SyntaxDiagnosticInfo(); // {window->start, start, window->ptr, ErrorCode::IllegalEscape};
     }
 
     uint32 ScanUnicodeEscape(TextWindow* textWindow, SyntaxDiagnosticInfo* error) {
@@ -99,9 +101,11 @@ namespace Alchemy::Parsing {
                 *usedUnderscore = true;
                 lastCharWasUnderscore = true;
             }
-            else if (!(isHex ? SyntaxFacts::IsHexDigit(ch) : isBinary
-                                                             ? SyntaxFacts::IsBinaryDigit(ch)
-                                                             : SyntaxFacts::IsDecDigit(ch))) {
+            else if (!(isHex
+                       ? SyntaxFacts::IsHexDigit(ch)
+                       : isBinary
+                         ? SyntaxFacts::IsBinaryDigit(ch)
+                         : SyntaxFacts::IsDecDigit(ch))) {
                 break;
             }
             else {
@@ -129,100 +133,132 @@ namespace Alchemy::Parsing {
     }
 
 
-    uint64 GetValueUInt64(FixedPodList<char>* pList, bool isHex, bool isBinary) {
-        uint64 result;
-        if (isBinary) {
-            if (!TryParseBinaryUInt64(pList, &result)) {
-                AddError(MakeError(ErrorCode::ERR_IntOverflow));
-            }
-        }
-        else if(isHex) {
-
-        }
-        else {
-
-        }
-        else if (!UInt64.TryParse(text, isHex ? NumberStyles.AllowHexSpecifier : NumberStyles.None, CultureInfo.InvariantCulture, &result)) {
-            //we've already lexed the literal, so the error must be from overflow
-            AddError(MakeError(ErrorCode::ERR_IntOverflow));
+    bool TryParseHexUInt64(FixedPodList<char>* text, uint64* value) {
+        *value = 0;
+        // can't fit into the value, overflow
+        if (text->size > 16) {
+            *value = 0;
+            return false;
         }
 
-        return result;
+        char buffer[17];
+        memcpy(buffer, text->array, text->size);
+        buffer[text->size] = '\0';
+
+        // we've already lexed valid hex
+        char* end;
+        errno = 0;
+        *value = strtoull(buffer, &end, 16);
+
+        return true;
     }
 
-    double GetDoubleValue(FixedPodList<char>* pList) {
+    bool TryParseBinaryUInt64(FixedPodList<char>* text, uint64* value) {
+        *value = 0;
+        for (int32 i = 0; i < text->size; i++) {
+            // if uppermost bit is set, then the next bitshift will overflow
+            if ((*value & 0x8000000000000000) != 0) {
+                *value = 0;
+                return false;
+            }
+            // We shouldn't ever get a string that's nonbinary (see ScanNumericLiteral),
+            // so don't explicitly check for it (there's a debug assert in SyntaxFacts)
+            uint64 bit = text->Get(i) == '1' ? 1 : 0;
+            *value = (*value << 1ull) | bit;
+        }
+
+        return true;
+    }
+
+    bool TryGetValueUInt64(FixedPodList<char>* pList, uint64* value) {
+        char buffer[128];
+        BufferNumber(pList->array, pList->size, buffer, 128);
+        char* end;
+        errno = 0;
+        *value = strtoull(buffer, &end, 10);
+        if ((errno == ERANGE && *value == ULLONG_MAX) || (errno != 0 && *value == 0)) {
+            *value = 0;
+            return false;
+        }
+        return true;
+    }
+
+    bool TryGetDoubleValue(FixedPodList<char>* pList, double* pValue, ErrorCode* errorCode) {
         char buffer[256];
         BufferNumber(pList->array, pList->size, buffer, 256);
         char* start = buffer;
         char* end;
         double value = strtod(start, &end);
-        if (start != end && !isnan(value) && !isinf(value)) {
-            return value;
-        }
 
-        // maybe need to check overflow too
+        if (start != end && !isnan(value) && !isinf(value)) {
+            *pValue = value;
+            return true;
+        }
 
         if (start == end) {
-            b.ErrorArgs(m, "double literal `%.*s` didn't parse to a value", pList->size, pList->array);
-            return true;
+            *errorCode = ErrorCode::ERR_InvalidReal;
+            *pValue = 0;
+            return false;
         }
         else if (isnan(value)) {
-            b.ErrorArgs(m, "double literal `%.*s` is NaN", pList->size, pList->array);
-            return true;
+            *errorCode = ErrorCode::ERR_InvalidRealNaN;
+            *pValue = 0;
+            return false;
         }
         else if (isinf(value)) {
-            b.ErrorArgs(m, "double literal `%.*s` is infinite", pList->size, pList->array);
-            return true;
+            *errorCode = ErrorCode::ERR_InvalidRealInfinite;
+            *pValue = 0;
+            return false;
         }
         else {
-            b.ErrorArgs(m, "double literal `%.*s` is invalid", pList->size, pList->array);
-            return true;
+            *errorCode = ErrorCode::ERR_InvalidReal;
+            *pValue = 0;
+            return false;
         }
     }
 
-    float GetFloatValue(FixedPodList<char>* pList) {
+    bool TryGetFloatValue(FixedPodList<char>* pList, float* pValue, ErrorCode* errorCode) {
         char buffer[256];
         BufferNumber(pList->array, pList->size, buffer, 256);
         char* start = buffer;
-        char* end;
+        char* end = nullptr;
         float value = strtof(start, &end);
 
         if (start != end && !isnan(value) && !isinf(value)) {
-            return value;
+            *pValue = value;
+            return true;
         }
 
         if (start == end) {
-            b.ErrorArgs(m, "float literal `%.*s` didn't parse to a value", pList->size, pList->array);
-            return 0;
+            *errorCode = ErrorCode::ERR_InvalidReal;
+            *pValue = 0;
+            return false;
         }
         else if (isnan(value)) {
-            b.ErrorArgs(m, "float literal `%.*s` is NaN", pList->size, pList->array);
-            return 0;
+            *errorCode = ErrorCode::ERR_InvalidRealNaN;
+            *pValue = 0;
+            return false;
         }
         else if (isinf(value)) {
-            b.ErrorArgs(m, "float literal `%.*s` is infinite", pList->size, pList->array);
-            return 0;
+            *errorCode = ErrorCode::ERR_InvalidRealInfinite;
+            *pValue = 0;
+            return false;
         }
         else {
-            b.ErrorArgs(m, "float literal `%.*s` is invalid", pList->size, pList->array);
-            return 0;
+            *errorCode = ErrorCode::ERR_InvalidReal;
+            *pValue = 0;
+            return false;
         }
 
-        return 0;
     }
 
-    struct Diagnostics {
-        LinearAllocator* allocator;
-    };
-
-    bool ScanNumericLiteral(TextWindow* textWindow, TokenInfo* info) {
+    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, TokenInfo* info) {
         char* start = textWindow->ptr;
         char c;
         bool isHex = false;
         bool isBinary = false;
         bool hasDecimal = false;
         bool hasExponent = false;
-        // _builder.Clear();
         bool hasUSuffix = false;
         bool hasLSuffix = false;
         bool underscoreInWrongPlace = false;
@@ -236,7 +272,7 @@ namespace Alchemy::Parsing {
 
         c = textWindow->PeekChar();
         if (c == '0') {
-            c = textWindow->PeekChar(1);
+            c = textWindow->PeekAhead(1);
             if (c == 'x' || c == 'X') {
                 textWindow->Advance(2);
                 isHex = true;
@@ -251,18 +287,18 @@ namespace Alchemy::Parsing {
             // It's OK if it has no digits after the '0x' -- we'll catch it in ScanNumericLiteral and give a proper error then.
             ScanNumericLiteralSingleInteger(textWindow, &buffer, &underscoreInWrongPlace, &usedUnderscore, &firstCharWasUnderscore, isHex, isBinary);
 
-            if (textWindow->PeekChar('L') || textWindow->Peek('l')) {
+            if (textWindow->Peek('L') || textWindow->Peek('l')) {
                 textWindow->Advance();
                 hasLSuffix = true;
-                if (textWindow->PeekChar('u') || textWindow->Peek('U')) {
+                if (textWindow->Peek('u') || textWindow->Peek('U')) {
                     textWindow->Advance();
                     hasUSuffix = true;
                 }
             }
-            else if (textWindow->PeekChar('u') || textWindow->Peek('U')) {
+            else if (textWindow->Peek('u') || textWindow->Peek('U')) {
                 textWindow->Advance();
                 hasUSuffix = true;
-                if (textWindow->PeekChar('L') || textWindow->Peek('l')) {
+                if (textWindow->Peek('L') || textWindow->Peek('l')) {
                     textWindow->Advance();
                     hasLSuffix = true;
                 }
@@ -273,7 +309,7 @@ namespace Alchemy::Parsing {
 
             c = textWindow->PeekChar();
             if (c == '.') {
-                char next = textWindow->PeekChar(1);
+                char next = textWindow->PeekAhead(1);
                 if (next >= '0' && next <= '9') {
                     hasDecimal = true;
                     buffer.Add(c);
@@ -299,7 +335,7 @@ namespace Alchemy::Parsing {
 
                 c = textWindow->PeekChar();
                 if (!SyntaxFacts::IsDecDigit(c) && c != '_') {
-                    AddError(ErrorCode::ERR_InvalidReal);
+                    diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_InvalidReal, start, textWindow->ptr));
                     // add dummy exponent, so parser does not blow up
                     buffer.Add('0');
                 }
@@ -348,7 +384,7 @@ namespace Alchemy::Parsing {
         }
 
         if (underscoreInWrongPlace) {
-            AddError(start, textWindow->ptr - start, ErrorCode::ERR_InvalidNumber);
+            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
         }
 
         info->Kind = SyntaxKind::NumericLiteralToken;
@@ -357,28 +393,101 @@ namespace Alchemy::Parsing {
 
         switch (info->valueKind) {
             case LiteralType::Float: {
-                info->floatValue = GetFloatValue(&buffer);
+                ErrorCode errorCode;
+                if (!TryGetFloatValue(&buffer, &info->literalValue.floatValue, &errorCode)) {
+                    diagnostics->AddScanningError(ScanningError(errorCode, start, textWindow->ptr));
+                }
                 break;
             }
             case LiteralType::Double: {
-                info->doubleValue = GetDoubleValue(&buffer);
+                ErrorCode errorCode;
+                if (!TryGetDoubleValue(&buffer, &info->literalValue.doubleValue, &errorCode)) {
+                    diagnostics->AddScanningError(ScanningError(errorCode, start, textWindow->ptr));
+                }
                 break;
             }
             default: {
                 if (buffer.size == 0) {
                     if (!underscoreInWrongPlace) {
-                        AddError(ErrorCode::ERR_InvalidNumber);
+                        diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
                     }
                     val = 0; //safe default
                 }
                 else {
-                    val = GetValueUInt64(&buffer);
+                    if (isBinary) {
+                        if (!TryParseBinaryUInt64(&buffer, &val)) {
+                            // overflow is the only error possible
+                            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
+                        }
+                    }
+                    else if (isHex) {
+                        if (!TryParseHexUInt64(&buffer, &val)) {
+                            // overflow is the only error possible
+                            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
+                        }
+                    }
+                    else {
+                        if (!TryGetValueUInt64(&buffer, &val)) {
+                            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
+                        }
+                    }
                 }
 
+                // If the literal has no suffix, it has the first of these types in which its value can be represented: int, uint, long, ulong.
 
+                if (!hasUSuffix && !hasLSuffix) {
+                    if (val <= std::numeric_limits<int32>::max()) {
+                        info->valueKind = LiteralType::Int32;
+                        info->literalValue.int32Value = (int32) val;
+                    }
+                    else if (val <= std::numeric_limits<uint32>::max()) {
+                        info->valueKind = LiteralType::UInt32;
+                        info->literalValue.uint32Value = (uint32) val;
+                    }
+                    else if (val <= std::numeric_limits<int64>::max()) {
+                        info->valueKind = LiteralType::Int64;
+                        info->literalValue.int64Value = (int64) val;
+                    }
+                    else {
+                        info->valueKind = LiteralType::UInt64;
+                        info->literalValue.uint64Value = val;
+                    }
+                }
+                else if (hasUSuffix && !hasLSuffix) {
+                    // * If the literal is suffixed by U or u, it has the first of these types in which its value can be represented: uint, ulong.
+                    if (val <= std::numeric_limits<uint32>::max()) {
+                        info->valueKind = LiteralType::UInt32;
+                        info->literalValue.uint32Value = (uint32) val;
+                    }
+                    else {
+                        info->valueKind = LiteralType::UInt64;
+                        info->literalValue.uint64Value = val;
+                    }
+                }
+
+                    // * If the literal is suffixed by L or l, it has the first of these types in which its value can be represented: long, ulong.
+                else if (!hasUSuffix & hasLSuffix) {
+                    if (val <= std::numeric_limits<int64>::max()) {
+                        info->valueKind = LiteralType::Int64;
+                        info->literalValue.int64Value = (int64) val;
+                    }
+                    else {
+                        info->valueKind = LiteralType::UInt64;
+                        info->literalValue.uint64Value = val;
+                    }
+                }
+
+                    // * If the literal is suffixed by UL, Ul, uL, ul, LU, Lu, lU, or lu, it is of type ulong.
+                else {
+                    assert(hasUSuffix && hasLSuffix);
+                    info->valueKind = LiteralType::UInt64;
+                    info->literalValue.uint64Value = val;
+                }
                 break;
             }
         }
+
+        return true;
 
     }
 
@@ -496,7 +605,7 @@ namespace Alchemy::Parsing {
 
         char* start = textWindow->ptr;
 
-        if (textWindow->PeekChar() != '/' || textWindow->PeekChar(1) != '/') {
+        if (textWindow->PeekChar() != '/' || textWindow->PeekAhead(1) != '/') {
             *span = FixedCharSpan(textWindow->ptr, 0);
             return;
         }
@@ -515,7 +624,7 @@ namespace Alchemy::Parsing {
     void ScanMultiLineComment(TextWindow* textWindow, FixedCharSpan* span, bool* isTerminated) {
         char* start = textWindow->ptr;
 
-        if (textWindow->PeekChar() != '/' || textWindow->PeekChar(1) != '*') {
+        if (textWindow->PeekChar() != '/' || textWindow->PeekAhead(1) != '*') {
             *span = FixedCharSpan(textWindow->ptr, 0);
             *isTerminated = true;
             return;
@@ -527,7 +636,7 @@ namespace Alchemy::Parsing {
         char32 c;
         int32 advance;
         while (textWindow->TryPeekChar32(&c, &advance)) {
-            if (c == '*' && textWindow->PeekChar(1) == '/') {
+            if (c == '*' && textWindow->PeekAhead(1) == '/') {
                 textWindow->Advance(2);
                 *isTerminated = true;
                 break;

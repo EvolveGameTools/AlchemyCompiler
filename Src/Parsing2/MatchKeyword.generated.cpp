@@ -1,7 +1,7 @@
 #include "../PrimitiveTypes.h"
 #include "./SyntaxKind.h"
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
 
 bool Matches2(const char* keyword, char* test) {
     return *(uint16 * )
@@ -495,7 +495,6 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, SyntaxKind * keyword
             }
         case 28519:
                     if(Matches2("to", truncatedBuffer)) { // GotoKeyword
-                        *keywordType = SyntaxKind::GotoKeyword;
                         return true;
                     }
                     return false;

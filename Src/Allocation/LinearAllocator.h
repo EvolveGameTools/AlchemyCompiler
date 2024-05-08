@@ -2,6 +2,7 @@
 
 #include "../PrimitiveTypes.h"
 #include "../Collections/CheckedArray.h"
+#include "../Parsing2/Scanning.h"
 #include <cstring>
 #include <memory>
 
@@ -27,7 +28,7 @@ public:
     }
 
     template<typename T>
-    T* Allocate(int32 count) {
+    T* Allocate(size_t count) {
         size_t bytes = count * sizeof(T);
         void* retn = AllocateBytesUncleared(bytes, alignof(T));
         memset(retn, 0, bytes);
@@ -51,9 +52,13 @@ public:
     }
 
     template<typename T>
-    T* AllocateUncleared(int32 count) {
+    T* AllocateUncleared(size_t count) {
         return (T*) AllocateBytesUncleared(sizeof(T) * count, alignof(T));
     }
+
+    size_t GetOffset(void * ptr);
+
+    uint8* GetBase();
 
 };
 
@@ -94,6 +99,5 @@ struct TempAllocator : public LinearAllocator {
     Marker MarkerFromOffset(void* p);
 
     TempAllocator(size_t reservation, size_t commitSize);
-
 
 };

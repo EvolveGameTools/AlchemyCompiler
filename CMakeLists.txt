@@ -3,28 +3,35 @@ project(AlchemyCompiler)
 
 set(CMAKE_CXX_STANDARD 17)
 
+list(APPEND Sources
+        Src/Unicode/Unicode.cpp
+        Src/Collections/LongBoolMap.cpp
+        Src/Allocation/PodAllocation.cpp
+        Src/Allocation/LinearAllocator.cpp
+        Src/Allocation/BytePoolAllocator.cpp
+
+        Src/JobSystem/Job.cpp
+#        Src/Parsing/impl/AlchemyParsing.cpp
+#        Src/Parsing/impl/TokenType.cpp
+#        Src/Parsing/impl/Keyword.cpp
+#        Src/Parsing/impl/ParseResult.cpp
+#        Src/Parsing/impl/BuiltInTypeName.cpp
+#        Src/Parsing/impl/NodeType.cpp
+#        Src/Parsing/impl/Nodes.cpp
+        Src/Allocation/ThreadLocalTemp.cpp
+        Src/Parsing2/Tokenizer.cpp
+        Src/Parsing2/SyntaxFacts.cpp
+        Src/Panic.cpp
+        Src/Parsing2/TextWindow.cpp
+        Src/Parsing2/Scanning.cpp
+        Src/Parsing2/MatchKeyword.generated.cpp
+        Src/Parsing2/Diagnostics.cpp
+        Src/Parsing2/Parser.cpp
+)
+
 add_executable(AlchemyCompiler
 #        main.cpp
-        Src/Unicode/Unicode.cpp
-        Src/Allocation/PodAllocation.cpp
-        Src/Collections/LongBoolMap.cpp
-        Src/Allocation/LinearAllocator.cpp
-#        Src/Util/Writer.cpp
-    Src/JobSystem/Job.cpp
-    Src/Parsing/impl/AlchemyParsing.cpp
-    Src/Parsing/impl/TokenType.cpp
-    Src/Parsing/impl/Keyword.cpp
-    Src/Parsing/impl/ParseResult.cpp
-    Src/Parsing/impl/BuiltInTypeName.cpp
-    Src/Parsing/impl/NodeType.cpp
-    Src/Parsing/impl/Nodes.cpp
-    Src/Allocation/ThreadLocalTemp.cpp
-    Src/Parsing2/Tokenizer.cpp
-    Src/Parsing2/SyntaxFacts.cpp
-    Src/Panic.cpp
-    Src/Parsing2/TextWindow.cpp
-    Src/Parsing2/Scanning.cpp
-    Src/Parsing2/MatchKeyword.generated.cpp
+        ${Sources}
 )
 
 include(FetchContent)
@@ -35,7 +42,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cpptrace)
 target_link_libraries(AlchemyCompiler cpptrace::cpptrace)
-
 # On windows copy cpptrace.dll to the same directory as the executable for your_target
 if(WIN32)
     add_custom_command(
@@ -83,17 +89,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-
-
 add_executable(tests
     Tests/Test.cpp
-    Src/Parsing2/TextWindow.cpp
-    Src/Parsing2/Tokenizer.cpp
-    Src/Parsing2/SyntaxFacts.cpp
-    Src/Parsing2/Scanning.cpp
-    Src/Unicode/Unicode.cpp
-    Src/Parsing2/MatchKeyword.generated.cpp
-
+    ${Sources}
 )
 
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)

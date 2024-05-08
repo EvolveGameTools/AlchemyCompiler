@@ -1,5 +1,6 @@
 #pragma once
 #include <type_traits>
+#include "../Util/MathUtil.h"
 
 namespace Alchemy {
 
@@ -61,7 +62,7 @@ namespace Alchemy {
             int32 newCapacity = capacity * 2;
             if (newCapacity < 16) newCapacity = 16;
             newCapacity = MathUtil::CeilPow2(newCapacity);
-            T * destinationArray = (T*)MallocByteArray(newCapacity * sizeof(T), alignof(T));
+            T * destinationArray = (T*)MallocateTypedUncleared(T, newCapacity);
 
             int j = 0;
             int i = head;
@@ -74,7 +75,7 @@ namespace Alchemy {
 
             }
 
-            FreeByteArray(array, alignof(T));
+            MfreeTyped(array, capacity);
 
             array = destinationArray;
             head = 0;

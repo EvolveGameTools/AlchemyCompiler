@@ -1,38 +1,20 @@
-#include "./SyntaxKind.h"
 #include "../PrimitiveTypes.h"
 #include "../Allocation/LinearAllocator.h"
 #include "../Util/FixedCharSpan.h"
 #include "../Allocation/ThreadLocalTemp.h"
-#include "./SyntaxFacts.h"
-#include "TextWindow.h"
-#include "SyntaxDiagnosticInfo.h"
-#include "Scanning.h"
 #include "../Unicode/Unicode.h"
 #include "../Collections/PodList.h"
+#include "./SyntaxKind.h"
+#include "./SyntaxFacts.h"
+#include "./TextWindow.h"
+#include "./SyntaxDiagnosticInfo.h"
+#include "./Scanning.h"
+#include "Diagnostics.h"
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
 
-    struct SyntaxListBuilder {};
-
-    struct InternMap {
-        static constexpr int32 kExponent = 11; // 2048 values
-        static constexpr int32 kThreshold = (1 << (kExponent - 1)); // fill half the values
-        char* values[1 << kExponent] {nullptr};
-        uint16 lengths[1 << kExponent] {0};
-        int32 size {0};
+    struct SyntaxListBuilder {
     };
-
-    struct ErrorList {
-        SyntaxDiagnosticInfo* array;
-        TempAllocator* allocator;
-        int32 size;
-        int32 capacity;
-    };
-
-    #define List_Add(s, y) ((s)->size >= (s)->capacity \
-        ? Grow(s, sizeof(*(s)->array), s->allocator), \
-          (s)->data + (s)->size++ \
-        : (s)->data + (s)->size++)
 
     struct Tokenizer {
 
@@ -40,7 +22,6 @@ namespace Alchemy::Parsing {
 
         TextWindow textWindow;
 
-        InternMap* internMap;
         LinearAllocator* allocator;
         TempAllocator* tempAllocator;
 
@@ -50,67 +31,10 @@ namespace Alchemy::Parsing {
 
     };
 
-    DEFINE_ENUM_FLAGS(SyntaxTokenFlags, uint8, {
-        None = 0,
-        Error = 1 << 1,
-        LeadingTrivia = 1 << 2,
-        TrailingTrivia = 1 << 3
-    })
-
-    struct SyntaxToken {
-        char* text;
-        union {
-            bool boolValue;
-            char charValue;
-            int32 int32Value;
-            uint32 uint32Value;
-            int64 int64Value;
-            uint64 uint64Value;
-            float floatValue;
-            double doubleValue;
-        };
-        int32 id;
-        uint32 textSize;
-        SyntaxTokenFlags flags;
-        SyntaxKind kind;
-        SyntaxKind contextualKind;
-        LiteralType literalType;
-    };
-
-    struct TriviaList {
-        Trivia* trivia;
-        uint16 leadingCount;
-        uint16 trailingCount;
-        uint16 capacity;
-    };
-
-    struct ParseTree {
-
-        CheckedArray<SyntaxToken> tokens;
-        CheckedArray<Trivia*> trivia;
-
-    };
-
-    void Grow(void* list, size_t itemSize, TempAllocator* allocator) {}
-
     static Tokenizer* CreateTokenizer(TempAllocator* tempAllocator) {
         Tokenizer* tokenizer = tempAllocator->AllocateUncleared<Tokenizer>(1);
         return tokenizer;
     }
-
-//    CheckedArray<SyntaxToken> Tokenize(char* source, int32 size, LinearAllocator* allocator) {
-//        TempAllocator::ScopedMarker scope(GetThreadLocalAllocator());
-//
-//        Tokenizer* tokenizer = CreateTokenizer(GetThreadLocalAllocator());
-//
-//        CheckedArray<SyntaxToken> retn = allocator->AllocateUncleared<SyntaxToken>(tokenizer->tokenCount);
-//
-//        for (int32 i = 0; i < tokenizer->tokenCount; i++) {
-//            retn[i] = CreateSyntaxToken(tokenizer->tokens[i]);
-//        }
-//
-//        return retn;
-//    }
 
     int32 ht_lookup64(uint64 hash, int32 exp, int32 idx) {
         uint32 mask = ((uint32) 1 << exp) - 1;
@@ -124,7 +48,6 @@ namespace Alchemy::Parsing {
         return (int32) ((idx + step) & mask);
     }
 
-
     uint64 hash(char* s, int32 len) {
         uint64 h = 0x100;
         for (int32 i = 0; i < len; i++) {
@@ -133,47 +56,6 @@ namespace Alchemy::Parsing {
         }
         return h ^ h >> 32;
     }
-
-//    static FixedCharSpan AllocateString(LinearAllocator* allocator, char* str, int32 length) {
-//        char* p = allocator->AllocateUncleared<char>(length + 1);
-//        memcpy(p, str, length);
-//        p[length] = 0;
-//        return FixedCharSpan(p, length);
-//    }
-
-//    static FixedCharSpan Intern(InternMap* map, char* str, int32 length, LinearAllocator* allocator) {
-//        uint64 h = hash(str, length);
-//
-//        if (map->size >= InternMap::kThreshold) {
-//            // allocate a new string, our map is full
-//            return AllocateString(allocator, str, length);
-//        }
-//
-//        for (int32 i = (int32) h;;) {
-//
-//            i = ht_lookup(h, InternMap::kExponent, i);
-//            if (map->values[i] == nullptr) {
-//                // insert here
-//                FixedCharSpan span = AllocateString(allocator, str, length);
-//
-//                // map is too big, just return our span
-//                if (map->size >= InternMap::kThreshold) {
-//                    return span;
-//                }
-//
-//                map->values[i] = span.ptr;
-//                map->lengths[i] = span.size;
-//                map->size++;
-//                return span;
-//            }
-//
-//            else if (map->lengths[i] == length && memcmp(map->values[i], str, length) == 0) {
-//                return FixedCharSpan(map->values[i], map->lengths[i]);
-//            }
-//
-//        }
-//
-//    }
 
     bool IsContextualKeyword(SyntaxKind kind) {
         return kind > SyntaxKind::__FirstContextualKeyword__ && kind < SyntaxKind::__LastContextualKeyword__;
@@ -187,17 +69,13 @@ namespace Alchemy::Parsing {
 
     }
 
-    void AddError(ErrorCode code) {
-
-    }
-
-    void LexMultiLineComment(TextWindow* textWindow, SyntaxListBuilder* triviaList) {
+    void LexMultiLineComment(TextWindow* textWindow, Diagnostics * diagnostics,  SyntaxListBuilder* triviaList) {
         bool isTerminated;
         FixedCharSpan span;
         ScanMultiLineComment(textWindow, &span, &isTerminated);
         if (!isTerminated) {
             // The comment didn't end.  Report an error at the start point.
-            AddError(ErrorCode::ERR_OpenEndedComment);
+            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_OpenEndedComment, span.ptr, textWindow->ptr));
         }
 
         AddTrivia(TriviaType::MultiLineComment, span, triviaList);
@@ -244,7 +122,7 @@ namespace Alchemy::Parsing {
         NOT_IMPLEMENTED("LexConflictMarkerTrivia");
     }
 
-    void LexSyntaxTrivia(TextWindow* textWindow, bool afterFirstToken, bool isTrailing, SyntaxListBuilder* triviaList) {
+    void LexSyntaxTrivia(TextWindow* textWindow, bool afterFirstToken, bool isTrailing, Diagnostics * diagnostics, SyntaxListBuilder* triviaList) {
         bool onlyWhitespaceOnLine = !isTrailing;
 
         while (true) {
@@ -284,7 +162,7 @@ namespace Alchemy::Parsing {
                     break;
                 }
                 case '/': {
-                    char c2 = textWindow->PeekChar(1);
+                    char c2 = textWindow->PeekAhead(1);
                     if (c2 == '/') {
                         // normal single line comment
                         LexSingleLineComment(textWindow, triviaList);
@@ -292,7 +170,7 @@ namespace Alchemy::Parsing {
                         break;
                     }
                     else if (c2 == '*') {
-                        LexMultiLineComment(textWindow, triviaList);
+                        LexMultiLineComment(textWindow, diagnostics, triviaList);
                         onlyWhitespaceOnLine = false;
                         break;
                     }
@@ -379,15 +257,20 @@ namespace Alchemy::Parsing {
         }
     }
 
-    bool ScanNumericLiteral(TextWindow* textWindow, TokenInfo* info) {
-        return false;
+//    bool ScanNumericLiteral(TextWindow* textWindow, TokenInfo* info) {
+//        return false;
+//    }
+
+    void Tokenize(char * src, int32 length, LinearAllocator * allocator) {
+        TextWindow window(src, length);
+
     }
 
-    void ScanSyntaxToken(TextWindow* textWindow, TokenInfo* info) {
+    void ScanSyntaxToken(TextWindow* textWindow, TokenInfo* info, Diagnostics * diagnostics, int32* badTokenCount) {
         info->Kind = SyntaxKind::None;
         info->ContextualKind = SyntaxKind::None;
         info->valueKind = LiteralType::None;
-        info->uint64Value = 0;
+        info->literalValue.uint64Value = 0;
         info->text.ptr = nullptr;
         info->text.size = 0;
 
@@ -407,7 +290,7 @@ namespace Alchemy::Parsing {
                 break;
             }
             case '.': {
-                if (!ScanNumericLiteral(textWindow, info)) {
+                if (!ScanNumericLiteral(textWindow, diagnostics, info)) {
                     textWindow->Advance();
                     info->Kind = SyntaxKind::DotToken;
                     if (textWindow->TryAdvance('.')) {
@@ -447,8 +330,8 @@ namespace Alchemy::Parsing {
             case '=': {
                 textWindow->Advance();
                 info->Kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::EqualsEqualsToken :
-                    textWindow->TryAdvance('>') ? SyntaxKind::EqualsGreaterThanToken : SyntaxKind::EqualsToken;
+                        textWindow->TryAdvance('=') ? SyntaxKind::EqualsEqualsToken :
+                        textWindow->TryAdvance('>') ? SyntaxKind::EqualsGreaterThanToken : SyntaxKind::EqualsToken;
                 break;
             }
             case '*': {
@@ -501,17 +384,17 @@ namespace Alchemy::Parsing {
             case '+': {
                 textWindow->Advance();
                 info->Kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::PlusEqualsToken :
-                    textWindow->TryAdvance('+') ? SyntaxKind::PlusPlusToken : SyntaxKind::PlusToken;
+                        textWindow->TryAdvance('=') ? SyntaxKind::PlusEqualsToken :
+                        textWindow->TryAdvance('+') ? SyntaxKind::PlusPlusToken : SyntaxKind::PlusToken;
                 break;
             }
 
             case '-': {
                 textWindow->Advance();
                 info->Kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::MinusEqualsToken :
-                    textWindow->TryAdvance('-') ? SyntaxKind::MinusMinusToken :
-                    textWindow->TryAdvance('>') ? SyntaxKind::MinusGreaterThanToken : SyntaxKind::MinusToken;
+                        textWindow->TryAdvance('=') ? SyntaxKind::MinusEqualsToken :
+                        textWindow->TryAdvance('-') ? SyntaxKind::MinusMinusToken :
+                        textWindow->TryAdvance('>') ? SyntaxKind::MinusGreaterThanToken : SyntaxKind::MinusToken;
                 break;
             }
 
@@ -524,8 +407,8 @@ namespace Alchemy::Parsing {
             case '&': {
                 textWindow->Advance();
                 info->Kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::AmpersandEqualsToken :
-                    textWindow->TryAdvance('&') ? SyntaxKind::AmpersandAmpersandToken : SyntaxKind::AmpersandToken;
+                        textWindow->TryAdvance('=') ? SyntaxKind::AmpersandEqualsToken :
+                        textWindow->TryAdvance('&') ? SyntaxKind::AmpersandAmpersandToken : SyntaxKind::AmpersandToken;
                 break;
             }
 
@@ -538,18 +421,18 @@ namespace Alchemy::Parsing {
             case '|': {
                 textWindow->Advance();
                 info->Kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::BarEqualsToken :
-                    textWindow->TryAdvance('|') ? SyntaxKind::BarBarToken : SyntaxKind::BarToken;
+                        textWindow->TryAdvance('=') ? SyntaxKind::BarEqualsToken :
+                        textWindow->TryAdvance('|') ? SyntaxKind::BarBarToken : SyntaxKind::BarToken;
                 break;
             }
 
             case '<': {
                 textWindow->Advance();
                 info->Kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::LessThanEqualsToken :
-                    textWindow->TryAdvance('<')
-                    ? textWindow->TryAdvance('=') ? SyntaxKind::LessThanLessThanEqualsToken : SyntaxKind::LessThanLessThanToken
-                    : SyntaxKind::LessThanToken;
+                        textWindow->TryAdvance('=') ? SyntaxKind::LessThanEqualsToken :
+                        textWindow->TryAdvance('<')
+                        ? textWindow->TryAdvance('=') ? SyntaxKind::LessThanLessThanEqualsToken : SyntaxKind::LessThanLessThanToken
+                        : SyntaxKind::LessThanToken;
                 break;
             }
 
@@ -574,7 +457,7 @@ namespace Alchemy::Parsing {
                 int32 advance = 0;
 
                 if (c >= '0' && c <= '9') {
-                    ScanNumericLiteral(textWindow, info);
+                    ScanNumericLiteral(textWindow, diagnostics, info);
                     break;
                 }
 
@@ -587,9 +470,10 @@ namespace Alchemy::Parsing {
 
                 textWindow->Advance(advance);
 
+                *badTokenCount = *badTokenCount + 1;
                 // If we get too many characters that we cannot make sense of, treat the entire rest of the file as
                 // a single invalid character, so we can bail out of parsing early without producing an unbounded number of errors.
-                if (tokenizer->badTokenCount++ >= 200) {
+                if (*badTokenCount >= 200) {
                     info->text = FixedCharSpan(textWindow->ptr, (int32) (textWindow->end - textWindow->ptr));
                     textWindow->ptr = textWindow->end;
                 }
@@ -597,7 +481,7 @@ namespace Alchemy::Parsing {
                     info->text = FixedCharSpan(start, (int32) (textWindow->ptr - start));
                 }
 
-                AddError(ErrorCode::ERR_UnexpectedCharacter); // , info->text);
+                diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_UnexpectedCharacter, start, textWindow->ptr));
 
             }
 
@@ -607,21 +491,16 @@ namespace Alchemy::Parsing {
 
     }
 
-    void LexSyntaxToken(Tokenizer* tokenizer) {
-        tokenizer->leadingTriviaList.size = 0;
+//    void LexSyntaxToken(Tokenizer* tokenizer) {
+//        tokenizer->leadingTriviaList.size = 0;
+//
+//        LexSyntaxTrivia(&tokenizer->textWindow, tokenizer->textWindow.ptr != tokenizer->textWindow.start, false, &tokenizer->leadingTriviaList);
+//
+//        TokenInfo tokenInfo;
+//
+//        ScanSyntaxToken()
+//
+//    }
 
-        LexSyntaxTrivia(&tokenizer->textWindow, tokenizer->textWindow.ptr != tokenizer->textWindow.start, false, &tokenizer->leadingTriviaList);
-
-        TokenInfo tokenInfo;
-
-        ScanSyntaxToken()
-
-    }
-
-
-    static void Tokenize(Tokenizer* tokenizer) {
-
-
-    }
 
 }

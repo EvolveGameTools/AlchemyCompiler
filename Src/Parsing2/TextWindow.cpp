@@ -1,7 +1,6 @@
-#include <cstdio>
 #include "./TextWindow.h"
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
 
     TextWindow::TextWindow(char* string, size_t length)
         : start(string)
@@ -12,7 +11,7 @@ namespace Alchemy::Parsing {
         return ptr != end && *ptr == c;
     }
 
-    char TextWindow::PeekChar(int32 steps) {
+    char TextWindow::PeekAhead(int32 steps) {
         return ptr + steps < end ? ptr[steps] : '\0';
     }
 

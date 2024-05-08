@@ -1,7 +1,7 @@
 #pragma once
 #include "../PrimitiveTypes.h"
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
 
     struct TextWindow {
 
@@ -13,7 +13,7 @@ namespace Alchemy::Parsing {
 
         bool Peek(char c);
         char PeekChar();
-        char PeekChar(int32 steps);
+        char PeekAhead(int32 steps);
         char32 PeekChar32(int32 * advance);
         bool TryPeekChar32(char32* c, int32* advance);
         void Advance(int32 steps = 1);

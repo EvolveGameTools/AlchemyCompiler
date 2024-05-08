@@ -1,12 +1,14 @@
 #pragma once
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
 
     enum class SyntaxKind : uint8 {
         None,
 
         // --- Reserved Keyword
         __FirstKeyword__,
+        FixedKeyword,
+        // todo -- int32 etc
         BoolKeyword,
         ByteKeyword,
         SByteKeyword,
@@ -39,7 +41,6 @@ namespace Alchemy::Parsing {
         TryKeyword,
         CatchKeyword,
         FinallyKeyword,
-        GotoKeyword,
         BreakKeyword,
         ContinueKeyword,
         ReturnKeyword,
@@ -76,6 +77,12 @@ namespace Alchemy::Parsing {
         ExplicitKeyword,
         NameofKeyword,
         ImplicitKeyword,
+        VarKeyword,
+        StackAllocKeyword,
+        ElifKeyword,
+        EndIfKeyword,
+        NameOfKeyword,
+
         __LastKeyword__,
         // --- End Reserved Keywords
 
@@ -151,8 +158,63 @@ namespace Alchemy::Parsing {
         GreaterThanToken,
         GreaterThanEqualsToken,
         NumericLiteralToken,
+        StringLiteralToken,
+        EndOfFileToken,
+        CharacterLiteralToken,
+        GreaterThanGreaterThanToken,
+        GreaterThanGreaterThanGreaterThanToken,
+        GreaterThanGreaterThanEqualsToken,
+        GreaterThanGreaterThanGreaterThanEqualsToken,
+        UnderscoreToken,
+        DollarToken,
+        BackslashToken,
+        DoubleQuoteToken,
+        SingleQuoteToken,
+        HashToken,
         __LastToken__,
         // --- End Tokens
+
+        // -- Start Expressions
+        __FirstExpression__,
+        UnaryPlusExpression,
+        UnaryMinusExpression,
+        BitwiseNotExpression,
+        LogicalNotExpression,
+        PreIncrementExpression,
+        PreDecrementExpression,
+        AddressOfExpression,
+        PointerIndirectionExpression,
+        IndexExpression,
+        PostIncrementExpression,
+        PostDecrementExpression,
+        CoalesceExpression,
+        IsExpression,
+        AsExpression,
+        BitwiseOrExpression,
+        ExclusiveOrExpression,
+        BitwiseAndExpression,
+        EqualsExpression,
+        NotEqualsExpression,
+        LessThanExpression,
+        LessThanOrEqualExpression,
+        GreaterThanExpression,
+        GreaterThanOrEqualExpression,
+        LeftShiftExpression,
+        RightShiftExpression,
+        UnsignedRightShiftExpression,
+        AddExpression,
+        SubtractExpression,
+        MultiplyExpression,
+        DivideExpression,
+        ModuloExpression,
+        LogicalAndExpression,
+        LogicalOrExpression,
+
+        __LastExpression__,
+        // -- End Expressions
+
+
+
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

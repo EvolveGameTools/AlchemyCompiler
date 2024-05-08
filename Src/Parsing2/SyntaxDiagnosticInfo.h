@@ -2,13 +2,22 @@
 
 #include "./ErrorCode.h"
 
-namespace Alchemy::Parsing {
+namespace Alchemy::Compilation {
+
+    enum class DiagnosticType {
+        Info,
+        Error,
+        Warning,
+        Suggestion
+    };
 
     struct SyntaxDiagnosticInfo {
-        char* source {};
-        char* position {};
-        char* end {};
+        char* text {};
+        SyntaxDiagnosticInfo * prevDiagnostic {};
+        DiagnosticType diagnosticType {};
         ErrorCode errorCode {};
+        int32 textLength {};
+        int32 offset;
     };
 
 }

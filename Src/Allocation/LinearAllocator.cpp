@@ -133,6 +133,18 @@ uint8* LinearAllocator::AllocateBytesUncleared(size_t size, size_t alignment) {
     return (uint8*) alignedptr;
 }
 
+size_t LinearAllocator::GetOffset(void* ptr) {
+    uint8 *bytePtr = (uint8*)ptr;
+    if(bytePtr < base || bytePtr > base + offset) {
+        return -1;
+    }
+    return bytePtr - base;
+}
+
+uint8* LinearAllocator::GetBase() {
+    return base;
+}
+
 TempAllocator::Marker TempAllocator::MarkerFromOffset(void* p) {
     if (p == nullptr || p < base || p >= base + committed) {
         return Mark();

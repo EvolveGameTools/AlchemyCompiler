@@ -4,7 +4,10 @@
 #include "./Panic.h"
 #include "PrimitiveTypes.h"
 #include "./Util/StringUtil.h"
+
+#if USE_STACKTRACE
 #include <cpptrace/cpptrace.hpp>
+#endif
 
 #if ALCHEMY_DEBUG
 #ifdef _WIN32
@@ -27,16 +30,16 @@ namespace Alchemy {
     char messageBuffer[1024 * 2];
 
     void Message(const char* message) {
-        #ifdef _WIN32
-        #ifdef ALCHEMY_DEBUG
+#ifdef _WIN32
+#ifdef ALCHEMY_DEBUG
         int32 result = MessageBoxA(NULL, message, "Panic! Want to debug?", MB_YESNO | MB_ICONERROR);
         if (result == IDYES) {
             if (IsDebuggerPresent()) {
                 DebugBreak();
             }
         }
-        #endif
-        #endif
+#endif
+#endif
 
         // todo -- if we have logs we'll want to log this probably
     }
@@ -46,6 +49,7 @@ namespace Alchemy {
         return pos != nullptr ? const_cast<char*>(pos) : str;
     }
 
+#if USE_STACKTRACE
     int32 print_frame(char* buffer, int32 size, std::size_t counter, const cpptrace::stacktrace_frame& frame) {
 
         const char* format = "#%d   0x%p in %s at %s:%s%s\n";
@@ -90,10 +94,12 @@ namespace Alchemy {
         return lineSize;
 
     }
+#endif
 
     void Panic(PanicType panicType, void* payload) {
         memset(messageBuffer, 0, sizeof(messageBuffer));
 
+#if USE_STACKTRACE
         cpptrace::stacktrace trace = cpptrace::generate_trace();
 
         int32 size = 1;
@@ -108,6 +114,9 @@ namespace Alchemy {
         for (int32 i = 1; i < trace.frames.size(); i++) {
             offset += print_frame(stackTrace + offset, size - offset, i, trace.frames[i]);
         }
+#else
+        const char* stackTrace = "";
+#endif
 
         switch (panicType) {
             case PanicType::MemoryCorruption: {
@@ -135,13 +144,14 @@ namespace Alchemy {
 
             case PanicType::NotSupported:
             case PanicType::NotImplemented: {
-                Message((char*)payload);
+                Message((char*) payload);
                 break;
             }
 
         }
-
+#if USE_STACKTRACE
         free(stackTrace);
+#endif
         // this is maybe a long jump instead
         abort();
 

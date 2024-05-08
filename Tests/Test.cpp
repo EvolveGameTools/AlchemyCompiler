@@ -3,12 +3,119 @@
 #include "../Src/Parsing2/TextWindow.h"
 #include "../Src/Parsing2/SyntaxDiagnosticInfo.h"
 #include "../Src/Parsing2/Scanning.h"
-#include "../Src/Util/FixedCharSpan.h"
+#include "../Src/Allocation/ThreadLocalTemp.h"
+#include "../Src/Allocation/BytePoolAllocator.h"
 
-using namespace Alchemy::Parsing;
+using namespace Alchemy::Compilation;
 
 TextWindow MakeTextWindow(const char* src) {
     return TextWindow((char*) src, strlen(src));
+}
+
+TEST_CASE("Scan numeric literals", "[scanner]") {
+    TempAllocator * allocator = Alchemy::GetThreadLocalAllocator();
+    TempAllocator::ScopedMarker marker(allocator);
+    Alchemy::BytePoolAllocator bytePoolAllocator(allocator);
+    Diagnostics diagnostics(&bytePoolAllocator);
+    TokenInfo info;
+
+    SECTION("Reals") {
+        TextWindow textWindow = MakeTextWindow(R"(123.0f)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Float);
+        REQUIRE(info.literalValue.floatValue == 123);
+
+        textWindow = MakeTextWindow(R"(123.1f)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Float);
+        REQUIRE(info.literalValue.floatValue == 123.1f);
+
+        textWindow = MakeTextWindow(R"(1_23.1f)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Float);
+        REQUIRE(info.literalValue.floatValue == 123.1f);
+
+        textWindow = MakeTextWindow(R"(1e4ff)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Float);
+        REQUIRE(info.literalValue.floatValue == 1e4f);
+
+        // todo -- parsing currently truncates, we want to do what c# does with real parsing
+        // but that's too much work for now.
+
+    }
+
+    SECTION("Integers") {
+        TextWindow textWindow = MakeTextWindow(R"(123)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Int32);
+        REQUIRE(info.literalValue.int32Value == 123);
+
+        textWindow = MakeTextWindow(R"(2147483648)");// max int + 1
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::UInt32);
+        REQUIRE(info.literalValue.uint32Value == 2147483648);
+
+        textWindow = MakeTextWindow(R"(2147483647)");// max int
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Int32);
+        REQUIRE(info.literalValue.uint32Value == 2147483647);
+
+        textWindow = MakeTextWindow(R"(214748364782)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Int64);
+        REQUIRE(info.literalValue.int64Value == 214748364782);
+
+        textWindow = MakeTextWindow(R"(214ul)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::UInt64);
+        REQUIRE(info.literalValue.int64Value == 214ull);
+
+        textWindow = MakeTextWindow(R"(214l)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Int64);
+        REQUIRE(info.literalValue.int64Value == 214ll);
+
+        textWindow = MakeTextWindow(R"(0xfeedbeef)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::UInt32);
+        REQUIRE(info.literalValue.uint32Value == 0xfeedbeef);
+
+        textWindow = MakeTextWindow(R"(0xfeed_beef)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::UInt32);
+        REQUIRE(info.literalValue.uint32Value == 0xfeedbeef);
+
+        textWindow = MakeTextWindow(R"(0xbeeful)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::UInt64);
+        REQUIRE(info.literalValue.uint64Value == 0xbeefull);
+
+        textWindow = MakeTextWindow(R"(0b1101)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(info.valueKind == LiteralType::Int32);
+        REQUIRE(info.literalValue.int32Value == 13);
+
+        textWindow = MakeTextWindow(R"(214748364899999999999999999)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(diagnostics.cnt == 1);
+        REQUIRE(diagnostics.errorList[0].errorCode == ErrorCode::ERR_IntOverflow);
+        diagnostics.cnt = 0; // reset for next test
+
+        textWindow = MakeTextWindow(R"(214__)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(diagnostics.cnt == 1);
+        REQUIRE(diagnostics.errorList[0].errorCode == ErrorCode::ERR_InvalidNumber);
+        diagnostics.cnt = 0; // reset for next test
+
+        textWindow = MakeTextWindow(R"(_214)");
+        REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
+        REQUIRE(diagnostics.cnt == 1);
+        REQUIRE(diagnostics.errorList[0].errorCode == ErrorCode::ERR_InvalidNumber);
+
+    }
+
+
 }
 
 TEST_CASE("Scan slow path identifiers", "[scanner]") {

@@ -394,7 +394,7 @@ function generateSyntaxKindKeywordMatchingCode(inputFile, outputFile, start, end
 
         const generatedFunction = generateKeywordMatch(data, start, end);
 
-        var output = '#include "../PrimitiveTypes.h"\n#include "./SyntaxKind.h"\n\n' + 'namespace Alchemy::Parsing {\n' + generatedFunction + '\n}';
+        var output = '#include "../PrimitiveTypes.h"\n#include "./SyntaxKind.h"\n\n' + 'namespace Alchemy::Compilation {\n' + generatedFunction + '\n}';
 
         fs.writeFile(outputFile, output, (err) => {
             if (err) {
