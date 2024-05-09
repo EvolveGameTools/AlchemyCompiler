@@ -1,9 +1,12 @@
 #pragma once
 
+#include "../PrimitiveTypes.h"
+
 namespace Alchemy::Compilation {
 
     enum class SyntaxKind : uint8 {
         None,
+        ListKind, // for holding lists, not a real usable type in the language
 
         // --- Reserved Keyword
         __FirstKeyword__,
@@ -90,7 +93,7 @@ namespace Alchemy::Compilation {
         __FirstContextualKeyword__,
         PartialKeyword,
         AliasKeyword,
-        GlobalKeyword,
+//        GlobalKeyword,
         GetKeyword,
         SetKeyword,
         WhereKeyword,
@@ -171,6 +174,7 @@ namespace Alchemy::Compilation {
         DoubleQuoteToken,
         SingleQuoteToken,
         HashToken,
+        OmittedArraySizeExpressionToken,
         __LastToken__,
         // --- End Tokens
 
@@ -209,11 +213,25 @@ namespace Alchemy::Compilation {
         ModuloExpression,
         LogicalAndExpression,
         LogicalOrExpression,
+        OmittedArraySizeExpression,
 
         __LastExpression__,
         // -- End Expressions
 
 
+        IdentifierName,
+        QualifiedName,
+        GenericName,
+        ArrayRankSpecifier,
+        TupleElement,
+
+        TypeArgumentList,
+
+        TupleType,
+        NullableType,
+        RefType,
+        ArrayType,
+        PredefinedType,
 
     };
 

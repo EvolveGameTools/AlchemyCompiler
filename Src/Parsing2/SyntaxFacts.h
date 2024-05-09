@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../PrimitiveTypes.h"
 #include "./SyntaxKind.h"
 
 namespace Alchemy::Compilation::SyntaxFacts {
@@ -13,7 +12,7 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     bool IsDecDigit(char c);
 
-    bool IsAnyUnaryExpression(SyntaxKind kind) ;
+    bool IsAnyUnaryExpression(SyntaxKind kind);
 
     bool IsBinaryExpression(SyntaxKind kind);
 
@@ -23,8 +22,10 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     bool IsReservedKeyword(SyntaxKind kind);
 
+    bool IsContextualKeyword(SyntaxKind kind);
+
     bool IsToken(SyntaxKind kind);
 
-    const char * GetText(SyntaxKind kind);
+    const char* GetText(SyntaxKind kind);
 
 }

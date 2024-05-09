@@ -4,7 +4,7 @@ namespace Alchemy::Compilation {
 
     enum class ErrorCode {
         None,
-        IllegalEscape,
+        ERR_IllegalEscape,
         ERR_OpenEndedComment,
         ERR_UnexpectedCharacter,
         ERR_InvalidReal,
@@ -20,6 +20,12 @@ namespace Alchemy::Compilation {
         ERR_LbraceExpected,
         ERR_RbraceExpected,
         ERR_SyntaxError,
+        ERR_NoVoidParameter,
+        ERR_NoVoidHere,
+        ERR_ValueExpected,
+        ERR_BadNewExpr,
+        ERR_TypeExpected,
+        ERR_TupleTooFewElements,
     };
 
 }

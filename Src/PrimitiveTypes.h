@@ -85,3 +85,4 @@ typedef x___ size_t;
 #define KILOBYTES(x) (1024ll * ((int64)x))
 
 #define NOT_IMPLEMENTED(x) Panic(PanicType::NotImplemented, (void*)(x))
+#define UNREACHABLE(x) Panic(PanicType::Unreachable, (void*)(x))

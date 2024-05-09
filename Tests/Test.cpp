@@ -1,22 +1,161 @@
 #include <catch2/catch_all.hpp>
 #include "../Src/PrimitiveTypes.h"
 #include "../Src/Parsing2/TextWindow.h"
-#include "../Src/Parsing2/SyntaxDiagnosticInfo.h"
 #include "../Src/Parsing2/Scanning.h"
 #include "../Src/Allocation/ThreadLocalTemp.h"
 #include "../Src/Allocation/BytePoolAllocator.h"
+#include "../Src/Parsing2/Tokenizer.h"
+#include "../Src/Collections/PodList.h"
+#include "../Src/Collections/CheckedArray.h"
+#include "../Src/Allocation/LinearAllocator.h"
+#include "../Src/Parsing2/Parser.h"
+#include "../Src/Parsing2/Parsing.h"
+#include "../Src/Parsing2/NodePrinter.h"
 
 using namespace Alchemy::Compilation;
 
 TextWindow MakeTextWindow(const char* src) {
     return TextWindow((char*) src, strlen(src));
 }
+#define INITIALIZE_PARSER_TEST \
+    Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \
+    Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator(); \
+    Alchemy::TempAllocator::ScopedMarker marker(tempAllocator); \
+    Alchemy::PodList<SyntaxToken> hotTokens; \
+    Alchemy::PodList<SyntaxTokenCold> coldTokens; \
+    Alchemy::PodList<Trivia> triviaBuffer; \
+    Diagnostics diagnostics(&allocator);
+
+#define INITIALIZE_PARSER(str) \
+    hotTokens.size = 0;        \
+    coldTokens.size = 0;       \
+    triviaBuffer.size = 0;     \
+    diagnostics.size = 0; \
+    TextWindow textWindow = MakeTextWindow((str)); \
+    Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer); \
+    Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray())
+
+TEST_CASE("Parse Types", "[parser]") {
+
+    INITIALIZE_PARSER_TEST
+
+    SECTION("basic type names") {
+
+        INITIALIZE_PARSER("float int char bool ushort short uint byte sbyte double");
+
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(parser.HasMoreTokens() == false);
+
+    }
+
+    SECTION("basic names") {
+
+        INITIALIZE_PARSER("something.somethingelse");
+
+        TypeSyntax * name = ParseQualifiedName(&parser, NameOptions::None);
+        REQUIRE(name->kind == SyntaxKind::QualifiedName);
+        QualifiedNameSyntax * first = (QualifiedNameSyntax*)name;
+//        REQUIRE(first->left->kind == SyntaxKind::IdentifierName);
+//        REQUIRE(parser.HasMoreTokens() == false);
+
+        NodePrinter p(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
+
+        p.PrintNode(name);
+        printf("%.*s", p.buffer.size, p.buffer.array);
+    }
+
+}
+
+TEST_CASE("Scan Type Arguments", "[tokenizer]") {
+    Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32));
+    Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator();
+    Alchemy::TempAllocator::ScopedMarker marker(tempAllocator);
+
+    Alchemy::PodList<SyntaxToken> hotTokens;
+    Alchemy::PodList<SyntaxTokenCold> coldTokens;
+    Alchemy::PodList<Trivia> triviaBuffer;
+    Diagnostics diagnostics(&allocator);
+
+    SECTION("Definitely type arg list") {
+        TextWindow textWindow = MakeTextWindow("<int, thing, string>");
+        Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
+        Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
+        REQUIRE(ScanTypeArgumentList(&parser, NameOptions::None) == ScanTypeArgumentListKind::DefiniteTypeArgumentList);
+    }
+    SECTION("Definitely not arg list") {
+        TextWindow textWindow = MakeTextWindow("<12, thing, string>");
+        Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
+        Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
+        REQUIRE(ScanTypeArgumentList(&parser, NameOptions::InExpression) == ScanTypeArgumentListKind::NotTypeArgumentList);
+    }
+}
+
+TEST_CASE("Tokenize", "[tokenizer]") {
+    Alchemy::TempAllocator* allocator = Alchemy::GetThreadLocalAllocator();
+    Alchemy::TempAllocator::ScopedMarker marker(allocator);
+    Diagnostics diagnostics(allocator);
+
+    Alchemy::PodList<SyntaxToken> hotTokens;
+    Alchemy::PodList<SyntaxTokenCold> coldTokens;
+    Alchemy::PodList<Trivia> triviaBuffer;
+
+    SECTION("Count Columns") {
+        TextWindow textWindow = MakeTextWindow(R"(this is a test)");
+        Tokenize(&textWindow, allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
+        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(hotTokens.size), hotTokens.size);
+        ComputeTokenLineColumns(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        REQUIRE(lc[0].column == 1);
+        REQUIRE(lc[1].column == 6);
+        REQUIRE(lc[2].column == 9);
+        REQUIRE(lc[3].column == 11);
+    }
+
+    SECTION("Count Lines / newline") {
+        TextWindow textWindow = MakeTextWindow("this is\n a test");
+        Tokenize(&textWindow, allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
+        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(hotTokens.size), hotTokens.size);
+        ComputeTokenLineColumns(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        REQUIRE(lc[0].line == 1);
+        REQUIRE(lc[1].line == 1);
+        REQUIRE(lc[2].line == 2);
+        REQUIRE(lc[3].line == 2);
+        REQUIRE(lc[0].column == 1);
+        REQUIRE(lc[1].column == 6);
+        REQUIRE(lc[2].column == 2);
+        REQUIRE(lc[3].column == 4);
+    }
+
+    SECTION("Count Lines / crlf") {
+        TextWindow textWindow = MakeTextWindow("this is\r\n a test");
+        Tokenize(&textWindow, allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
+        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(hotTokens.size), hotTokens.size);
+        ComputeTokenLineColumns(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        REQUIRE(lc[0].line == 1);
+        REQUIRE(lc[1].line == 1);
+        REQUIRE(lc[2].line == 2);
+        REQUIRE(lc[3].line == 2);
+        REQUIRE(lc[0].column == 1);
+        REQUIRE(lc[1].column == 6);
+        REQUIRE(lc[2].column == 2);
+        REQUIRE(lc[3].column == 4);
+        PrintTokens(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+    }
+
+}
 
 TEST_CASE("Scan numeric literals", "[scanner]") {
-    TempAllocator * allocator = Alchemy::GetThreadLocalAllocator();
-    TempAllocator::ScopedMarker marker(allocator);
-    Alchemy::BytePoolAllocator bytePoolAllocator(allocator);
-    Diagnostics diagnostics(&bytePoolAllocator);
+    Alchemy::TempAllocator * allocator = Alchemy::GetThreadLocalAllocator();
+    Alchemy::TempAllocator::ScopedMarker marker(allocator);
+    Diagnostics diagnostics(allocator);
     TokenInfo info;
 
     SECTION("Reals") {
@@ -98,20 +237,20 @@ TEST_CASE("Scan numeric literals", "[scanner]") {
 
         textWindow = MakeTextWindow(R"(214748364899999999999999999)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(diagnostics.cnt == 1);
-        REQUIRE(diagnostics.errorList[0].errorCode == ErrorCode::ERR_IntOverflow);
-        diagnostics.cnt = 0; // reset for next test
+        REQUIRE(diagnostics.size == 1);
+        REQUIRE(diagnostics.array[0]->errorCode == ErrorCode::ERR_IntOverflow);
+        diagnostics.size = 0; // reset for next test
 
         textWindow = MakeTextWindow(R"(214__)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(diagnostics.cnt == 1);
-        REQUIRE(diagnostics.errorList[0].errorCode == ErrorCode::ERR_InvalidNumber);
-        diagnostics.cnt = 0; // reset for next test
+        REQUIRE(diagnostics.size == 1);
+        REQUIRE(diagnostics.array[0]->errorCode == ErrorCode::ERR_InvalidNumber);
+        diagnostics.size = 0; // reset for next test
 
         textWindow = MakeTextWindow(R"(_214)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(diagnostics.cnt == 1);
-        REQUIRE(diagnostics.errorList[0].errorCode == ErrorCode::ERR_InvalidNumber);
+        REQUIRE(diagnostics.size == 1);
+        REQUIRE(diagnostics.array[0]->errorCode == ErrorCode::ERR_InvalidNumber);
 
     }
 
@@ -265,7 +404,7 @@ TEST_CASE("Scan fast path identifiers", "[scanner]") {
 
 TEST_CASE("Scan Unicode Escapes", "[scanner]") {
 
-    SyntaxDiagnosticInfo error;
+    Diagnostic error;
 
     SECTION("scan unicode escape utf32") {
         TextWindow textWindow = MakeTextWindow(R"(\U0001F600)");
@@ -276,7 +415,7 @@ TEST_CASE("Scan Unicode Escapes", "[scanner]") {
     SECTION("scan unicode escape utf32 overflow") {
         TextWindow textWindow = MakeTextWindow(R"(\Uffffffff)");
         ScanUnicodeEscape(&textWindow, &error);
-        REQUIRE(error.errorCode == ErrorCode::IllegalEscape);
+        REQUIRE(error.errorCode == ErrorCode::ERR_IllegalEscape);
     }
 
     SECTION("scan unicode utf16") {
@@ -291,7 +430,7 @@ TEST_CASE("Scan Unicode Escapes", "[scanner]") {
     SECTION("scan unicode utf16 illegal") {
         TextWindow textWindow = MakeTextWindow(R"(\uFjFF\uDE00)");
         uint32 unicode0 = ScanUnicodeEscape(&textWindow, &error);
-        REQUIRE(error.errorCode == ErrorCode::IllegalEscape);
+        REQUIRE(error.errorCode == ErrorCode::ERR_IllegalEscape);
         uint32 unicode1 = ScanUnicodeEscape(&textWindow, &error);
         REQUIRE(unicode0 == 0);
         REQUIRE(unicode1 == 0);

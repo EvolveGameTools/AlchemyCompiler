@@ -1,35 +1,44 @@
 #pragma once
+
 #include "./ErrorCode.h"
 #include "../PrimitiveTypes.h"
-
-namespace Alchemy {
-    struct BytePoolAllocator;
-}
+#include "../Allocation/LinearAllocator.h"
+#include "../Util/FixedCharSpan.h"
 
 namespace Alchemy::Compilation {
 
-    struct ScanningError {
+    struct Diagnostic {
+
         char* start;
         char* end;
         char* message;
         uint32 messageLength;
         ErrorCode errorCode;
 
-        ScanningError(ErrorCode errorCode, char* start, char* end);
+        Diagnostic()
+            : start(nullptr)
+            , end(nullptr)
+            , message(nullptr)
+            , messageLength(0)
+            , errorCode(ErrorCode::None) {}
+
+        Diagnostic(ErrorCode code, Alchemy::FixedCharSpan span);
+
+        Diagnostic(ErrorCode errorCode, char* start, char* end);
 
     };
 
     struct Diagnostics {
 
-        Alchemy::BytePoolAllocator* allocator;
+        LinearAllocator* allocator;
 
-        int32 cnt;
+        int32 size;
         int32 capacity;
-        ScanningError* errorList;
+        Diagnostic** array;
 
-        explicit Diagnostics(Alchemy::BytePoolAllocator * allocator);
+        explicit Diagnostics(LinearAllocator* allocator);
 
-        void AddScanningError(ScanningError error);
+        void AddError(Diagnostic error);
 
     };
 

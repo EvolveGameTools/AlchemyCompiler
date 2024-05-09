@@ -64,94 +64,95 @@ size_t ComputeMinCommitSize(size_t declaredSize) {
 
 }
 
-LinearAllocator::LinearAllocator(size_t reserveSize, size_t commitSize)
+namespace Alchemy {
+    LinearAllocator::LinearAllocator(size_t reserveSize, size_t commitSize)
         : reserved(reserveSize)
-          , committed(0)
-          , base()
-          , offset(0)
-          , minCommitStep(ComputeMinCommitSize(commitSize)) {
-    // reserve at least 1 gb
-    if (reserved < kGigabyte) {
-        reserved = kGigabyte;
-    }
+        , committed(0)
+        , base()
+        , offset(0)
+        , minCommitStep(ComputeMinCommitSize(commitSize)) {
+        // reserve at least 1 gb
+        if (reserved < kGigabyte) {
+            reserved = kGigabyte;
+        }
 
 #if defined(_WIN32)
-    base = (uint8*) VirtualAlloc(nullptr, reserved, MEM_RESERVE, PAGE_READWRITE);
+        base = (uint8*) VirtualAlloc(nullptr, reserved, MEM_RESERVE, PAGE_READWRITE);
 #else
-    base = (uint8*)mmap(nullptr, reserved, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        base = (uint8*)mmap(nullptr, reserved, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
 
-}
+    }
 
-TempAllocator::TempAllocator(size_t reservation, size_t commitSize)
+    TempAllocator::TempAllocator(size_t reservation, size_t commitSize)
         : LinearAllocator(reservation, commitSize) {}
 
-LinearAllocator::~LinearAllocator() {
-    if(base == nullptr) {
-        return;
-    }
+    LinearAllocator::~LinearAllocator() {
+        if (base == nullptr) {
+            return;
+        }
 #ifdef _WIN32
-    VirtualFree(base, 0, MEM_RELEASE);
+        VirtualFree(base, 0, MEM_RELEASE);
 #else
-    munmap(base, reserved);
+        munmap(base, reserved);
 #endif
-    base = nullptr;
-    offset = 0;
-    reserved = 0;
-    committed = 0;
-}
-
-uint8* LinearAllocator::AllocateBytesUncleared(size_t size, size_t alignment) {
-
-    if ((alignment & (alignment - 1)) != 0) {
-        alignment = Ceilpow2(alignment);
+        base = nullptr;
+        offset = 0;
+        reserved = 0;
+        committed = 0;
     }
 
-    uint8* unalignedptr = base + offset;
-    uint8* alignedptr = reinterpret_cast<uint8*>((reinterpret_cast<size_t>(unalignedptr) + alignment - 1) & ~(alignment - 1));
+    uint8* LinearAllocator::AllocateBytesUncleared(size_t size, size_t alignment) {
 
-    size_t alignmentDiff = alignedptr - unalignedptr;
+        if ((alignment & (alignment - 1)) != 0) {
+            alignment = Ceilpow2(alignment);
+        }
 
-    offset += size + alignmentDiff;
+        uint8* unalignedptr = base + offset;
+        uint8* alignedptr = reinterpret_cast<uint8*>((reinterpret_cast<size_t>(unalignedptr) + alignment - 1) & ~(alignment - 1));
 
-    if (offset > committed) {
-        size_t growBy = offset - committed;
-        growBy = growBy < minCommitStep ? minCommitStep : growBy;
-        growBy = (growBy + kPageSize - 1) & ~(kPageSize - 1); // round to page size
+        size_t alignmentDiff = alignedptr - unalignedptr;
+
+        offset += size + alignmentDiff;
+
+        if (offset > committed) {
+            size_t growBy = offset - committed;
+            growBy = growBy < minCommitStep ? minCommitStep : growBy;
+            growBy = (growBy + kPageSize - 1) & ~(kPageSize - 1); // round to page size
 #if defined(_WIN32)
-        if (!VirtualAlloc(base + committed, growBy, MEM_COMMIT, PAGE_READWRITE)) {
-            return nullptr; // abort?
-        }
+            if (!VirtualAlloc(base + committed, growBy, MEM_COMMIT, PAGE_READWRITE)) {
+                return nullptr; // abort?
+            }
 #else
-        if(!mmap(base + committed, growBy, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) {
-            return nullptr; // abort?
-        }
+            if(!mmap(base + committed, growBy, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) {
+                return nullptr; // abort?
+            }
 #endif
-        committed += growBy;
+            committed += growBy;
+        }
+
+        return (uint8*) alignedptr;
     }
 
-    return (uint8*) alignedptr;
-}
-
-size_t LinearAllocator::GetOffset(void* ptr) {
-    uint8 *bytePtr = (uint8*)ptr;
-    if(bytePtr < base || bytePtr > base + offset) {
-        return -1;
-    }
-    return bytePtr - base;
-}
-
-uint8* LinearAllocator::GetBase() {
-    return base;
-}
-
-TempAllocator::Marker TempAllocator::MarkerFromOffset(void* p) {
-    if (p == nullptr || p < base || p >= base + committed) {
-        return Mark();
+    size_t LinearAllocator::GetOffset(void* ptr) {
+        uint8* bytePtr = (uint8*) ptr;
+        if (bytePtr < base || bytePtr > base + offset) {
+            return -1;
+        }
+        return bytePtr - base;
     }
 
-    return TempAllocator::Marker(static_cast<uint64_t>((uint8*) p - base));
+    uint8* LinearAllocator::GetBase() {
+        return base;
+    }
+
+    TempAllocator::Marker TempAllocator::MarkerFromOffset(void* p) {
+        if (p == nullptr || p < base || p >= base + committed) {
+            return Mark();
+        }
+
+        return TempAllocator::Marker(static_cast<uint64_t>((uint8*) p - base));
+    }
+
+
 }
-
-
-

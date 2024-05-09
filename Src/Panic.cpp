@@ -142,6 +142,7 @@ namespace Alchemy {
                 break;
             }
 
+            case PanicType::Unreachable:
             case PanicType::NotSupported:
             case PanicType::NotImplemented: {
                 Message((char*) payload);

@@ -2,21 +2,13 @@
 
 #include "../PrimitiveTypes.h"
 #include "../Util/FixedCharSpan.h"
-#include "SyntaxKind.h"
-#include "Diagnostics.h"
-#include "./SyntaxDiagnosticInfo.h"
+#include "../Collections/CheckedArray.h"
+#include "./SyntaxKind.h"
+#include "./Diagnostics.h"
 
 namespace Alchemy::Compilation {
 
     struct TextWindow;
-
-    struct ScanningResult {
-        int32 errorCount;
-        int32 tokenCount;
-//        SyntaxError* errors;
-//        SyntaxToken* tokens;
-//        SyntaxTriviaList* triviaList;
-    };
 
     enum class ParseTypeMode {
         Normal,
@@ -49,10 +41,6 @@ namespace Alchemy::Compilation {
 
         ///Might be a non-generic (qualified) type name or an expression.
         NonGenericTypeOrExpression,
-
-        /// A type name with alias prefix (Alias::Name).  Note that Alias::Name.X would not fall under this.  This
-        /// only is returned for exactly Alias::Name.
-        AliasQualifiedName,
 
         /// Nullable type (ending with ?).
         NullableType,
@@ -87,81 +75,81 @@ namespace Alchemy::Compilation {
         UInt64
     };
 
+    DEFINE_ENUM_FLAGS(SyntaxTokenFlags, uint8, {
+        None = 0,
+        Error = 1 << 1,
+        LeadingTrivia = 1 << 2,
+        TrailingTrivia = 1 << 3,
+        Missing = 1 << 4,
+        Skipped = 1 << 5
+    })
+
+    struct SyntaxToken {
+
+        int32 id {};
+        SyntaxKind kind {};
+        SyntaxKind contextualKind {};
+        SyntaxTokenFlags flags {};
+        LiteralType literalType {};
+
+        inline bool ContainsDiagnostics() {
+            return (flags & SyntaxTokenFlags::Error) != 0;
+        }
+
+        inline bool IsValid() {
+            return id != 0;
+        }
+
+        inline bool IsMissing() {
+            return id < 0;
+        }
+
+    };
+
     enum class TriviaType : uint8 {
         Whitespace,
         SingleLineComment,
         MultiLineComment,
         NewLine,
         BadToken,
-        SkippedTokens,
-        LiteralValue,
-        Diagnostic
+        LiteralValue
     };
 
     struct Trivia {
         union {
-            char* span;
-            SyntaxDiagnosticInfo* diagnostic;
+            char* span {};
             LiteralValue literalValue;
         };
-        uint32 length;
-        TriviaType type;
-        bool isLeading;
-        bool isTrailing;
+        uint32 length {};
+        TriviaType type {};
+        bool isLeading {};
+        bool isTrailing {};
+
     };
 
     struct TokenInfo {
 
-        FixedCharSpan text;
-        SyntaxKind Kind;
-        SyntaxKind ContextualKind;
-        LiteralType valueKind;
-        LiteralValue literalValue;
-
-    };
-
-    DEFINE_ENUM_FLAGS(SyntaxTokenFlags, uint8, {
-        None = 0,
-        Error = 1 << 1,
-        LeadingTrivia = 1 << 2,
-        TrailingTrivia = 1 << 3,
-        Missing = 1 << 4
-    })
-
-    struct SyntaxTokenCold {
-        char* text;
-        Trivia* triviaList;
-        uint16 triviaCount;
-        uint16 triviaCapacity;
-        uint32 textSize;
-    };
-
-    struct SyntaxToken {
-        int32 id {};
+        FixedCharSpan text {};
         SyntaxKind kind {};
         SyntaxKind contextualKind {};
-        SyntaxTokenFlags flags {};
-        LiteralType literalType {};
+        LiteralType valueKind {};
+        LiteralValue literalValue {};
+
     };
 
-//    struct SyntaxToken {
-//        char* text;
-//        LiteralValue literalValue;
-//        int32 id;
-//        uint32 textSize; // encode w/ flags maybe
-//        SyntaxTokenFlags flags;
-//        SyntaxKind kind;
-//        SyntaxKind contextualKind;
-//        LiteralType literalType;
-//    };
+    struct SyntaxTokenCold {
+        char* text {};
+        Trivia* triviaList {};
+        uint16 triviaCount {};
+        uint16 triviaCapacity {}; // don't actually need this, we don't resize trivia
+        uint32 textSize {};
+    };
 
     bool IsNewline(char32 c);
 
     bool IsIdentifierStartCharacter(uint32 codepoint);
 
-    uint32 ScanUnicodeEscape(TextWindow* textWindow, SyntaxDiagnosticInfo* error);
-
-    bool ScanIdentifier(TextWindow* textWindow, FixedCharSpan* identifier);
+    uint32 ScanUnicodeEscape(TextWindow* textWindow, Diagnostic* error);
 
     bool ScanIdentifier_FastPath(TextWindow* textWindow, FixedCharSpan* identifier);
 
@@ -178,5 +166,9 @@ namespace Alchemy::Compilation {
     bool TryMatchKeyword_Generated(char* buffer, int32 length, SyntaxKind* keywordType);
 
     bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, TokenInfo* info);
+
+    void ScanSyntaxToken(TextWindow* textWindow, TokenInfo* info, Diagnostics* diagnostics, int32* badTokenCount);
+
+    bool ScanIdentifierOrKeyword(TextWindow* textWindow, TokenInfo* info);
 
 }

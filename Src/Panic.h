@@ -8,7 +8,8 @@ namespace Alchemy {
         PartialFree,
         IndexOutOfBounds,
         NotImplemented,
-        NotSupported
+        NotSupported,
+        Unreachable
     };
 
     void Panic(PanicType panicType, void * payload);

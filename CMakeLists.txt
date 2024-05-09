@@ -27,6 +27,9 @@ list(APPEND Sources
         Src/Parsing2/MatchKeyword.generated.cpp
         Src/Parsing2/Diagnostics.cpp
         Src/Parsing2/Parser.cpp
+        Src/Parsing2/Parsing.cpp
+        Src/Parsing2/SyntaxKind.cpp
+
 )
 
 add_executable(AlchemyCompiler

@@ -1,21 +1,18 @@
 #include "./TextWindow.h"
-#include "./SyntaxDiagnosticInfo.h"
 #include "./SyntaxFacts.h"
 #include "../Util/FixedCharSpan.h"
 #include "../Unicode/Unicode.h"
 #include "./Scanning.h"
 #include "../Collections/FixedPodList.h"
 #include "../Allocation/ThreadLocalTemp.h"
-#include "../Allocation/BytePoolAllocator.h"
 
 namespace Alchemy::Compilation {
 
-    SyntaxDiagnosticInfo CreateIllegalEscapeDiagnostic(TextWindow* window, char* start) {
-        NOT_IMPLEMENTED("CreateIllegalEscapeDiagnostic -- figure out error storage");
-        return SyntaxDiagnosticInfo(); // {window->start, start, window->ptr, ErrorCode::IllegalEscape};
+    Diagnostic CreateIllegalEscapeDiagnostic(TextWindow* window, char* start) {
+        return Diagnostic(ErrorCode::ERR_IllegalEscape, start, window->ptr);
     }
 
-    uint32 ScanUnicodeEscape(TextWindow* textWindow, SyntaxDiagnosticInfo* error) {
+    uint32 ScanUnicodeEscape(TextWindow* textWindow, Diagnostic* error) {
         char* start = textWindow->ptr;
         if (*start != '\\') {
             return 0;
@@ -335,7 +332,7 @@ namespace Alchemy::Compilation {
 
                 c = textWindow->PeekChar();
                 if (!SyntaxFacts::IsDecDigit(c) && c != '_') {
-                    diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_InvalidReal, start, textWindow->ptr));
+                    diagnostics->AddError(Diagnostic(ErrorCode::ERR_InvalidReal, start, textWindow->ptr));
                     // add dummy exponent, so parser does not blow up
                     buffer.Add('0');
                 }
@@ -384,10 +381,10 @@ namespace Alchemy::Compilation {
         }
 
         if (underscoreInWrongPlace) {
-            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
+            diagnostics->AddError(Diagnostic(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
         }
 
-        info->Kind = SyntaxKind::NumericLiteralToken;
+        info->kind = SyntaxKind::NumericLiteralToken;
         info->text = FixedCharSpan(start, (int32) (textWindow->ptr - start));
         uint64 val;
 
@@ -395,21 +392,21 @@ namespace Alchemy::Compilation {
             case LiteralType::Float: {
                 ErrorCode errorCode;
                 if (!TryGetFloatValue(&buffer, &info->literalValue.floatValue, &errorCode)) {
-                    diagnostics->AddScanningError(ScanningError(errorCode, start, textWindow->ptr));
+                    diagnostics->AddError(Diagnostic(errorCode, start, textWindow->ptr));
                 }
                 break;
             }
             case LiteralType::Double: {
                 ErrorCode errorCode;
                 if (!TryGetDoubleValue(&buffer, &info->literalValue.doubleValue, &errorCode)) {
-                    diagnostics->AddScanningError(ScanningError(errorCode, start, textWindow->ptr));
+                    diagnostics->AddError(Diagnostic(errorCode, start, textWindow->ptr));
                 }
                 break;
             }
             default: {
                 if (buffer.size == 0) {
                     if (!underscoreInWrongPlace) {
-                        diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
+                        diagnostics->AddError(Diagnostic(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
                     }
                     val = 0; //safe default
                 }
@@ -417,18 +414,18 @@ namespace Alchemy::Compilation {
                     if (isBinary) {
                         if (!TryParseBinaryUInt64(&buffer, &val)) {
                             // overflow is the only error possible
-                            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
+                            diagnostics->AddError(Diagnostic(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
                         }
                     }
                     else if (isHex) {
                         if (!TryParseHexUInt64(&buffer, &val)) {
                             // overflow is the only error possible
-                            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
+                            diagnostics->AddError(Diagnostic(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
                         }
                     }
                     else {
                         if (!TryGetValueUInt64(&buffer, &val)) {
-                            diagnostics->AddScanningError(ScanningError(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
+                            diagnostics->AddError(Diagnostic(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
                         }
                     }
                 }
@@ -489,6 +486,51 @@ namespace Alchemy::Compilation {
 
         return true;
 
+    }
+
+    bool ScanIdentifierOrKeyword(TextWindow* textWindow, TokenInfo* info) {
+
+        FixedCharSpan identifier;
+
+        if (ScanIdentifier_FastPath(textWindow, &identifier)) {
+            info->text = identifier;
+            // check if it's a keyword (no need to try if fast path didn't work)
+            SyntaxKind keyword;
+            if (TryMatchKeyword_Generated(identifier.ptr, identifier.size, &keyword)) {
+
+                if (SyntaxFacts::IsReservedKeyword(keyword)) {
+                    info->kind = keyword;
+                    info->contextualKind = SyntaxKind::None;
+                }
+                else {
+                    // it's contextual
+                    assert(SyntaxFacts::IsContextualKeyword(keyword));
+                    info->kind = SyntaxKind::IdentifierToken;
+                    info->contextualKind = keyword;
+
+                }
+
+            }
+            else {
+                // not a keyword
+                info->kind = SyntaxKind::IdentifierToken;
+                info->contextualKind = SyntaxKind::IdentifierToken;
+            }
+
+            return true;
+
+        }
+        else if (ScanIdentifier_SlowPath(textWindow, &identifier)) {
+            info->text = identifier;
+            info->kind = SyntaxKind::IdentifierToken;
+            info->contextualKind = SyntaxKind::IdentifierToken;
+            return true;
+        }
+        else {
+            info->kind = SyntaxKind::None;
+            info->contextualKind = SyntaxKind::None;
+            return false;
+        }
     }
 
     bool IsIdentifierPartCharacter(uint32 codepoint) {
@@ -658,6 +700,7 @@ namespace Alchemy::Compilation {
         while (textWindow->TryPeekChar32(&c, &advance)) {
             if (IsNewline(c)) {
                 *span = FixedCharSpan(start, (int32) (textWindow->ptr - start));
+                textWindow->Advance(advance);
                 return;
             }
             textWindow->Advance(advance);

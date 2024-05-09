@@ -428,7 +428,6 @@ function generateKeywordMatchingCode(inputFile, outputFile) {
 }
 
 function getEnumNames(content, enumName, valuesToIgnore = []) {
-    const enumRegex = new RegExp(`enum\\s+class\\s+${enumName}\\s*(?::\\s*([^\\s{]+))?\\s*{([\\s\\S]*?)}`);
 
     const lines = content.split("\n").map(s => s.trim());
     const enumString = "enum class " + enumName;
@@ -491,7 +490,6 @@ function getEnumNames(content, enumName, valuesToIgnore = []) {
             names.push(line);
         }
 
-
     }
 
     // Remove values specified in valuesToIgnore array
@@ -519,6 +517,75 @@ function generateIsDeclarationNode(src) {
 
         });
 
+    });
+}
+
+function findSignatureIndex(src, signature) {
+    var lines = src.split('\n');
+
+    for(var k = 0; k < lines.length; k++) {
+        if(lines[i].trim().startsWith(signature)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+function enumToStringFn2(src, dst, enumName, signature, valuesToIgnore = []) {
+    fs.readFile(src, 'utf8', (err, fileContent) => {
+        if (err) {
+            console.error("Error reading the file:", err);
+            return;
+        }
+
+        const enumNames = getEnumNames(fileContent, enumName, valuesToIgnore);
+
+        fs.readFile(dst, 'utf8', (err, dstContent) => {
+
+            var idx = findSignatureIndex(dst, signature);
+            if(idx === -1) {
+                throw new Error("Can't find " + signature);
+            }
+
+            var lines = src.split('\n');
+
+
+            var output = "    const char* " + enumName + "ToString(" + enumName + " e) {\n";
+            output += "        switch(e) {\n";
+            for (let i = 0; i < enumNames.length; i++) {
+                output += "            case " + enumName + "::" + enumNames[i] + ": return \"" + enumNames[i] + "\";\n";
+            }
+            output += "            default: return \"\";\n";
+            output += "        }\n";
+            output += "    }\n";
+
+            const startMarker = `// --- Generate ${enumName}ToString Start`;
+            const endMarker = `// --- Generate ${enumName}ToString End`;
+
+            var startIdx = dstContent.indexOf(startMarker);
+            var endIdx = dstContent.indexOf(endMarker);
+
+            if (startIdx < 0 || endIdx < 0) {
+                console.log(`nowhere to output ${enumName}ToString function, missing marker comments`);
+                return;
+            }
+
+            // Extract the content before and after the markers
+            const beforeContent = dstContent.substring(0, startIdx);
+            const afterContent = dstContent.substring(endIdx + endMarker.length);
+
+            // Concatenate the new content with the content before and after the markers
+            output = beforeContent + startMarker + '\n' + output + '\n' + endMarker + afterContent;
+
+            fs.writeFile(dst, output, (err) => {
+                if (err) {
+                    console.error("Error writing the file:", err);
+                } else {
+                    console.log(`Generated function has been written to ${src}`);
+                }
+            });
+
+        });
     });
 }
 
@@ -665,5 +732,6 @@ generateNodeType('Src/Parsing/Nodes.h', 'Src/Parsing/private/Nodes.generated.h')
 
 generateIsDeclarationNode("Src/Parsing/NodeType.h");
 
-enumToStringFn("Src/Parsing/NodeType.h", "Src/Parsing/impl/NodeType.cpp", "NodeType", ["None"]);
-enumToStringFn("Src/Parsing/TokenType.h", "Src/Parsing/impl/TokenType.cpp", "TokenType", ["Invalid"]);
+// enumToStringFn("Src/Parsing/NodeType.h", "Src/Parsing/impl/NodeType.cpp", "NodeType", ["None"]);
+// enumToStringFn("Src/Parsing/TokenType.h", "Src/Parsing/impl/TokenType.cpp", "TokenType", ["Invalid"]);
+enumToStringFn("Src/Parsing2/SyntaxKind.h", "Src/Parsing2/SyntaxKind.cpp", "SyntaxKind");
