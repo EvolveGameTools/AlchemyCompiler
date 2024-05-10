@@ -97,7 +97,7 @@ namespace Alchemy::Compilation {
         }
 
         inline bool IsValid() {
-            return id != 0;
+            return kind != SyntaxKind::None;
         }
 
         inline bool IsMissing() {

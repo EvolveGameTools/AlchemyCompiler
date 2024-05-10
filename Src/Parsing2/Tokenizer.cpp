@@ -7,6 +7,7 @@
 #include "./TextWindow.h"
 #include "./Scanning.h"
 #include "./Tokenizer.h"
+#include <cstdio>
 
 namespace Alchemy::Compilation {
 
@@ -263,7 +264,9 @@ namespace Alchemy::Compilation {
 
             TokenInfo tokenInfo;
 
+            tokenInfo.text.ptr = textWindow->ptr;
             ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
+            tokenInfo.text.size = (int32)(textWindow->ptr - tokenInfo.text.ptr);
 
             if (tokenInfo.valueKind != LiteralType::None) {
                 Trivia literal;
@@ -315,8 +318,8 @@ namespace Alchemy::Compilation {
         info->contextualKind = SyntaxKind::None;
         info->valueKind = LiteralType::None;
         info->literalValue.uint64Value = 0;
-        info->text.ptr = nullptr;
-        info->text.size = 0;
+//        info->text.ptr = nullptr;
+//        info->text.size = 0;
 
         char* start = textWindow->start;
 

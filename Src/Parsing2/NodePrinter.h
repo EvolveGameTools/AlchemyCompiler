@@ -32,7 +32,7 @@ namespace Alchemy::Compilation {
 
         void PrintIndent() {
             for (int32 i = 0; i < 4 * indent; i++) {
-                buffer.Add(' ');
+                buffer.Add('_');
             }
         }
 
@@ -59,9 +59,9 @@ namespace Alchemy::Compilation {
         }
 
         void PrintLine(const char* str) {
-            buffer.Add('\n');
             PrintIndent();
             PrintInline(str);
+            buffer.Add('\n');
         }
 
         void PrintInline(char* str, int32 length) {
@@ -74,6 +74,21 @@ namespace Alchemy::Compilation {
 
         void PrintInline(const char* str) {
             PrintInline((char*) str, strlen(str));
+        }
+
+        SyntaxToken GetFirstToken(SyntaxBase * base) {
+            switch (base->kind) {
+                case SyntaxKind::QualifiedName: {
+                    QualifiedNameSyntax * p = (QualifiedNameSyntax*)base;
+                    // try all the fields until we find one that isn't missing?
+                    // how do we get token info for missing nodes?
+                    // i guess the first token will never be missing or we wouldn't parse that type right?
+                    // last token might be missing, in which cse we check the parent's end or next sibling's if we have one
+                    // or we do it at parse time?
+                    // if we create a missing token can we give it an indication of what it should have been?
+                    return GetFirstToken(p->left);
+                }
+            }
         }
 
         void PrintTrivia(Trivia trivia) {
@@ -102,15 +117,18 @@ namespace Alchemy::Compilation {
                     }
                 }
 
+                PrintIndent();
                 PrintInline(SyntaxKindToString(token.kind));
                 if (token.contextualKind != SyntaxKind::None) {
                     PrintInline(" (");
-                    SyntaxKindToString(token.contextualKind);
-                    PrintInline(" )");
+                    PrintInline(SyntaxKindToString(token.contextualKind));
+                    PrintInline(")");
                 }
 
-                PrintInline(" -> ");
-                PrintLine(cold.text, cold.textSize);
+                PrintInline(" -> \"");
+                PrintInline(cold.text, cold.textSize);
+                PrintInline("\"");
+                PrintLine();
 
                 for (int32 i = 0; i < cold.triviaCount; i++) {
                     Trivia trivia = cold.triviaList[i];
@@ -129,7 +147,6 @@ namespace Alchemy::Compilation {
                 return;
             }
 
-            indent++;
             switch (syntaxBase->kind) {
                 default: {
                     break;

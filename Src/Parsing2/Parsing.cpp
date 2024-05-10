@@ -1496,17 +1496,17 @@ namespace Alchemy::Compilation {
 
     }
 
-    SyntaxToken MakeMissingToken(SyntaxKind kind) {
+    SyntaxToken MakeMissingToken(SyntaxKind kind, int32 id) {
         assert(SyntaxFacts::IsToken(kind));
         SyntaxToken retn;
         retn.kind = kind;
-        retn.id = -1;
+        retn.id = id;
         retn.flags |= SyntaxTokenFlags::Missing;
         return retn;
     }
 
     IdentifierNameSyntax* CreateMissingIdentifierName(Parser* parser) {
-        return parser->allocator->New<IdentifierNameSyntax>(MakeMissingToken(SyntaxKind::IdentifierToken));
+        return parser->allocator->New<IdentifierNameSyntax>(MakeMissingToken(SyntaxKind::IdentifierToken, parser->ptr));
     }
 
     TupleElementSyntax* ParseTupleElement(Parser* parser) {

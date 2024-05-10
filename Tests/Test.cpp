@@ -59,7 +59,7 @@ TEST_CASE("Parse Types", "[parser]") {
 
     SECTION("basic names") {
 
-        INITIALIZE_PARSER("something.somethingelse");
+        INITIALIZE_PARSER("  something.somethingelse");
 
         TypeSyntax * name = ParseQualifiedName(&parser, NameOptions::None);
         REQUIRE(name->kind == SyntaxKind::QualifiedName);
