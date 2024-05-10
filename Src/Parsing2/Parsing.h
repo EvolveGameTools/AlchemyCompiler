@@ -56,7 +56,7 @@ namespace Alchemy::Compilation {
     NameSyntax* ParseQualifiedNameRight(Parser* parser, NameOptions options, NameSyntax* left, SyntaxToken separator);
     SimpleNameSyntax* ParseSimpleName(Parser* parser, NameOptions options = NameOptions::None);
 
-    SyntaxToken MakeMissingToken(SyntaxKind kind);
+    SyntaxToken MakeMissingToken(SyntaxKind kind, int32 tokenId);
 
     ScanTypeFlags ScanPossibleTypeArgumentList(Parser* parser, SyntaxToken* greaterThanToken, bool* pIsDefinitelyTypeArgumentList);
 

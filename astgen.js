@@ -25,7 +25,7 @@ function findCppStructs(filename) {
             continue;
         }
 
-        if(lastWasAbstract) {
+        if (lastWasAbstract) {
             lastWasAbstract = false;
             continue;
         }
@@ -94,41 +94,314 @@ function stripSuffix(str, suffix) {
     return str;
 }
 
-for (var i = 0; i < structs.length; i++) {
-    const struct = structs[i];
-
-    struct.printBlock = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
-    struct.printBlock += statementIndent;
-    struct.printBlock += struct.structName;
-    struct.printBlock += `* p = (${struct.structName}*)syntaxBase;\n`
-    struct.printBlock += statementIndent;
-    struct.printBlock += `PrintLine("${struct.structName}");\n`
-    struct.printBlock += statementIndent;
-    struct.printBlock += "indent++;\n";
-    for (var f = 0; f < struct.fields.length; f++) {
-        const field = struct.fields[f];
-        struct.printBlock += statementIndent;
-        if(field.fieldType === "SyntaxToken") {
-            struct.printBlock += `PrintToken(p->${field.fieldName});\n`;
-        }
-        else if(field.fieldType.startsWith("SyntaxList")) {
-            struct.printBlock += `PrintSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
-        }
-        else if(field.fieldType.startsWith("SeparatedSyntaxList")) {
-            struct.printBlock += `PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->${field.fieldName});\n`;
-        }
-        else {
-            struct.printBlock += `PrintNode(p->${field.fieldName});\n`;
-        }
-
-    }
-    struct.printBlock += statementIndent;
-    struct.printBlock += "indent--;\n";
-    struct.printBlock += statementIndent;
-    struct.printBlock += "break;\n";
-    struct.printBlock += caseIndent;
-    struct.printBlock += '}\n';
-    console.log(struct.printBlock);
+function capitalizeFirstLetter(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// console.log(structs);
+function createBuilders(structs) {
+
+    for (let i = 0; i < structs.length; i++) {
+        const struct = structs[i];
+
+        var str = "    struct " + struct.structName + "Builder";
+        if (struct.baseType) {
+            str += ": " + struct.baseType + "Builder {\n\n";
+        } else {
+            str += " : Builder {\n\n";
+        }
+
+        for (var f = 0; f < struct.fields.length; f++) {
+            const field = struct.fields[f];
+            str += "        ";
+
+            if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                field.builderType = "SeparatedSyntaxListBuilder*";
+            } else if (field.fieldType.startsWith("SyntaxList")) {
+                field.builderType = "SyntaxListBuilder*";
+            } else if(field.fieldType === "SyntaxToken") {
+                field.builderType = "SyntaxToken";
+            }
+            else {
+                field.builderType = stripSuffix(field.fieldType, "*") + "Builder *";
+            }
+            str += field.builderType;
+            str += " ";
+            str += field.fieldName
+            str += " {};\n";
+        }
+
+        for (f = 0; f < struct.fields.length; f++) {
+            const field = struct.fields[f];
+            str += "\n        inline ";
+            str += struct.structName + "Builder* ";
+            str += capitalizeFirstLetter(field.fieldName);
+            str += "(";
+            str += field.builderType;
+            str += " builder";
+            str += ") {\n";
+            str += "            ";
+            str += field.fieldName;
+            str += " = builder;\n";
+            str += "            ";
+            str += "return this;\n";
+            str += "        ";
+            str += "}\n";
+        }
+
+        str += "\n        inline SyntaxBase* Build() override {\n";
+        str += `            ${struct.structName}* retn = allocator->Allocate<${struct.structName}>(1);\n`;
+        str += `            retn->_kind = SyntaxKind::${stripSuffix(struct.structName, "Syntax")};\n`;
+        for(f = 0; f < struct.fields.length; f++) {
+            const field = struct.fields[f];
+
+            str += "            ";
+            str += `retn->${field.fieldName} = `;
+            if(field.fieldType === "SyntaxToken") {
+                str += field.fieldName + ";\n";
+            }
+            else {
+                str += `${field.fieldName} != nullptr ? (${field.fieldType})${field.fieldName}->Build() : nullptr;\n`;
+            }
+        }
+        str += "            ";
+        str += "return retn;\n        }\n";
+
+        str += "\n    };\n";
+
+        struct.builder = str;
+
+        str = "\n        inline " + struct.structName + "Builder* ";
+        str += struct.structName + "() { \n";
+        str += `            ${struct.structName}Builder * retn = allocator->Allocate<${struct.structName}Builder>(1);\n`;
+        str += `            new (retn) ${struct.structName}Builder();\n`;
+        str += "            retn->allocator = allocator;\n";
+        str += "            return retn;\n";
+        str += "        }";
+
+        struct.builderGen = str;
+
+    }
+
+}
+
+function createCompareBlocks(structs) {
+    for (var i = 0; i < structs.length; i++) {
+        const struct = structs[i];
+
+        var comp = "";
+        comp = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
+        comp += statementIndent;
+        comp += struct.structName;
+        comp += `* pA = (${struct.structName}*)a;\n`
+        comp += statementIndent;
+        comp += struct.structName;
+        comp += `* pB = (${struct.structName}*)b;\n`
+        for (var f = 0; f < struct.fields.length; f++) {
+            const field = struct.fields[f];
+            comp += statementIndent;
+
+            if (field.fieldType === "SyntaxToken") {
+                comp += `if(!TokensEqual(pA->${field.fieldName}, pB->${field.fieldName}, options)) return false;\n`;
+            } else if (field.fieldType.startsWith("SyntaxList")) {
+                comp += `if(!SyntaxListEqual((SyntaxListUntyped*)pA->${field.fieldName}, (SyntaxListUntyped*)pB->${field.fieldName}, options)) return false;\n`;
+            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                comp += `if(!SeparatedSyntaxListEqual((SeparatedSyntaxListUntyped*)pA->${field.fieldName}, (SeparatedSyntaxListUntyped*)pB->${field.fieldName}, options)) return false;\n`;
+            } else {
+                comp += `if(!NodesEqual(pA->${field.fieldName}, pB->${field.fieldName}, options)) return false;\n`;
+            }
+
+        }
+        comp += statementIndent;
+        comp += "return true;\n";
+        comp += caseIndent;
+        comp += '}\n';
+        struct.compBlock = comp;
+    }
+}
+
+function createPrintBlocks(structs) {
+    for (var i = 0; i < structs.length; i++) {
+        const struct = structs[i];
+
+        struct.printBlock = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
+        struct.printBlock += statementIndent;
+        struct.printBlock += struct.structName;
+        struct.printBlock += `* p = (${struct.structName}*)syntaxBase;\n`
+        struct.printBlock += statementIndent;
+        struct.printBlock += `PrintLine("${struct.structName}");\n`
+        struct.printBlock += statementIndent;
+        struct.printBlock += "indent++;\n";
+        for (var f = 0; f < struct.fields.length; f++) {
+            const field = struct.fields[f];
+            struct.printBlock += statementIndent;
+            struct.printBlock += `PrintFieldName("${field.fieldName}");\n`;
+            struct.printBlock += statementIndent;
+
+            if (field.fieldType === "SyntaxToken") {
+                struct.printBlock += `PrintToken(p->${field.fieldName});\n`;
+            } else if (field.fieldType.startsWith("SyntaxList")) {
+                struct.printBlock += `PrintSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
+            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                struct.printBlock += `PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->${field.fieldName});\n`;
+            } else {
+                struct.printBlock += `PrintNode(p->${field.fieldName});\n`;
+            }
+
+        }
+        struct.printBlock += statementIndent;
+        struct.printBlock += "indent--;\n";
+        struct.printBlock += statementIndent;
+        struct.printBlock += "break;\n";
+        struct.printBlock += caseIndent;
+        struct.printBlock += '}\n';
+    }
+}
+
+function createGetFirstTokens(structs) {
+    for (let i = 0; i < structs.length; i++) {
+        const struct = structs[i];
+
+        var block = "";
+        block = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
+        block += statementIndent;
+        block += struct.structName;
+        block += `* p = (${struct.structName}*)syntaxBase;\n`
+        block += statementIndent;
+
+        const field = struct.fields[0];
+        if (field.fieldType === "SyntaxToken") {
+            block += `return p->${field.fieldName};\n`;
+        } else if (field.fieldType.startsWith("SyntaxList")) {
+            block += `return GetFirstTokenFromSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
+        } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+            block += `return GetFirstTokenFromSyntaxList((SeparatedSyntaxListUntyped*)p->${field.fieldName});\n`;
+        } else {
+            block += `return GetFirstToken((SyntaxBase*)p->${field.fieldName});\n`;
+        }
+        block += caseIndent;
+        block += '}\n';
+        struct.firstTokenBlock = block;
+        // console.log(struct.printBlock);
+    }
+}
+
+const nodePrinterTemplate = `#include "./NodePrinter.h"
+
+namespace Alchemy::Compilation {
+
+    void NodePrinter::PrintNode(SyntaxBase* syntaxBase) {
+
+        if (syntaxBase == nullptr) {
+            return;
+        }
+
+        switch (syntaxBase->GetKind()) {
+__REPLACE__
+            default: {
+                break;
+            }
+            
+        }
+    }
+}
+`
+const firstTokenTemplate = `#include "./SyntaxBase.h"
+#include "./SyntaxNodes.h"
+
+namespace Alchemy::Compilation {
+    
+    SyntaxToken GetFirstToken(SyntaxBase * syntaxBase) {
+    
+        if(syntaxBase == nullptr) {
+            return SyntaxToken();
+        }
+        
+        switch(syntaxBase->GetKind()) {
+__REPLACE__
+            default: {
+                return SyntaxToken();
+            }
+            
+        }        
+        
+    }
+    
+}
+`;
+
+const builderTemplate = `#include "./Builders.h"
+
+namespace Alchemy::Compilation {
+
+__REPLACE__
+    struct Builder : BuilderBase {
+    
+        explicit Builder(LinearAllocator * allocator) : BuilderBase((allocator)) {}
+__REPLACE_BUILDER_API__        
+        
+    };
+
+}
+`;
+
+const compareTemplate = `#include "./NodeEquality.h"
+
+namespace Alchemy::Compilation {
+    
+    bool NodesEqual(SyntaxBase * a, SyntaxBase * b, NodeEqualityOptions options) {
+    
+        if(a == nullptr && b == nullptr) {
+            return true;
+        }
+        
+        if(a == nullptr || b == nullptr) {
+            return false;
+        }
+
+        if(a->GetKind() != b->GetKind()) {
+            return false;
+        }
+        
+        switch(a->GetKind()) {
+__REPLACE__
+            default: {
+                UNREACHABLE("NodesEqual");
+                return true;
+            }
+            
+        }        
+        
+    }
+    
+}`;
+
+function makeFirstTokenSource() {
+    createGetFirstTokens(structs);
+    return firstTokenTemplate.replace("__REPLACE__", structs.map(s => s.firstTokenBlock).join('\n'));
+}
+
+function makeNodePrinter() {
+    createPrintBlocks(structs);
+    return nodePrinterTemplate.replace("__REPLACE__", structs.map(s => s.printBlock).join('\n'));
+}
+
+function makeBuilders() {
+    createBuilders(structs);
+    return builderTemplate
+        .replace("__REPLACE__", structs.map(s => s.builder).join('\n'))
+        .replace("__REPLACE_BUILDER_API__", structs.map(s => s.builderGen).join('\n')
+    );
+}
+
+function makeEqualityComparisons() {
+    createCompareBlocks(structs);
+    return compareTemplate.replace("__REPLACE__", structs.map(s => s.compBlock).join('\n'));
+
+}
+
+module.exports = {
+    makeBuilders,
+    makeEqualityComparisons,
+    makeFirstTokenSource,
+    makeNodePrinter
+}

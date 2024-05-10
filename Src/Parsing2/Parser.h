@@ -5,8 +5,11 @@
 #include "./Diagnostics.h"
 #include "./Precidence.h"
 #include "./TerminatorState.h"
+#include "SyntaxBase.h"
 
 namespace Alchemy::Compilation {
+
+    SyntaxToken GetFirstToken(SyntaxBase * syntaxBase);
 
     struct Parser  {
 
@@ -44,6 +47,20 @@ namespace Alchemy::Compilation {
         SyntaxToken GetLastNonSkipped();
 
         bool HasMoreTokens();
+
+        template <typename T, typename... Args>
+        T* CreateNode(Args && ... args) {
+            T* retn = (T*) allocator->AllocateUncleared<T>(1);
+            new(retn) T(std::forward<Args>(args)...);
+            SyntaxBase * pBase = (SyntaxBase*)retn;
+            SyntaxToken startToken = GetFirstToken(pBase);
+            pBase->startTokenId = startToken.id;
+
+            assert(startToken.IsValid() && !startToken.IsMissing());
+
+            pBase->endTokenId = ptr;
+            return retn;
+        }
     };
 
 }

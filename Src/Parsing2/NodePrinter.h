@@ -3,6 +3,7 @@
 #include "../PrimitiveTypes.h"
 #include "./SyntaxNodes.h"
 #include "./SyntaxKind.h"
+#include "../Collections/PodList.h"
 
 namespace Alchemy::Compilation {
 
@@ -32,7 +33,7 @@ namespace Alchemy::Compilation {
 
         void PrintIndent() {
             for (int32 i = 0; i < 4 * indent; i++) {
-                buffer.Add('_');
+                buffer.Add(' ');
             }
         }
 
@@ -50,18 +51,20 @@ namespace Alchemy::Compilation {
 
         void PrintLine() {
             buffer.Add('\n');
+            buffer.Add('_');
         }
 
         void PrintLine(char* str, int32 length) {
             buffer.Add('\n');
+            buffer.Add('_');
             PrintIndent();
             PrintInline(str, length);
         }
 
         void PrintLine(const char* str) {
-            PrintIndent();
             PrintInline(str);
             buffer.Add('\n');
+            buffer.Add('_');
         }
 
         void PrintInline(char* str, int32 length) {
@@ -76,21 +79,6 @@ namespace Alchemy::Compilation {
             PrintInline((char*) str, strlen(str));
         }
 
-        SyntaxToken GetFirstToken(SyntaxBase * base) {
-            switch (base->kind) {
-                case SyntaxKind::QualifiedName: {
-                    QualifiedNameSyntax * p = (QualifiedNameSyntax*)base;
-                    // try all the fields until we find one that isn't missing?
-                    // how do we get token info for missing nodes?
-                    // i guess the first token will never be missing or we wouldn't parse that type right?
-                    // last token might be missing, in which cse we check the parent's end or next sibling's if we have one
-                    // or we do it at parse time?
-                    // if we create a missing token can we give it an indication of what it should have been?
-                    return GetFirstToken(p->left);
-                }
-            }
-        }
-
         void PrintTrivia(Trivia trivia) {
 
             if (trivia.type == TriviaType::Whitespace || trivia.type == TriviaType::NewLine && printWhitespace) {
@@ -99,6 +87,13 @@ namespace Alchemy::Compilation {
             else if (trivia.type == TriviaType::SingleLineComment || trivia.type == TriviaType::MultiLineComment && printComments) {
                 PrintLine(trivia.span, trivia.length);
             }
+        }
+
+        void PrintFieldName(const char * fieldName) {
+            PrintIndent();
+            PrintInline("[");
+            PrintInline(fieldName);
+            PrintInline("] ");
         }
 
         void PrintToken(SyntaxToken token) {
@@ -110,14 +105,14 @@ namespace Alchemy::Compilation {
 
                 SyntaxTokenCold cold = coldTokens[token.id];
 
-                for (int32 i = 0; i < cold.triviaCount; i++) {
-                    Trivia trivia = cold.triviaList[i];
-                    if (trivia.isLeading) {
-                        PrintTrivia(trivia);
-                    }
-                }
+//                for (int32 i = 0; i < cold.triviaCount; i++) {
+//                    Trivia trivia = cold.triviaList[i];
+//                    if (trivia.isLeading) {
+//                        PrintTrivia(trivia);
+//                    }
+//                }
 
-                PrintIndent();
+//                PrintIndent();
                 PrintInline(SyntaxKindToString(token.kind));
                 if (token.contextualKind != SyntaxKind::None) {
                     PrintInline(" (");
@@ -141,141 +136,9 @@ namespace Alchemy::Compilation {
 
         }
 
-        void PrintNode(SyntaxBase* syntaxBase) {
+        void PrintNode(SyntaxBase* syntaxBase);
 
-            if (syntaxBase == nullptr) {
-                return;
-            }
-
-            switch (syntaxBase->kind) {
-                default: {
-                    break;
-                }
-                case SyntaxKind::ArrayRankSpecifier: {
-                    ArrayRankSpecifierSyntax* p = (ArrayRankSpecifierSyntax*) syntaxBase;
-                    PrintLine("ArrayRankSpecifierSyntax");
-                    indent++;
-                    PrintToken(p->open);
-                    PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*) p->ranks);
-                    PrintToken(p->close);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::TypeArgumentList: {
-                    TypeArgumentListSyntax* p = (TypeArgumentListSyntax*) syntaxBase;
-                    PrintLine("TypeArgumentListSyntax");
-                    indent++;
-                    PrintToken(p->lessThanToken);
-                    PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*) p->arguments);
-                    PrintToken(p->greaterThanToken);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::GenericName: {
-                    GenericNameSyntax* p = (GenericNameSyntax*) syntaxBase;
-                    PrintLine("GenericNameSyntax");
-                    indent++;
-                    PrintToken(p->identifier);
-                    PrintNode(p->typeArgumentList);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::QualifiedName: {
-                    QualifiedNameSyntax* p = (QualifiedNameSyntax*) syntaxBase;
-                    PrintLine("QualifiedNameSyntax");
-                    indent++;
-                    PrintNode(p->left);
-                    PrintToken(p->dotToken);
-                    PrintNode(p->right);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::IdentifierName: {
-                    IdentifierNameSyntax* p = (IdentifierNameSyntax*) syntaxBase;
-                    PrintLine("IdentifierNameSyntax");
-                    indent++;
-                    PrintToken(p->identifier);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::PredefinedType: {
-                    PredefinedTypeSyntax* p = (PredefinedTypeSyntax*) syntaxBase;
-                    PrintLine("PredefinedTypeSyntax");
-                    indent++;
-                    PrintToken(p->typeToken);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::TupleElement: {
-                    TupleElementSyntax* p = (TupleElementSyntax*) syntaxBase;
-                    PrintLine("TupleElementSyntax");
-                    indent++;
-                    PrintNode(p->type);
-                    PrintToken(p->identifier);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::TupleType: {
-                    TupleTypeSyntax* p = (TupleTypeSyntax*) syntaxBase;
-                    PrintLine("TupleTypeSyntax");
-                    indent++;
-                    PrintToken(p->openParenToken);
-                    PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*) p->elements);
-                    PrintToken(p->closeParenToken);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::ArrayType: {
-                    ArrayTypeSyntax* p = (ArrayTypeSyntax*) syntaxBase;
-                    PrintLine("ArrayTypeSyntax");
-                    indent++;
-                    PrintNode(p->elementType);
-                    PrintSyntaxList((SyntaxListUntyped*) p->ranks);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::RefType: {
-                    RefTypeSyntax* p = (RefTypeSyntax*) syntaxBase;
-                    PrintLine("RefTypeSyntax");
-                    indent++;
-                    PrintToken(p->refKeyword);
-                    PrintToken(p->readonlyKeyword);
-                    PrintNode(p->type);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::OmittedArraySizeExpression: {
-                    OmittedArraySizeExpressionSyntax* p = (OmittedArraySizeExpressionSyntax*) syntaxBase;
-                    PrintLine("OmittedArraySizeExpressionSyntax");
-                    indent++;
-                    PrintToken(p->token);
-                    indent--;
-                    break;
-                }
-
-                case SyntaxKind::NullableType: {
-                    NullableType* p = (NullableType*) syntaxBase;
-                    PrintLine("NullableType");
-                    indent++;
-                    PrintNode(p->elementType);
-                    PrintToken(p->questionMark);
-                    indent--;
-                    break;
-                }
-
-            }
-
-        }
+        void Dump();
     };
 
 }

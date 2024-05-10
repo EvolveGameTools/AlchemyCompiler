@@ -32,10 +32,10 @@ namespace Alchemy::Compilation {
         }
 
         SyntaxList<T>* ToSyntaxList(LinearAllocator* pAllocator) {
-            SyntaxList<T> * retn = pAllocator->AllocateUncleared<SyntaxList<T>>(1);
+            SyntaxList<T>* retn = pAllocator->AllocateUncleared<SyntaxList<T>>(1);
             T** ptr = pAllocator->AllocateUncleared<T*>(size);
             memcpy(ptr, array, sizeof(T*) * size);
-            new (retn) SyntaxList<T>(ptr, size);
+            new(retn) SyntaxList<T>(ptr, size);
             return retn;
         }
     };
@@ -1110,7 +1110,7 @@ namespace Alchemy::Compilation {
     };
 
     IdentifierNameSyntax* ParseIdentifierName(Parser* parser, ErrorCode code = ErrorCode::ERR_IdentifierExpected) {
-        return parser->allocator->New<IdentifierNameSyntax>(parser->EatToken(SyntaxKind::IdentifierToken));
+        return parser->CreateNode<IdentifierNameSyntax>(parser->EatToken(SyntaxKind::IdentifierToken));
     }
 
     ScanTypeArgumentListKind ScanTypeArgumentList(Parser* parser, NameOptions options) {
@@ -1412,9 +1412,9 @@ namespace Alchemy::Compilation {
                 SyntaxToken close;
                 ParseTypeArgumentList(parser, &open, &builder, &close);
 
-                name = parser->allocator->New<GenericNameSyntax>(
+                name = parser->CreateNode<GenericNameSyntax>(
                     id->identifier,
-                    parser->allocator->New<TypeArgumentListSyntax>(open, builder.ToList(parser->allocator), close)
+                    parser->CreateNode<TypeArgumentListSyntax>(open, builder.ToList(parser->allocator), close)
                 );
             }
 
@@ -1424,14 +1424,14 @@ namespace Alchemy::Compilation {
 
     }
 
-    NameSyntax * RecoverFromDotDot(Parser * parser, NameSyntax * left, SyntaxToken * separator)    {
+    NameSyntax* RecoverFromDotDot(Parser* parser, NameSyntax* left, SyntaxToken* separator) {
         assert(separator->kind == SyntaxKind::DotDotToken);
 
-        IdentifierNameSyntax * missingName = CreateMissingIdentifierName(parser);
-        SyntaxToken leftDot = MakeMissingToken(SyntaxKind::DotToken);
+        IdentifierNameSyntax* missingName = CreateMissingIdentifierName(parser);
+        SyntaxToken leftDot = MakeMissingToken(SyntaxKind::DotToken, parser->ptr);
         parser->AddError(*separator, Diagnostic(ErrorCode::ERR_IdentifierExpected, parser->GetTokenText(*separator)));
-        *separator = MakeMissingToken(SyntaxKind::DotToken);
-        return parser->allocator->New<QualifiedNameSyntax>(left, leftDot, missingName);
+        *separator = MakeMissingToken(SyntaxKind::DotToken, parser->ptr);
+        return parser->CreateNode<QualifiedNameSyntax>(left, leftDot, missingName);
     }
 
     NameSyntax* ParseQualifiedNameRight(Parser* parser, NameOptions options, NameSyntax* left, SyntaxToken separator) {
@@ -1440,13 +1440,13 @@ namespace Alchemy::Compilation {
 
         switch (separator.kind) {
             case SyntaxKind::DotToken:
-                return parser->allocator->New<QualifiedNameSyntax>(left, separator, right);
+                return parser->CreateNode<QualifiedNameSyntax>(left, separator, right);
 
             case SyntaxKind::DotDotToken:
                 // Error recovery.  If we have `X..Y` break that into `X.<missing-id>.Y`
-                return parser->allocator->New<QualifiedNameSyntax>(RecoverFromDotDot(parser, left, &separator), separator, right);
+                return parser->CreateNode<QualifiedNameSyntax>(RecoverFromDotDot(parser, left, &separator), separator, right);
 
-              // removing :: support for now, doesn't seem super helpful and is maybe just confusing
+                // removing :: support for now, doesn't seem super helpful and is maybe just confusing
 
 //            case SyntaxKind::ColonColonToken:
 //
@@ -1479,12 +1479,12 @@ namespace Alchemy::Compilation {
     }
 
     TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options) {
-        NameSyntax * name = ParseSimpleName(parser, options);
+        NameSyntax* name = ParseSimpleName(parser, options);
 
         // Handle .. tokens for error recovery purposes.
         while (parser->currentToken.kind == SyntaxKind::DotToken || parser->currentToken.kind == SyntaxKind::DotDotToken) {
 
-            if (parser->PeekToken(1).kind == SyntaxKind::ThisKeyword){
+            if (parser->PeekToken(1).kind == SyntaxKind::ThisKeyword) {
                 break;
             }
 
@@ -1506,11 +1506,11 @@ namespace Alchemy::Compilation {
     }
 
     IdentifierNameSyntax* CreateMissingIdentifierName(Parser* parser) {
-        return parser->allocator->New<IdentifierNameSyntax>(MakeMissingToken(SyntaxKind::IdentifierToken, parser->ptr));
+        return parser->CreateNode<IdentifierNameSyntax>(MakeMissingToken(SyntaxKind::IdentifierToken, parser->ptr));
     }
 
     TupleElementSyntax* ParseTupleElement(Parser* parser) {
-        return parser->allocator->New<TupleElementSyntax>(
+        return parser->CreateNode<TupleElementSyntax>(
             ParseType(parser, ParseTypeMode::Normal),
             IsTrueIdentifier(parser)
             ? ParseIdentifierToken(parser)
@@ -1536,19 +1536,19 @@ namespace Alchemy::Compilation {
         if (list.itemCount < 2) {
 
             if (list.itemCount == 0) {
-                list.Add(parser->allocator->New<TupleElementSyntax>(CreateMissingIdentifierName(parser), SyntaxToken()));
+                list.Add(parser->CreateNode<TupleElementSyntax>(CreateMissingIdentifierName(parser), SyntaxToken()));
             }
 
             IdentifierNameSyntax* missing = CreateMissingIdentifierName(parser);
 
-            list.AddSeparator(MakeMissingToken(SyntaxKind::CommaToken));
-            list.Add(parser->allocator->New<TupleElementSyntax>(missing, SyntaxToken()));
+            list.AddSeparator(MakeMissingToken(SyntaxKind::CommaToken, parser->ptr));
+            list.Add(parser->CreateNode<TupleElementSyntax>(missing, SyntaxToken()));
 
             FixedCharSpan span = parser->GetTokenText(parser->currentToken);
             parser->diagnostics->AddError(Diagnostic(ErrorCode::ERR_TupleTooFewElements, span));
         }
 
-        return parser->allocator->New<TupleTypeSyntax>(open, list.ToList(parser->allocator), parser->EatToken(SyntaxKind::CloseParenToken));
+        return parser->CreateNode<TupleTypeSyntax>(open, list.ToList(parser->allocator), parser->EatToken(SyntaxKind::CloseParenToken));
 
     }
 
@@ -1560,7 +1560,7 @@ namespace Alchemy::Compilation {
                 parser->AddError(token, parser->MakeDiagnostic(code, token));
             }
 
-            return parser->allocator->New<PredefinedTypeSyntax>(token);
+            return parser->CreateNode<PredefinedTypeSyntax>(token);
         }
 
         if (IsTrueIdentifier(parser)) {
@@ -1627,7 +1627,7 @@ namespace Alchemy::Compilation {
     bool CanBeNullableType(Parser* parser, TypeSyntax* typeSyntax, ParseTypeMode mode) {
         // These are the fast tests for (in)applicability.
         // More expensive tests are in `TryEatNullableQualifierIfApplicable`
-        if (typeSyntax->kind == SyntaxKind::NullableType) {
+        if (typeSyntax->GetKind() == SyntaxKind::NullableType) {
             return false;
         }
         if (parser->PeekToken(1).kind == SyntaxKind::OpenBracketToken) {
@@ -1636,7 +1636,7 @@ namespace Alchemy::Compilation {
         if (mode == ParseTypeMode::DefinitePattern) {
             return true; // Permit nullable type parsing and report while binding for a better error message
         }
-        if (mode == ParseTypeMode::NewExpression && typeSyntax->kind == SyntaxKind::TupleType && parser->PeekToken(1).kind != SyntaxKind::OpenParenToken && parser->PeekToken(1).kind != SyntaxKind::OpenBraceToken) {
+        if (mode == ParseTypeMode::NewExpression && typeSyntax->GetKind() == SyntaxKind::TupleType && parser->PeekToken(1).kind != SyntaxKind::OpenParenToken && parser->PeekToken(1).kind != SyntaxKind::OpenBraceToken) {
             return false; // Permit `new (int, int)?(t)` (creation) and `new (int, int) ? x : y` (conditional)
         }
 
@@ -1696,6 +1696,15 @@ namespace Alchemy::Compilation {
         );
     }
 
+    SyntaxToken MakeOmittedToken(SyntaxKind kind, int32 position) {
+        SyntaxToken omittedToken;
+        omittedToken.kind = kind;
+        omittedToken.contextualKind = SyntaxKind::None;
+        omittedToken.id = position;
+        omittedToken.flags |= SyntaxTokenFlags::Omitted;
+        return omittedToken;
+    }
+
     ArrayRankSpecifierSyntax* ParseArrayRankSpecifier(Parser* parser, bool* pSawNonOmittedSize) {
         *pSawNonOmittedSize = false;
         bool sawOmittedSize = false;
@@ -1703,19 +1712,12 @@ namespace Alchemy::Compilation {
         TempAllocator::ScopedMarker scopedMarker(parser->tempAllocator);
         SeparatedNodeListBuilder<ExpressionSyntax> list(parser->tempAllocator);
 
-        SyntaxToken omittedToken;
-        omittedToken.kind = SyntaxKind::OmittedArraySizeExpressionToken;
-        omittedToken.contextualKind = SyntaxKind::None;
-        omittedToken.id = -1; // todo -- this isn't missing, its omitted by definition
-
-        OmittedArraySizeExpressionSyntax* omittedArraySizeExpressionInstance = parser->allocator->New<OmittedArraySizeExpressionSyntax>(omittedToken);
-
         int32 lastTokenPosition = -1;
         while (IsMakingProgress(parser, &lastTokenPosition) && parser->currentToken.kind != SyntaxKind::CloseBracketToken) {
 
             if (parser->currentToken.kind == SyntaxKind::CommaToken) {
                 sawOmittedSize = true;
-                list.Add(omittedArraySizeExpressionInstance);
+                list.Add(parser->CreateNode<OmittedArraySizeExpressionSyntax>(MakeOmittedToken(SyntaxKind::OmittedArraySizeExpressionToken, parser->ptr)));
                 list.AddSeparator(parser->EatToken());
             }
             else if (IsPossibleExpression(parser)) {
@@ -1736,23 +1738,23 @@ namespace Alchemy::Compilation {
         // If the omitted size would be the only element, then skip it unless sizes were expected.
         if (list.separatorCount == list.itemCount + 1) {
             sawOmittedSize = true;
-            list.Add(omittedArraySizeExpressionInstance);
+            list.Add(parser->CreateNode<OmittedArraySizeExpressionSyntax>(MakeOmittedToken(SyntaxKind::OmittedArraySizeExpressionToken, parser->ptr)));
         }
 
         // Never mix omitted and non-omitted array sizes.  If there were non-omitted array sizes,
         // then convert all of the omitted array sizes to missing identifiers.
         if (sawOmittedSize && *pSawNonOmittedSize) {
             for (int32 i = 0; i < list.itemCount; i++) {
-                if (list.GetItem(i)->kind == SyntaxKind::OmittedArraySizeExpression) {
+                if (list.GetItem(i)->GetKind() == SyntaxKind::OmittedArraySizeExpression) {
                     SyntaxToken separator = list.GetSeparator(i);
                     FixedCharSpan text = parser->GetTokenText(separator); // we need a text range for the error. try to use the next separator. todo -- probably fails on the end
                     parser->AddError(separator, Diagnostic(ErrorCode::ERR_ValueExpected, text.ptr, text.ptr + text.size));
-                    list.items[i] = parser->allocator->New<IdentifierNameSyntax>(parser->CreateMissingToken(SyntaxKind::IdentifierToken));
+                    list.items[i] = parser->CreateNode<IdentifierNameSyntax>(parser->CreateMissingToken(SyntaxKind::IdentifierToken));
                 }
             }
         }
 
-        return parser->allocator->New<ArrayRankSpecifierSyntax>(open, list.ToList(parser->allocator), parser->EatToken(SyntaxKind::CloseBracketToken));
+        return parser->CreateNode<ArrayRankSpecifierSyntax>(open, list.ToList(parser->allocator), parser->EatToken(SyntaxKind::CloseBracketToken));
 
     }
 
@@ -1794,7 +1796,7 @@ namespace Alchemy::Compilation {
                     if (CanBeNullableType(parser, type, mode)) {
                         SyntaxToken question;
                         if (TryEatNullableQualifierIfApplicable(parser, mode, &question)) {
-                            type = parser->allocator->New<NullableType>(type, question);
+                            type = parser->CreateNode<NullableType>(type, question);
                             continue;
                         }
                     }
@@ -1810,7 +1812,7 @@ namespace Alchemy::Compilation {
                         ranks.Add(ParseArrayRankSpecifier(parser, &unused));
                     } while (parser->currentToken.kind == SyntaxKind::OpenBracketToken);
 
-                    type = parser->allocator->New<ArrayTypeSyntax>(type, ranks.ToSyntaxList(parser->allocator));
+                    type = parser->CreateNode<ArrayTypeSyntax>(type, ranks.ToSyntaxList(parser->allocator));
                     continue;
                 }
                 default:
@@ -1825,7 +1827,7 @@ namespace Alchemy::Compilation {
 
         if (parser->currentToken.kind == SyntaxKind::RefKeyword) {
 
-            return parser->allocator->New<RefTypeSyntax>(
+            return parser->CreateNode<RefTypeSyntax>(
                 parser->EatToken(),
                 parser->currentToken.kind == SyntaxKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken(),
                 ParseTypeCore(parser, ParseTypeMode::AfterRef)

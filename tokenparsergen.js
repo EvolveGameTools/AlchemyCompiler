@@ -735,3 +735,20 @@ generateIsDeclarationNode("Src/Parsing/NodeType.h");
 // enumToStringFn("Src/Parsing/NodeType.h", "Src/Parsing/impl/NodeType.cpp", "NodeType", ["None"]);
 // enumToStringFn("Src/Parsing/TokenType.h", "Src/Parsing/impl/TokenType.cpp", "TokenType", ["Invalid"]);
 enumToStringFn("Src/Parsing2/SyntaxKind.h", "Src/Parsing2/SyntaxKind.cpp", "SyntaxKind");
+
+const astgen = require("./astgen");
+
+function report(str) {
+    return function(err) {
+        if (err) {
+            console.error("Error writing the file:", err);
+        } else {
+            console.log(`Generated ` + str);
+        }
+    }
+}
+
+fs.writeFile("Src/Parsing2/GetFirstToken.generated.cpp", astgen.makeFirstTokenSource(), report("GenFirstToken"));
+fs.writeFile("Src/Parsing2/NodePrinter.generated.cpp", astgen.makeNodePrinter(), report("NodePrinter"));
+fs.writeFile("Src/Parsing2/Builders.generated.h", astgen.makeBuilders(), report("Builders"));
+fs.writeFile("Src/Parsing2/NodeEquality.generated.cpp", astgen.makeEqualityComparisons(), report("Node Equality"));

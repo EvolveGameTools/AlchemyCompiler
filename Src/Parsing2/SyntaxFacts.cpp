@@ -478,8 +478,6 @@ namespace Alchemy::Compilation::SyntaxFacts {
                 return "set";
             case SyntaxKind::AliasKeyword:
                 return "alias";
-//            case SyntaxKind::GlobalKeyword:
-//                return "global";
             case SyntaxKind::NameOfKeyword:
                 return "nameof";
             case SyntaxKind::WhenKeyword:

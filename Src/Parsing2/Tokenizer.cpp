@@ -246,7 +246,6 @@ namespace Alchemy::Compilation {
             lineCols[i].column = col + 1;
             last = cold.text;
 
-
         }
 
     }
@@ -286,6 +285,10 @@ namespace Alchemy::Compilation {
             hotToken.contextualKind = tokenInfo.contextualKind;
             hotToken.literalType = tokenInfo.valueKind;
             hotToken.flags = SyntaxTokenFlags::None;
+
+#if ALCHEMY_DEBUG != 0
+            hotToken.text = FixedCharSpan(tokenInfo.text.ptr, tokenInfo.text.size);
+#endif
 
             if (leadingTrivia > 0) {
                 hotToken.flags |= SyntaxTokenFlags::LeadingTrivia;

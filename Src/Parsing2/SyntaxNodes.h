@@ -1,83 +1,10 @@
 #pragma once
 
-// marker for re-ordering fields
-#define NodeIndex(x)
+#include "./SyntaxBase.h"
+
 #define abstract
 
 namespace Alchemy::Compilation {
-
-    abstract struct SyntaxBase {
-
-        SyntaxKind kind;
-        SyntaxTokenFlags flags;
-
-        explicit SyntaxBase(SyntaxKind kind) : kind(kind), flags(SyntaxTokenFlags::None) {}
-
-        inline bool IsMissing() {
-            return false; // (flags & SyntaxTokenFlags::IsNotMissing) == 0;
-        }
-
-        #if true // shows better debugger output if polymorphic
-
-        virtual void dummy() {}
-
-        #endif
-
-    };
-
-    abstract struct SyntaxListUntyped : SyntaxBase {
-        // DO NOT CHANGE THIS LAYOUT WITHOUT MIRRORING IN SyntaxList<T>
-        int32 size;
-        SyntaxBase** array;
-
-        SyntaxListUntyped(SyntaxBase ** array, int32 size) : SyntaxBase(SyntaxKind::ListKind), array(array), size(size) {}
-
-    };
-
-    template<typename T>
-    abstract
-    struct SyntaxList : SyntaxBase {
-        // DO NOT CHANGE THIS LAYOUT WITHOUT MIRRORING IN SyntaxListUntyped
-        int32 size;
-        T** array;
-        SyntaxList(T ** array, int32 size) : SyntaxBase(SyntaxKind::ListKind), array(array), size(size) {}
-    };
-
-    abstract struct SeparatedSyntaxListUntyped : SyntaxBase {
-        // DO NOT CHANGE THIS LAYOUT WITHOUT MIRRORING IN SeparatedSyntaxList<T>
-        int32 itemCount {};
-        int32 separatorCount {};
-        SyntaxBase** items {};
-        SyntaxToken* separators {};
-    };
-
-    template<typename T>
-    abstract
-    struct SeparatedSyntaxList : SyntaxBase {
-        // DO NOT CHANGE THIS LAYOUT WITHOUT MIRRORING IN SeparatedSyntaxListUntyped
-        int32 itemCount;
-        int32 separatorCount;
-        T** items;
-        SyntaxToken* separators;
-
-        SeparatedSyntaxList(int32 itemCount, T** items, int32 separatorCount, SyntaxToken* separators)
-            : SyntaxBase(SyntaxKind::ListKind)
-            , itemCount(itemCount)
-            , items(items)
-            , separatorCount(separatorCount)
-            , separators(separators) {}
-
-        SeparatedSyntaxListUntyped* ToUntypedList() {
-            return (SeparatedSyntaxListUntyped*) this;
-        }
-
-    };
-
-    abstract struct ExpressionSyntax : SyntaxBase {
-
-        explicit ExpressionSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
-
-    };
 
     struct ArrayRankSpecifierSyntax : ExpressionSyntax {
         SyntaxToken open;
@@ -89,24 +16,6 @@ namespace Alchemy::Compilation {
             , open(open)
             , ranks(ranks)
             , close(close) {}
-
-    };
-
-    abstract struct TypeSyntax : ExpressionSyntax {
-
-        explicit TypeSyntax(SyntaxKind kind) : ExpressionSyntax(kind) {}
-
-    };
-
-    abstract struct NameSyntax : TypeSyntax {
-
-        explicit NameSyntax(SyntaxKind kind) : TypeSyntax(kind) {}
-
-    };
-
-    abstract struct SimpleNameSyntax : NameSyntax {
-
-        explicit SimpleNameSyntax(SyntaxKind kind) : NameSyntax(kind) {}
 
     };
 
@@ -245,5 +154,4 @@ namespace Alchemy::Compilation {
 
 }
 
-#undef NodeIndex
 #undef abstract

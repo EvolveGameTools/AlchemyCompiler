@@ -81,7 +81,8 @@ namespace Alchemy::Compilation {
         LeadingTrivia = 1 << 2,
         TrailingTrivia = 1 << 3,
         Missing = 1 << 4,
-        Skipped = 1 << 5
+        Skipped = 1 << 5,
+        Omitted = 1 << 6
     })
 
     struct SyntaxToken {
@@ -92,6 +93,10 @@ namespace Alchemy::Compilation {
         SyntaxTokenFlags flags {};
         LiteralType literalType {};
 
+#if ALCHEMY_DEBUG == 1
+        FixedCharSpan text;
+#endif
+
         inline bool ContainsDiagnostics() {
             return (flags & SyntaxTokenFlags::Error) != 0;
         }
@@ -101,7 +106,7 @@ namespace Alchemy::Compilation {
         }
 
         inline bool IsMissing() {
-            return id < 0;
+            return (flags & SyntaxTokenFlags::Missing) != 0;
         }
 
     };

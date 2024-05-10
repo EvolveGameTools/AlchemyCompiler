@@ -11,12 +11,15 @@
 #include "../Src/Parsing2/Parser.h"
 #include "../Src/Parsing2/Parsing.h"
 #include "../Src/Parsing2/NodePrinter.h"
+#include "../Src/Parsing2/Builders.generated.h"
+#include "../Src/Parsing2/NodeEquality.h"
 
 using namespace Alchemy::Compilation;
 
 TextWindow MakeTextWindow(const char* src) {
     return TextWindow((char*) src, strlen(src));
 }
+
 #define INITIALIZE_PARSER_TEST \
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \
     Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator(); \
@@ -43,34 +46,44 @@ TEST_CASE("Parse Types", "[parser]") {
 
         INITIALIZE_PARSER("float int char bool ushort short uint byte sbyte double");
 
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->kind == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
+        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
         REQUIRE(parser.HasMoreTokens() == false);
 
     }
 
+    // get tokenAt(line/col)
+    // get firstTokenOfTypeOnLine().isTrivia
+    // get firstTokenOfTypeOnLine().isSkipped
+
     SECTION("basic names") {
 
-        INITIALIZE_PARSER("  something.somethingelse");
+        INITIALIZE_PARSER("something.somethingelse");
 
-        TypeSyntax * name = ParseQualifiedName(&parser, NameOptions::None);
-        REQUIRE(name->kind == SyntaxKind::QualifiedName);
-        QualifiedNameSyntax * first = (QualifiedNameSyntax*)name;
-//        REQUIRE(first->left->kind == SyntaxKind::IdentifierName);
-//        REQUIRE(parser.HasMoreTokens() == false);
+        TypeSyntax* name = ParseQualifiedName(&parser, NameOptions::None);
+
+        Builder builder(&allocator);
+        QualifiedNameSyntaxBuilder * b = builder.QualifiedNameSyntax()
+            ->Left(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("something")))
+            ->DotToken(builder.SyntaxToken(SyntaxKind::DotToken))
+            ->Right(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("somethingelse")));
 
         NodePrinter p(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
-
         p.PrintNode(name);
-        printf("%.*s", p.buffer.size, p.buffer.array);
+        p.Dump();
+
+        QualifiedNameSyntax * m = (QualifiedNameSyntax*)b->Build();
+        bool equal = NodesEqual(name, m , NodeEqualityOptions::Default);
+        REQUIRE(equal == true);
+
     }
 
 }
@@ -90,8 +103,7 @@ TEST_CASE("Scan Type Arguments", "[tokenizer]") {
         Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
         Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
         REQUIRE(ScanTypeArgumentList(&parser, NameOptions::None) == ScanTypeArgumentListKind::DefiniteTypeArgumentList);
-    }
-    SECTION("Definitely not arg list") {
+    }SECTION("Definitely not arg list") {
         TextWindow textWindow = MakeTextWindow("<12, thing, string>");
         Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
         Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
@@ -153,7 +165,7 @@ TEST_CASE("Tokenize", "[tokenizer]") {
 }
 
 TEST_CASE("Scan numeric literals", "[scanner]") {
-    Alchemy::TempAllocator * allocator = Alchemy::GetThreadLocalAllocator();
+    Alchemy::TempAllocator* allocator = Alchemy::GetThreadLocalAllocator();
     Alchemy::TempAllocator::ScopedMarker marker(allocator);
     Diagnostics diagnostics(allocator);
     TokenInfo info;

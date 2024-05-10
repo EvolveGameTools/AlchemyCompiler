@@ -24,11 +24,15 @@ list(APPEND Sources
         Src/Panic.cpp
         Src/Parsing2/TextWindow.cpp
         Src/Parsing2/Scanning.cpp
-        Src/Parsing2/MatchKeyword.generated.cpp
         Src/Parsing2/Diagnostics.cpp
         Src/Parsing2/Parser.cpp
         Src/Parsing2/Parsing.cpp
         Src/Parsing2/SyntaxKind.cpp
+
+        Src/Parsing2/MatchKeyword.generated.cpp
+        Src/Parsing2/GetFirstToken.generated.cpp
+        Src/Parsing2/NodePrinter.generated.cpp
+        Src/Parsing2/NodeEquality.generated.cpp
 
 )
 
@@ -96,5 +100,7 @@ add_executable(tests
     Tests/Test.cpp
     ${Sources}
 )
+
+target_compile_definitions(tests PRIVATE ALCHEMY_DEBUG=1)
 
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
