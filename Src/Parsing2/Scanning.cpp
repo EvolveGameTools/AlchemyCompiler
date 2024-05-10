@@ -130,17 +130,17 @@ namespace Alchemy::Compilation {
     }
 
 
-    bool TryParseHexUInt64(FixedPodList<char>* text, uint64* value) {
+    bool TryParseHexUInt64(char * src, int32 length, uint64* value) {
         *value = 0;
         // can't fit into the value, overflow
-        if (text->size > 16) {
+        if (length > 16) {
             *value = 0;
             return false;
         }
 
         char buffer[17];
-        memcpy(buffer, text->array, text->size);
-        buffer[text->size] = '\0';
+        memcpy(buffer, src, length);
+        buffer[length] = '\0';
 
         // we've already lexed valid hex
         char* end;
@@ -150,9 +150,9 @@ namespace Alchemy::Compilation {
         return true;
     }
 
-    bool TryParseBinaryUInt64(FixedPodList<char>* text, uint64* value) {
+    bool TryParseBinaryUInt64(char * src, int32 length, uint64* value) {
         *value = 0;
-        for (int32 i = 0; i < text->size; i++) {
+        for (int32 i = 0; i < length; i++) {
             // if uppermost bit is set, then the next bitshift will overflow
             if ((*value & 0x8000000000000000) != 0) {
                 *value = 0;
@@ -160,16 +160,17 @@ namespace Alchemy::Compilation {
             }
             // We shouldn't ever get a string that's nonbinary (see ScanNumericLiteral),
             // so don't explicitly check for it (there's a debug assert in SyntaxFacts)
-            uint64 bit = text->Get(i) == '1' ? 1 : 0;
+            uint64 bit = src[i] == '1' ? 1 : 0;
             *value = (*value << 1ull) | bit;
         }
 
         return true;
     }
 
-    bool TryGetValueUInt64(FixedPodList<char>* pList, uint64* value) {
+
+    bool TryGetValueUInt64(char* src, int32 length, uint64* value) {
         char buffer[128];
-        BufferNumber(pList->array, pList->size, buffer, 128);
+        BufferNumber(src, length, buffer, 128);
         char* end;
         errno = 0;
         *value = strtoull(buffer, &end, 10);
@@ -178,6 +179,73 @@ namespace Alchemy::Compilation {
             return false;
         }
         return true;
+    }
+
+    int64 GetInt64Value(char* str, int32 length) {
+        uint64 retn = 0;
+        TryGetValueUInt64(str, length, &retn);
+        return (int64) retn;
+    }
+
+    uint32 GetUInt32Value(char* str, int32 length) {
+        uint64 retn = 0;
+        TryGetValueUInt64(str, length, &retn);
+        return (uint32) retn;
+    }
+
+    uint64 GetBinaryValue(char* str, int32 length) {
+        uint64 value = 0;
+        char buffer[65];
+        if(str[0] == '0' && str[1] == 'b') {
+            str += 2;
+            length -=2;
+        }
+
+        int32 cnt = 0;
+        for(int32 i = 0; i < length; i++) {
+            if(str[i] == '_') continue;
+            if(str[i] != '1' && str[i] != '0') {
+                break;
+            }
+            buffer[cnt++] = str[i];
+        }
+        buffer[cnt] = '\0';
+        TryParseBinaryUInt64(str, length, &value);
+        return value;
+    }
+
+    uint64 GetHexValue(char* str, int32 length) {
+        uint64 value = 0;
+        if(str[0] == '0' && str[1] == 'x') {
+            str += 2;
+            length -= 2;
+        }
+
+        char buffer[17];
+        int32 cnt = 0;
+
+        for(int32 i = 0; i < length; i++) {
+            if(str[i] == '_') continue;
+            if(!SyntaxFacts::IsHexDigit(str[i])){
+                break;
+            }
+            buffer[cnt++] = str[i];
+        }
+        buffer[cnt] = '\0';
+        TryParseHexUInt64(buffer, cnt, &value);
+        return value;
+    }
+
+    int32 GetInt32Value(char* str, int32 length) {
+        uint64 retn = 0;
+        TryGetValueUInt64(str, length, &retn);
+        return (int32) retn;
+    }
+
+    uint64 GetUInt64Value(char* str, int32 length) {
+        uint64 retn = 0;
+        TryGetValueUInt64(str, length, &retn);
+        return retn;
     }
 
     bool TryGetDoubleValue(FixedPodList<char>* pList, double* pValue, ErrorCode* errorCode) {
@@ -249,7 +317,23 @@ namespace Alchemy::Compilation {
 
     }
 
-    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, TokenInfo* info) {
+    float GetFloatValue(char* str, int32 length) {
+        char buffer[128];
+        BufferNumber(str, length, buffer, 128);
+        char* start = buffer;
+        char* end = nullptr;
+        float value = strtof(start, &end);
+
+        if (start != end && !isnan(value) && !isinf(value)) {
+            return value;
+        }
+
+        return 0;
+
+    }
+
+    // todo -- maybe move value parsing to the parser, just figure out the type here and don't report errors
+    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info) {
         char* start = textWindow->ptr;
         char c;
         bool isHex = false;
@@ -344,23 +428,23 @@ namespace Alchemy::Compilation {
             if (hasExponent || hasDecimal) {
                 if (c == 'f' || c == 'F') {
                     textWindow->Advance();
-                    info->valueKind = LiteralType::Float;
+                    info->contextualKind = SyntaxKind::FloatLiteral;
                 }
                 else if (c == 'D' || c == 'd') {
                     textWindow->Advance();
-                    info->valueKind = LiteralType::Double;
+                    info->contextualKind = SyntaxKind::DoubleLiteral;
                 }
                 else {
-                    info->valueKind = LiteralType::Double;
+                    info->contextualKind = SyntaxKind::DoubleLiteral;
                 }
             }
             else if (c == 'f' || c == 'F') {
                 textWindow->Advance();
-                info->valueKind = LiteralType::Float;
+                info->contextualKind = SyntaxKind::FloatLiteral;
             }
             else if (c == 'D' || c == 'd') {
                 textWindow->Advance();
-                info->valueKind = LiteralType::Double;
+                info->contextualKind = SyntaxKind::DoubleLiteral;
             }
             else if (c == 'L' || c == 'l') {
                 textWindow->Advance();
@@ -385,20 +469,23 @@ namespace Alchemy::Compilation {
         }
 
         info->kind = SyntaxKind::NumericLiteralToken;
-        info->text = FixedCharSpan(start, (int32) (textWindow->ptr - start));
+        info->text = start;
+        info->textSize = (int32) ((textWindow->ptr - start));
         uint64 val;
 
-        switch (info->valueKind) {
-            case LiteralType::Float: {
+        switch (info->contextualKind) {
+            case SyntaxKind::FloatLiteral: {
                 ErrorCode errorCode;
-                if (!TryGetFloatValue(&buffer, &info->literalValue.floatValue, &errorCode)) {
+                float floatValue = 0;
+                if (!TryGetFloatValue(&buffer, &floatValue, &errorCode)) {
                     diagnostics->AddError(Diagnostic(errorCode, start, textWindow->ptr));
                 }
                 break;
             }
-            case LiteralType::Double: {
+            case SyntaxKind::DoubleLiteral: {
                 ErrorCode errorCode;
-                if (!TryGetDoubleValue(&buffer, &info->literalValue.doubleValue, &errorCode)) {
+                double doubleValue = 0;
+                if (!TryGetDoubleValue(&buffer, &doubleValue, &errorCode)) {
                     diagnostics->AddError(Diagnostic(errorCode, start, textWindow->ptr));
                 }
                 break;
@@ -412,19 +499,19 @@ namespace Alchemy::Compilation {
                 }
                 else {
                     if (isBinary) {
-                        if (!TryParseBinaryUInt64(&buffer, &val)) {
+                        if (!TryParseBinaryUInt64(buffer.array, buffer.size, &val)) {
                             // overflow is the only error possible
                             diagnostics->AddError(Diagnostic(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
                         }
                     }
                     else if (isHex) {
-                        if (!TryParseHexUInt64(&buffer, &val)) {
+                        if (!TryParseHexUInt64(buffer.array, buffer.size, &val)) {
                             // overflow is the only error possible
                             diagnostics->AddError(Diagnostic(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
                         }
                     }
                     else {
-                        if (!TryGetValueUInt64(&buffer, &val)) {
+                        if (!TryGetValueUInt64(buffer.array, buffer.size, &val)) {
                             diagnostics->AddError(Diagnostic(ErrorCode::ERR_IntOverflow, start, textWindow->ptr));
                         }
                     }
@@ -434,51 +521,51 @@ namespace Alchemy::Compilation {
 
                 if (!hasUSuffix && !hasLSuffix) {
                     if (val <= std::numeric_limits<int32>::max()) {
-                        info->valueKind = LiteralType::Int32;
-                        info->literalValue.int32Value = (int32) val;
+                        info->contextualKind = SyntaxKind::Int32Literal;
+//                        info->literalValue.int32Value = (int32) val;
                     }
                     else if (val <= std::numeric_limits<uint32>::max()) {
-                        info->valueKind = LiteralType::UInt32;
-                        info->literalValue.uint32Value = (uint32) val;
+                        info->contextualKind = SyntaxKind::UInt32Literal;
+//                        info->literalValue.uint32Value = (uint32) val;
                     }
                     else if (val <= std::numeric_limits<int64>::max()) {
-                        info->valueKind = LiteralType::Int64;
-                        info->literalValue.int64Value = (int64) val;
+                        info->contextualKind = SyntaxKind::Int64Literal;
+//                        info->literalValue.int64Value = (int64) val;
                     }
                     else {
-                        info->valueKind = LiteralType::UInt64;
-                        info->literalValue.uint64Value = val;
+                        info->contextualKind = SyntaxKind::UInt64Literal;
+//                        info->literalValue.uint64Value = val;
                     }
                 }
                 else if (hasUSuffix && !hasLSuffix) {
                     // * If the literal is suffixed by U or u, it has the first of these types in which its value can be represented: uint, ulong.
                     if (val <= std::numeric_limits<uint32>::max()) {
-                        info->valueKind = LiteralType::UInt32;
-                        info->literalValue.uint32Value = (uint32) val;
+                        info->contextualKind = SyntaxKind::UInt32Literal;
+//                        info->literalValue.uint32Value = (uint32) val;
                     }
                     else {
-                        info->valueKind = LiteralType::UInt64;
-                        info->literalValue.uint64Value = val;
+                        info->contextualKind = SyntaxKind::UInt64Literal;
+//                        info->literalValue.uint64Value = val;
                     }
                 }
 
                     // * If the literal is suffixed by L or l, it has the first of these types in which its value can be represented: long, ulong.
                 else if (!hasUSuffix & hasLSuffix) {
                     if (val <= std::numeric_limits<int64>::max()) {
-                        info->valueKind = LiteralType::Int64;
-                        info->literalValue.int64Value = (int64) val;
+                        info->contextualKind = SyntaxKind::Int64Literal;
+//                        info->literalValue.int64Value = (int64) val;
                     }
                     else {
-                        info->valueKind = LiteralType::UInt64;
-                        info->literalValue.uint64Value = val;
+                        info->contextualKind = SyntaxKind::UInt64Literal;
+//                        info->literalValue.uint64Value = val;
                     }
                 }
 
                     // * If the literal is suffixed by UL, Ul, uL, ul, LU, Lu, lU, or lu, it is of type ulong.
                 else {
                     assert(hasUSuffix && hasLSuffix);
-                    info->valueKind = LiteralType::UInt64;
-                    info->literalValue.uint64Value = val;
+                    info->contextualKind = SyntaxKind::UInt64Literal;
+//                    info->literalValue.uint64Value = val;
                 }
                 break;
             }
@@ -488,12 +575,13 @@ namespace Alchemy::Compilation {
 
     }
 
-    bool ScanIdentifierOrKeyword(TextWindow* textWindow, TokenInfo* info) {
+    bool ScanIdentifierOrKeyword(TextWindow* textWindow, SyntaxToken* info) {
 
         FixedCharSpan identifier;
 
         if (ScanIdentifier_FastPath(textWindow, &identifier)) {
-            info->text = identifier;
+            info->text = identifier.ptr;
+            info->textSize = identifier.size;
             // check if it's a keyword (no need to try if fast path didn't work)
             SyntaxKind keyword;
             if (TryMatchKeyword_Generated(identifier.ptr, identifier.size, &keyword)) {
@@ -521,7 +609,8 @@ namespace Alchemy::Compilation {
 
         }
         else if (ScanIdentifier_SlowPath(textWindow, &identifier)) {
-            info->text = identifier;
+            info->text = identifier.ptr;
+            info->textSize = identifier.size;
             info->kind = SyntaxKind::IdentifierToken;
             info->contextualKind = SyntaxKind::IdentifierToken;
             return true;

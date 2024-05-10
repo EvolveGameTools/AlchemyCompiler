@@ -14,15 +14,13 @@ namespace Alchemy::Compilation {
         bool printComments;
         bool printWhitespace;
 
-        CheckedArray<SyntaxToken> hotTokens;
-        CheckedArray<SyntaxTokenCold> coldTokens;
+        CheckedArray<SyntaxToken> tokens;
         PodList<char> buffer;
 
         int32 indent;
 
-        NodePrinter(CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens)
-            : hotTokens(hotTokens)
-            , coldTokens(coldTokens)
+        NodePrinter(CheckedArray<SyntaxToken> tokens)
+            : tokens(tokens)
             , indent(0)
             , printComments(true)
             , printWhitespace(true)
@@ -97,42 +95,27 @@ namespace Alchemy::Compilation {
         }
 
         void PrintToken(SyntaxToken token) {
+
             if (!token.IsValid()) {
                 return;
             }
 
-            if (!token.IsMissing()) {
+            PrintInline(SyntaxKindToString(token.kind));
 
-                SyntaxTokenCold cold = coldTokens[token.id];
-
-//                for (int32 i = 0; i < cold.triviaCount; i++) {
-//                    Trivia trivia = cold.triviaList[i];
-//                    if (trivia.isLeading) {
-//                        PrintTrivia(trivia);
-//                    }
-//                }
-
-//                PrintIndent();
-                PrintInline(SyntaxKindToString(token.kind));
-                if (token.contextualKind != SyntaxKind::None) {
-                    PrintInline(" (");
-                    PrintInline(SyntaxKindToString(token.contextualKind));
-                    PrintInline(")");
-                }
-
-                PrintInline(" -> \"");
-                PrintInline(cold.text, cold.textSize);
-                PrintInline("\"");
-                PrintLine();
-
-                for (int32 i = 0; i < cold.triviaCount; i++) {
-                    Trivia trivia = cold.triviaList[i];
-                    if (trivia.isTrailing) {
-                        PrintTrivia(trivia);
-                    }
-                }
-
+            if(token.IsMissing()) {
+                PrintInline(" <missing> ");
             }
+
+            if (token.contextualKind != SyntaxKind::None) {
+                PrintInline(" (");
+                PrintInline(SyntaxKindToString(token.contextualKind));
+                PrintInline(")");
+            }
+
+            PrintInline(" -> \"");
+            PrintInline(token.text, token.textSize);
+            PrintInline("\"");
+            PrintLine();
 
         }
 

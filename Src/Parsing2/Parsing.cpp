@@ -540,7 +540,7 @@ namespace Alchemy::Compilation {
         //        }
 
         struct Parser cpy = parser;
-        SyntaxToken k = {0};
+        SyntaxToken k;
         ScanTypeFlags st = ScanType(&cpy, &k, false);
         if (st == ScanTypeFlags::NotType || parser.currentToken.kind != SyntaxKind::OpenParenToken) {
             // reset
@@ -1001,9 +1001,7 @@ namespace Alchemy::Compilation {
         }
         else {
             SyntaxToken token = parser->currentToken;
-            assert(token.id >= 0);
-            SyntaxTokenCold cold = parser->GetColdToken(token);
-            Diagnostic diagnostic(errorCode, cold.text, cold.text + cold.textSize);
+            Diagnostic diagnostic(errorCode, token.text, token.text + token.textSize);
             parser->AddError(token, diagnostic);
             return parser->CreateMissingToken(SyntaxKind::IdentifierToken);
         }
@@ -1081,10 +1079,10 @@ namespace Alchemy::Compilation {
             , tempAllocatorOffset(parser->tempAllocator->offset)
             , diagnosticsCopy(*parser->diagnostics)
             , resetOnDispose(resetOnDispose) {
-            flags = parser->tempAllocator->AllocateUncleared<SyntaxTokenFlags>(parser->hotTokens.size - parser->ptr);
+            flags = parser->tempAllocator->AllocateUncleared<SyntaxTokenFlags>(parser->tokens.size - parser->ptr);
             int32 flagIdx = 0;
-            for (int32 i = parser->ptr; i < parser->hotTokens.size; i++) {
-                flags[flagIdx++] = parser->hotTokens.array[i].flags;
+            for (int32 i = parser->ptr; i < parser->tokens.size; i++) {
+                flags[flagIdx++] = parser->tokens.array[i].GetFlags();
             }
         }
 
@@ -1097,8 +1095,8 @@ namespace Alchemy::Compilation {
         void Reset() {
 
             int32 flagIdx = 0;
-            for (int32 i = copyParser.ptr; i < copyParser.hotTokens.size; i++) {
-                originalParser->hotTokens.array[i].flags = flags[flagIdx++];
+            for (int32 i = copyParser.ptr; i < copyParser.tokens.size; i++) {
+                originalParser->tokens.array[i].SetFlags(flags[flagIdx++]);
             }
 
             *originalParser = copyParser;
@@ -1429,7 +1427,7 @@ namespace Alchemy::Compilation {
 
         IdentifierNameSyntax* missingName = CreateMissingIdentifierName(parser);
         SyntaxToken leftDot = MakeMissingToken(SyntaxKind::DotToken, parser->ptr);
-        parser->AddError(*separator, Diagnostic(ErrorCode::ERR_IdentifierExpected, parser->GetTokenText(*separator)));
+        parser->AddError(*separator, Diagnostic(ErrorCode::ERR_IdentifierExpected, separator->GetText()));
         *separator = MakeMissingToken(SyntaxKind::DotToken, parser->ptr);
         return parser->CreateNode<QualifiedNameSyntax>(left, leftDot, missingName);
     }
@@ -1500,8 +1498,8 @@ namespace Alchemy::Compilation {
         assert(SyntaxFacts::IsToken(kind));
         SyntaxToken retn;
         retn.kind = kind;
-        retn.id = id;
-        retn.flags |= SyntaxTokenFlags::Missing;
+        retn.SetId(id);
+        retn.SetFlags(SyntaxTokenFlags::Missing);
         return retn;
     }
 
@@ -1544,7 +1542,7 @@ namespace Alchemy::Compilation {
             list.AddSeparator(MakeMissingToken(SyntaxKind::CommaToken, parser->ptr));
             list.Add(parser->CreateNode<TupleElementSyntax>(missing, SyntaxToken()));
 
-            FixedCharSpan span = parser->GetTokenText(parser->currentToken);
+            FixedCharSpan span = parser->currentToken.GetText();
             parser->diagnostics->AddError(Diagnostic(ErrorCode::ERR_TupleTooFewElements, span));
         }
 
@@ -1574,7 +1572,7 @@ namespace Alchemy::Compilation {
         // we don't advance in the error case, is that correct?
         IdentifierNameSyntax* retn = CreateMissingIdentifierName(parser);
         ErrorCode errorCode = mode == ParseTypeMode::NewExpression ? ErrorCode::ERR_BadNewExpr : ErrorCode::ERR_TypeExpected;
-        FixedCharSpan span = parser->GetTokenText(parser->currentToken);
+        FixedCharSpan span = parser->currentToken.GetText();
         parser->AddError(parser->currentToken, Diagnostic(errorCode, span.ptr, span.ptr + span.size));
         return retn;
 
@@ -1669,7 +1667,7 @@ namespace Alchemy::Compilation {
         }
 
         for (int32 i = startToken; i < parser->ptr; i++) {
-            parser->hotTokens[i].flags |= SyntaxTokenFlags::Skipped;
+            parser->tokens[i].AddFlag(SyntaxTokenFlags::Skipped);
         }
 
         return action;
@@ -1699,9 +1697,8 @@ namespace Alchemy::Compilation {
     SyntaxToken MakeOmittedToken(SyntaxKind kind, int32 position) {
         SyntaxToken omittedToken;
         omittedToken.kind = kind;
-        omittedToken.contextualKind = SyntaxKind::None;
-        omittedToken.id = position;
-        omittedToken.flags |= SyntaxTokenFlags::Omitted;
+        omittedToken.SetId(position);
+        omittedToken.SetFlags(SyntaxTokenFlags::Omitted);
         return omittedToken;
     }
 
@@ -1747,7 +1744,7 @@ namespace Alchemy::Compilation {
             for (int32 i = 0; i < list.itemCount; i++) {
                 if (list.GetItem(i)->GetKind() == SyntaxKind::OmittedArraySizeExpression) {
                     SyntaxToken separator = list.GetSeparator(i);
-                    FixedCharSpan text = parser->GetTokenText(separator); // we need a text range for the error. try to use the next separator. todo -- probably fails on the end
+                    FixedCharSpan text = separator.GetText(); // we need a text range for the error. try to use the next separator. todo -- probably fails on the end
                     parser->AddError(separator, Diagnostic(ErrorCode::ERR_ValueExpected, text.ptr, text.ptr + text.size));
                     list.items[i] = parser->CreateNode<IdentifierNameSyntax>(parser->CreateMissingToken(SyntaxKind::IdentifierToken));
                 }

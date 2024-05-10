@@ -59,8 +59,9 @@ namespace Alchemy::Compilation {
             struct SyntaxToken retn;
             retn.kind = SyntaxKind::IdentifierToken;
             retn.contextualKind = SyntaxKind::IdentifierToken;
-            retn.flags = flags;
-
+            retn.SetFlags(flags);
+            retn.text = (char*)identifier;
+            retn.textSize = (uint16) strlen(identifier);
             SyntaxKind keyword;
 
             if(TryMatchKeyword_Generated((char*)identifier, (int32)strlen(identifier), & keyword)) {
@@ -78,22 +79,17 @@ namespace Alchemy::Compilation {
 
             }
 
-            #if ALCHEMY_DEBUG != 0
-            retn.text = FixedCharSpan(identifier);
-            #endif
             return retn;
         }
 
         struct SyntaxToken SyntaxToken(SyntaxKind kind, SyntaxTokenFlags flags = SyntaxTokenFlags::None) {
             struct SyntaxToken retn;
             retn.kind = kind;
-            retn.flags = flags;
+            retn.SetFlags(flags);
 
             assert(kind != SyntaxKind::IdentifierToken && "use MakeIdentifier instead");
-
-            #if ALCHEMY_DEBUG != 0
-            retn.text = FixedCharSpan(SyntaxFacts::GetText(kind));
-            #endif
+            retn.text = (char*)SyntaxFacts::GetText(kind);
+            retn.textSize = (uint16) strlen(retn.text);
             return retn;
         }
 
@@ -101,7 +97,12 @@ namespace Alchemy::Compilation {
             struct SyntaxToken retn;
             retn.kind = kind;
             retn.contextualKind = contextualKind;
-            retn.flags = flags;
+            assert(kind != SyntaxKind::IdentifierToken && "use MakeIdentifier instead");
+            retn.SetFlags(flags);
+
+            retn.text = (char*)SyntaxFacts::GetText(contextualKind);
+            retn.textSize = (uint16) strlen(retn.text);
+
             return retn;
         }
 

@@ -87,18 +87,37 @@ namespace Alchemy::Compilation {
 
     struct SyntaxToken {
 
-        int32 id {};
         SyntaxKind kind {};
         SyntaxKind contextualKind {};
-        SyntaxTokenFlags flags {};
-        LiteralType literalType {};
+        uint16 textSize {};
+        uint32 id_flags {};
+        char * text {};
 
-#if ALCHEMY_DEBUG == 1
-        FixedCharSpan text;
-#endif
+        inline FixedCharSpan GetText() {
+            return FixedCharSpan(text, textSize);
+        }
+
+        inline int32 GetId() const {
+            return static_cast<int32>((id_flags >> 8) & 0xffffff);
+        }
+
+        inline SyntaxTokenFlags GetFlags() const {
+            return static_cast<SyntaxTokenFlags>(id_flags & 0xff);
+        }
+
+        // Setter functions to update data
+        inline void SetId(int32 id) {
+            id_flags &= ~(0xFFFFFF << 8); // Clear the ID bits
+            id_flags |= (static_cast<uint32>(id) << 8); // Set new ID
+        }
+
+        inline void SetFlags(SyntaxTokenFlags flags) {
+            id_flags &= ~(0xFF); // Clear the flags bits
+            id_flags |= (uint8)flags; // Set new flags
+        }
 
         inline bool ContainsDiagnostics() {
-            return (flags & SyntaxTokenFlags::Error) != 0;
+            return (GetFlags() & SyntaxTokenFlags::Error) != 0;
         }
 
         inline bool IsValid() {
@@ -106,18 +125,23 @@ namespace Alchemy::Compilation {
         }
 
         inline bool IsMissing() {
-            return (flags & SyntaxTokenFlags::Missing) != 0;
+            return (GetFlags() & SyntaxTokenFlags::Missing) != 0;
+        }
+
+        inline void AddFlag(SyntaxTokenFlags flags) {
+            SetFlags(GetFlags() | flags);
         }
 
     };
 
+    static_assert(sizeof(SyntaxToken) == 16);
     enum class TriviaType : uint8 {
         Whitespace,
         SingleLineComment,
         MultiLineComment,
         NewLine,
         BadToken,
-        LiteralValue
+        Directive
     };
 
     struct Trivia {
@@ -130,24 +154,6 @@ namespace Alchemy::Compilation {
         bool isLeading {};
         bool isTrailing {};
 
-    };
-
-    struct TokenInfo {
-
-        FixedCharSpan text {};
-        SyntaxKind kind {};
-        SyntaxKind contextualKind {};
-        LiteralType valueKind {};
-        LiteralValue literalValue {};
-
-    };
-
-    struct SyntaxTokenCold {
-        char* text {};
-        Trivia* triviaList {};
-        uint16 triviaCount {};
-        uint16 triviaCapacity {}; // don't actually need this, we don't resize trivia
-        uint32 textSize {};
     };
 
     bool IsNewline(char32 c);
@@ -170,10 +176,18 @@ namespace Alchemy::Compilation {
 
     bool TryMatchKeyword_Generated(char* buffer, int32 length, SyntaxKind* keywordType);
 
-    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, TokenInfo* info);
+    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info);
 
-    void ScanSyntaxToken(TextWindow* textWindow, TokenInfo* info, Diagnostics* diagnostics, int32* badTokenCount);
+    void ScanSyntaxToken(TextWindow* textWindow, SyntaxToken* info, Diagnostics* diagnostics, int32* badTokenCount);
 
-    bool ScanIdentifierOrKeyword(TextWindow* textWindow, TokenInfo* info);
+    bool ScanIdentifierOrKeyword(TextWindow* textWindow, SyntaxToken* info);
+
+    float GetFloatValue(char * str, int32 length);
+    uint64 GetUInt64Value(char * str, int32 length);
+    int64 GetInt64Value(char * str, int32 length);
+    int32 GetInt32Value(char * str, int32 length);
+    uint32 GetUInt32Value(char * str, int32 length);
+    uint64 GetHexValue(char * str, int32 length);
+    uint64 GetBinaryValue(char * str, int32 length);
 
 }

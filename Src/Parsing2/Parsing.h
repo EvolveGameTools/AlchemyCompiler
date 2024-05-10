@@ -49,7 +49,7 @@ namespace Alchemy::Compilation {
 
     bool IsPartialType(Parser* parser);
 
-    TypeSyntax* ParseType(Parser* parser, ParseTypeMode mode);
+    TypeSyntax* ParseType(Parser* parser, ParseTypeMode mode = ParseTypeMode::Normal);
 
     IdentifierNameSyntax* CreateMissingIdentifierName(Parser* parser);
     TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options);

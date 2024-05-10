@@ -8,6 +8,18 @@ namespace Alchemy::Compilation {
         None,
         ListKind, // for holding lists, not a real usable type in the language
 
+        // --- Literal Types ---
+        __FirstLiteral__,
+        BoolLiteral,
+        CharLiteral,
+        FloatLiteral,
+        DoubleLiteral,
+        Int32Literal,
+        Int64Literal,
+        UInt32Literal,
+        UInt64Literal,
+        __LastLiteral__,
+
         // --- Reserved Keyword
         __FirstKeyword__,
         FixedKeyword,
@@ -235,6 +247,12 @@ namespace Alchemy::Compilation {
         ArrayType,
         PredefinedType,
 
+        Trivia,
+        MultiLineComment,
+        SingleLineComment,
+        Whitespace,
+
+        NewLine,
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

@@ -16,8 +16,8 @@ namespace Alchemy::Compilation {
             return false;
         }
 
-        SyntaxTokenFlags a1 = a.flags;
-        SyntaxTokenFlags b1 = b.flags;
+        SyntaxTokenFlags a1 = a.GetFlags();
+        SyntaxTokenFlags b1 = b.GetFlags();
 
         if ((options & NodeEqualityOptions::IgnoreTrivia) != 0) {
             a1 = a1 & ~(SyntaxTokenFlags::LeadingTrivia | SyntaxTokenFlags::TrailingTrivia);
@@ -28,17 +28,10 @@ namespace Alchemy::Compilation {
             return false;
         }
 
-        if (a.literalType != b.literalType) {
-            return false;
-        }
+        FixedCharSpan aText(a.text, a.textSize);
+        FixedCharSpan bText(b.text, b.textSize);
 
-        #if ALCHEMY_DEBUG != 0
-        if (a.text != b.text) {
-            return false;
-        }
-        #endif
-
-        return true;
+        return aText == bText;
     }
 
     inline bool SeparatedSyntaxListEqual(SeparatedSyntaxListUntyped* a, SeparatedSyntaxListUntyped* b, NodeEqualityOptions options) {

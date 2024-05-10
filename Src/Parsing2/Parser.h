@@ -13,21 +13,18 @@ namespace Alchemy::Compilation {
 
     struct Parser  {
 
-        CheckedArray<SyntaxToken> hotTokens;
-        CheckedArray<SyntaxTokenCold> coldTokens;
         SyntaxToken currentToken;
         int32 ptr;
         TerminatorState _termState;
         LinearAllocator* allocator;
         TempAllocator * tempAllocator;
         Diagnostics* diagnostics;
+        CheckedArray<SyntaxToken> tokens;
 
-        Parser(LinearAllocator * allocator, TempAllocator * tempAllocator, Diagnostics * diagnostics, CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens);
+        Parser(LinearAllocator * allocator, TempAllocator * tempAllocator, Diagnostics * diagnostics, CheckedArray<SyntaxToken> tokens);
 
         SyntaxToken EatToken(SyntaxKind kind);
         SyntaxToken EatToken();
-        SyntaxTokenCold GetColdToken(SyntaxToken token);
-        SyntaxTokenCold PeekTokenCold(int32 steps);
         SyntaxToken PeekToken(int32 steps);
 
         SyntaxToken CreateMissingToken(SyntaxKind expected);
@@ -35,16 +32,11 @@ namespace Alchemy::Compilation {
         Diagnostic MakeDiagnostic(ErrorCode code, SyntaxToken token);
         static ErrorCode GetExpectedTokenErrorCode(SyntaxKind expected, SyntaxKind actual);
 
-        FixedCharSpan GetTokenText(SyntaxToken token);
-        FixedCharSpan GetTokenTextWithTrivia(SyntaxToken token);
-
         SyntaxToken EatTokenWithPrejudice(SyntaxKind kind);
 
         void AddError(SyntaxToken token, Diagnostic diagnostic);
 
         void SkipToken();
-
-        SyntaxToken GetLastNonSkipped();
 
         bool HasMoreTokens();
 
@@ -54,10 +46,8 @@ namespace Alchemy::Compilation {
             new(retn) T(std::forward<Args>(args)...);
             SyntaxBase * pBase = (SyntaxBase*)retn;
             SyntaxToken startToken = GetFirstToken(pBase);
-            pBase->startTokenId = startToken.id;
-
+            pBase->startTokenId = startToken.GetId();
             assert(startToken.IsValid() && !startToken.IsMissing());
-
             pBase->endTokenId = ptr;
             return retn;
         }

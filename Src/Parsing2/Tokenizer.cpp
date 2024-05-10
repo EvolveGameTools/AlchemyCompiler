@@ -11,17 +11,17 @@
 
 namespace Alchemy::Compilation {
 
-    void AddTrivia(TriviaType type, FixedCharSpan span, bool isTrailing, PodList<Trivia>* triviaBuffer) {
-        Trivia trivia;
-        trivia.type = type;
-        trivia.length = span.size;
-        trivia.span = span.ptr;
-        trivia.isTrailing = isTrailing;
-        trivia.isLeading = !isTrailing;
-        triviaBuffer->Add(trivia);
+    void AddTrivia(SyntaxKind triviaType, FixedCharSpan span, bool isTrailing, PodList<SyntaxToken>* buffer) {
+        SyntaxToken token;
+        token.text = span.ptr;
+        token.textSize = span.size;
+        token.kind = SyntaxKind::Trivia; // maybe we don't need this to be a kind
+        token.contextualKind = triviaType;
+        token.SetFlags(isTrailing ? SyntaxTokenFlags::TrailingTrivia : SyntaxTokenFlags::LeadingTrivia);
+        buffer->Add(token);
     }
 
-    void LexMultiLineComment(TextWindow* textWindow, Diagnostics* diagnostics, bool isTrailing, PodList<Trivia>* triviaList) {
+    void LexMultiLineComment(TextWindow* textWindow, Diagnostics* diagnostics, bool isTrailing, PodList<SyntaxToken>* buffer) {
         bool isTerminated;
         FixedCharSpan span;
         ScanMultiLineComment(textWindow, &span, &isTerminated);
@@ -30,16 +30,16 @@ namespace Alchemy::Compilation {
             diagnostics->AddError(Diagnostic(ErrorCode::ERR_OpenEndedComment, span.ptr, textWindow->ptr));
         }
 
-        AddTrivia(TriviaType::MultiLineComment, span, isTrailing, triviaList);
+        AddTrivia(SyntaxKind::MultiLineComment, span, isTrailing, buffer);
     }
 
-    void LexSingleLineComment(TextWindow* textWindow, bool isTrailing, PodList<Trivia>* triviaList) {
+    void LexSingleLineComment(TextWindow* textWindow, bool isTrailing, PodList<SyntaxToken>* buffer) {
         FixedCharSpan span;
         ScanSingleLineComment(textWindow, &span);
-        AddTrivia(TriviaType::SingleLineComment, span, isTrailing, triviaList);
+        AddTrivia(SyntaxKind::SingleLineComment, span, isTrailing, buffer);
     }
 
-    void LexDirectiveAndExcludedTrivia(bool afterFirstToken, bool afterNonWhitespaceOnLine, PodList<Trivia>* triviaList) {
+    void LexDirectiveAndExcludedTrivia(bool afterFirstToken, bool afterNonWhitespaceOnLine, PodList<SyntaxToken>* buffer) {
         NOT_IMPLEMENTED("LexDirectiveAndExcludedTrivia");
     }
 
@@ -70,7 +70,7 @@ namespace Alchemy::Compilation {
         return false;
     }
 
-    void LexConflictMarkerTrivia(TextWindow* textWindow, PodList<Trivia>* triviaList) {
+    void LexConflictMarkerTrivia(TextWindow* textWindow, PodList<SyntaxToken>* buffer) {
         NOT_IMPLEMENTED("LexConflictMarkerTrivia");
     }
 
@@ -99,7 +99,7 @@ namespace Alchemy::Compilation {
         return;
     }
 
-    void LexSyntaxTrivia(TextWindow* textWindow, bool afterFirstToken, bool isTrailing, Diagnostics* diagnostics, PodList<Trivia>* triviaList) {
+    void LexSyntaxTrivia(TextWindow* textWindow, bool afterFirstToken, bool isTrailing, Diagnostics* diagnostics, PodList<SyntaxToken>* buffer) {
         bool onlyWhitespaceOnLine = !isTrailing;
 
         while (true) {
@@ -108,7 +108,7 @@ namespace Alchemy::Compilation {
             if (c == ' ') {
                 FixedCharSpan span;
                 ScanWhitespace(textWindow, &span);
-                AddTrivia(TriviaType::Whitespace, span, isTrailing, triviaList);
+                AddTrivia(SyntaxKind::Whitespace, span, isTrailing, buffer);
                 continue;
             }
             else if (c > 127) {
@@ -135,19 +135,19 @@ namespace Alchemy::Compilation {
                 case '\f': {     // Form-feed
                     FixedCharSpan span;
                     ScanWhitespace(textWindow, &span);
-                    AddTrivia(TriviaType::Whitespace, span, isTrailing, triviaList);
+                    AddTrivia(SyntaxKind::Whitespace, span, isTrailing, buffer);
                     break;
                 }
                 case '/': {
                     char c2 = textWindow->PeekAhead(1);
                     if (c2 == '/') {
                         // normal single line comment
-                        LexSingleLineComment(textWindow, isTrailing, triviaList);
+                        LexSingleLineComment(textWindow, isTrailing, buffer);
                         onlyWhitespaceOnLine = false;
                         break;
                     }
                     else if (c2 == '*') {
-                        LexMultiLineComment(textWindow, diagnostics, isTrailing, triviaList);
+                        LexMultiLineComment(textWindow, diagnostics, isTrailing, buffer);
                         onlyWhitespaceOnLine = false;
                         break;
                     }
@@ -156,7 +156,7 @@ namespace Alchemy::Compilation {
                 case '\n': {
                     FixedCharSpan line;
                     ScanEndOfLine(textWindow, &line);
-                    AddTrivia(TriviaType::NewLine, line, isTrailing, triviaList);
+                    AddTrivia(SyntaxKind::NewLine, line, isTrailing, buffer);
                     if (isTrailing) {
                         return;
                     }
@@ -164,7 +164,7 @@ namespace Alchemy::Compilation {
                     break;
                 }
                 case '#': {
-                    LexDirectiveAndExcludedTrivia(afterFirstToken, isTrailing || !onlyWhitespaceOnLine, triviaList);
+                    LexDirectiveAndExcludedTrivia(afterFirstToken, isTrailing || !onlyWhitespaceOnLine, buffer);
                     break;
                 }
                 case '|':
@@ -172,7 +172,7 @@ namespace Alchemy::Compilation {
                 case '<': {
                     if (!isTrailing) {
                         if (IsConflictMarkerTrivia(textWindow)) {
-                            LexConflictMarkerTrivia(textWindow, triviaList);
+                            LexConflictMarkerTrivia(textWindow, buffer);
                             break;
                         }
                     }
@@ -185,40 +185,38 @@ namespace Alchemy::Compilation {
 
     }
 
-    void ScanStringLiteral(TextWindow* pWindow, TokenInfo* pInfo, bool b) {
+    void ScanStringLiteral(TextWindow* pWindow, SyntaxToken* pInfo, bool b) {
 
     }
 
-    void PrintTokens(CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens, CheckedArray<LineColumn> lineCols) {
+    void PrintTokens(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
 
-        for(int32 i = 0; i < hotTokens.size; i++) {
+        for(int32 i = 0; i < tokens.size; i++) {
             //[line:column] kind, contextualKind -> "text"
 
-            SyntaxToken token = hotTokens[i];
-            SyntaxTokenCold cold = coldTokens[i];
+            SyntaxToken token = tokens[i];
             LineColumn lc = lineCols[i];
-            printf("[%d:%d] %s (%s) -> \"%.*s\" \n", lc.line, lc.column, SyntaxKindToString(token.kind), SyntaxKindToString(token.contextualKind), cold.textSize, cold.text);
+            printf("[%d:%d] %s (%s) -> \"%.*s\" \n", lc.line, lc.column, SyntaxKindToString(token.kind), SyntaxKindToString(token.contextualKind), token.textSize, token.text);
 
         }
 
     }
 
-    void ComputeTokenLineColumns(CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens, CheckedArray<LineColumn> lineCols) {
+    void ComputeTokenLineColumns(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
 
         // given a utf8 byte offset compute line/column for the token. tokens never span multiple lines (but trivia might)
 
-        char* last = coldTokens[0].text;
+        char* last = tokens[0].text;
         char* lastNewLineEnd = last;
 
         int32 lineNumber = 0;
-        for (int32 i = 0; i < hotTokens.size; i++) {
-            SyntaxTokenCold cold = coldTokens[i];
-
+        for (int32 i = 0; i < tokens.size; i++) {
+            SyntaxToken token = tokens[i];
             char* ptr = last;
-            while (ptr != cold.text) {
+            while (ptr != token.text) {
 
                 if(*ptr == '\r') {
-                    if(ptr + 1 != cold.text && ptr[1] == '\n') {
+                    if(ptr + 1 != token.text && ptr[1] == '\n') {
                         lineNumber++;
                         lastNewLineEnd = ptr + 2; // we want byte width to end of the last new line char
                         ptr += 2;
@@ -239,90 +237,43 @@ namespace Alchemy::Compilation {
                 ptr++;
             }
 
-            int32 col = (int32)(cold.text - lastNewLineEnd);
+            int32 col = (int32)(token.text - lastNewLineEnd);
 
             // 1 based
             lineCols[i].line = lineNumber + 1;
             lineCols[i].column = col + 1;
-            last = cold.text;
+            last = token.text;
 
         }
 
     }
 
-    void Tokenize(TextWindow * textWindow, LinearAllocator* allocator, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens, PodList<SyntaxTokenCold>* coldTokens, PodList<Trivia>* triviaBuffer) {
+    void Tokenize(TextWindow * textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens) {
 
         int32 badTokenCount = 0;
         while (textWindow->HasMoreContent()) {
 
-            int32 diagnosticCount = diagnostics->size;
+            LexSyntaxTrivia(textWindow, textWindow->ptr != textWindow->start, false, diagnostics, tokens);
 
-            triviaBuffer->size = 0;
-            LexSyntaxTrivia(textWindow, textWindow->ptr != textWindow->start, false, diagnostics, triviaBuffer);
-            int32 leadingTrivia = triviaBuffer->size;
+            SyntaxToken tokenInfo;
 
-            TokenInfo tokenInfo;
-
-            tokenInfo.text.ptr = textWindow->ptr;
+            tokenInfo.text = textWindow->ptr;
             ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
-            tokenInfo.text.size = (int32)(textWindow->ptr - tokenInfo.text.ptr);
+            tokenInfo.textSize = (int32)(textWindow->ptr - tokenInfo.text);
 
-            if (tokenInfo.valueKind != LiteralType::None) {
-                Trivia literal;
-                literal.type = TriviaType::LiteralValue;
-                literal.literalValue = tokenInfo.literalValue;
-                triviaBuffer->Add(literal);
-            }
+            tokens->Add(tokenInfo);
 
-            LexSyntaxTrivia(textWindow, true, true, diagnostics, triviaBuffer);
+            LexSyntaxTrivia(textWindow, true, true, diagnostics, tokens);
 
-            Trivia* trivia = allocator->AllocateUncleared<Trivia>(triviaBuffer->size);
-            memcpy(trivia, triviaBuffer->array, triviaBuffer->size * sizeof(Trivia));
+        }
 
-            SyntaxToken hotToken;
-            hotToken.id = tokens->size;
-            hotToken.kind = tokenInfo.kind;
-            hotToken.contextualKind = tokenInfo.contextualKind;
-            hotToken.literalType = tokenInfo.valueKind;
-            hotToken.flags = SyntaxTokenFlags::None;
-
-#if ALCHEMY_DEBUG != 0
-            hotToken.text = FixedCharSpan(tokenInfo.text.ptr, tokenInfo.text.size);
-#endif
-
-            if (leadingTrivia > 0) {
-                hotToken.flags |= SyntaxTokenFlags::LeadingTrivia;
-            }
-
-            if (triviaBuffer->size != leadingTrivia) {
-                hotToken.flags |= SyntaxTokenFlags::TrailingTrivia;
-            }
-
-            if (diagnostics->size != diagnosticCount) {
-                hotToken.flags |= SyntaxTokenFlags::Error;
-            }
-
-            SyntaxTokenCold coldToken;
-            coldToken.triviaList = trivia;
-            coldToken.triviaCount = triviaBuffer->size;
-            coldToken.triviaCapacity = triviaBuffer->size;
-            coldToken.text = tokenInfo.text.ptr;
-            coldToken.textSize = tokenInfo.text.size;
-
-            tokens->Add(hotToken);
-            coldTokens->Add(coldToken);
-
+        for(int32 i = 0; i < tokens->size; i++) {
+            tokens->Get(i).SetId(i);
         }
 
     }
 
-    void ScanSyntaxToken(TextWindow* textWindow, TokenInfo* info, Diagnostics* diagnostics, int32* badTokenCount) {
-        info->kind = SyntaxKind::None;
-        info->contextualKind = SyntaxKind::None;
-        info->valueKind = LiteralType::None;
-        info->literalValue.uint64Value = 0;
-//        info->text.ptr = nullptr;
-//        info->text.size = 0;
+    void ScanSyntaxToken(TextWindow* textWindow, SyntaxToken* info, Diagnostics* diagnostics, int32* badTokenCount) {
 
         char* start = textWindow->start;
 
@@ -525,11 +476,13 @@ namespace Alchemy::Compilation {
                 // If we get too many characters that we cannot make sense of, treat the entire rest of the file as
                 // a single invalid character, so we can bail out of parsing early without producing an unbounded number of errors.
                 if (*badTokenCount >= 200) {
-                    info->text = FixedCharSpan(textWindow->ptr, (int32) (textWindow->end - textWindow->ptr));
+                    info->text = textWindow->ptr;
+                    info->textSize = (int32) (textWindow->end - textWindow->ptr);
                     textWindow->ptr = textWindow->end;
                 }
                 else {
-                    info->text = FixedCharSpan(start, (int32) (textWindow->ptr - start));
+                    info->text = start;
+                    info->textSize = (int32) (textWindow->ptr - start);
                 }
 
                 diagnostics->AddError(Diagnostic(ErrorCode::ERR_UnexpectedCharacter, start, textWindow->ptr));
@@ -547,7 +500,7 @@ namespace Alchemy::Compilation {
 //
 //        LexSyntaxTrivia(&tokenizer->textWindow, tokenizer->textWindow.ptr != tokenizer->textWindow.start, false, &tokenizer->leadingTriviaList);
 //
-//        TokenInfo tokenInfo;
+//        SyntaxToken tokenInfo;
 //
 //        ScanSyntaxToken()
 //

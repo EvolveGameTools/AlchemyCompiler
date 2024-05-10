@@ -9,8 +9,8 @@ namespace Alchemy::Compilation {
         int32 column;
     };
 
-    void ComputeTokenLineColumns(CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens, CheckedArray<LineColumn> lineCols);
-    void PrintTokens(CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens, CheckedArray<LineColumn> lineCols);
-    void Tokenize(TextWindow * textWindow, LinearAllocator* allocator, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens, PodList<SyntaxTokenCold>* coldTokens, PodList<Trivia>* triviaBuffer);
+    void ComputeTokenLineColumns(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols);
+    void PrintTokens(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols);
+    void Tokenize(TextWindow * textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens);
 
 }

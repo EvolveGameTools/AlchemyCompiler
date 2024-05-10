@@ -3,14 +3,9 @@
 #include "../Src/Parsing2/TextWindow.h"
 #include "../Src/Parsing2/Scanning.h"
 #include "../Src/Allocation/ThreadLocalTemp.h"
-#include "../Src/Allocation/BytePoolAllocator.h"
 #include "../Src/Parsing2/Tokenizer.h"
-#include "../Src/Collections/PodList.h"
-#include "../Src/Collections/CheckedArray.h"
-#include "../Src/Allocation/LinearAllocator.h"
 #include "../Src/Parsing2/Parser.h"
 #include "../Src/Parsing2/Parsing.h"
-#include "../Src/Parsing2/NodePrinter.h"
 #include "../Src/Parsing2/Builders.generated.h"
 #include "../Src/Parsing2/NodeEquality.h"
 
@@ -24,19 +19,15 @@ TextWindow MakeTextWindow(const char* src) {
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \
     Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator(); \
     Alchemy::TempAllocator::ScopedMarker marker(tempAllocator); \
-    Alchemy::PodList<SyntaxToken> hotTokens; \
-    Alchemy::PodList<SyntaxTokenCold> coldTokens; \
-    Alchemy::PodList<Trivia> triviaBuffer; \
+    Alchemy::PodList<SyntaxToken> tokens; \
     Diagnostics diagnostics(&allocator);
 
 #define INITIALIZE_PARSER(str) \
-    hotTokens.size = 0;        \
-    coldTokens.size = 0;       \
-    triviaBuffer.size = 0;     \
+    tokens.size = 0;        \
     diagnostics.size = 0; \
     TextWindow textWindow = MakeTextWindow((str)); \
-    Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer); \
-    Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray())
+    Tokenize(&textWindow, &diagnostics, &tokens); \
+    Parser parser(&allocator, tempAllocator, &diagnostics, tokens.ToCheckedArray());
 
 TEST_CASE("Parse Types", "[parser]") {
 
@@ -46,23 +37,24 @@ TEST_CASE("Parse Types", "[parser]") {
 
         INITIALIZE_PARSER("float int char bool ushort short uint byte sbyte double");
 
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(ParseType(&parser, ParseTypeMode::Normal)->GetKind() == SyntaxKind::PredefinedType);
-        REQUIRE(parser.HasMoreTokens() == false);
+        Builder builder(&allocator);
 
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::FloatKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::IntKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::CharKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::BoolKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::UShortKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::ShortKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::UIntKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::ByteKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::SByteKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::DoubleKeyword))->Build(), NodeEqualityOptions::Default));
+        REQUIRE(parser.HasMoreTokens() == false);
     }
 
-    // get tokenAt(line/col)
-    // get firstTokenOfTypeOnLine().isTrivia
-    // get firstTokenOfTypeOnLine().isSkipped
+        // get tokenAt(line/col)
+        // get firstTokenOfTypeOnLine().isTrivia
+        // get firstTokenOfTypeOnLine().isSkipped
 
     SECTION("basic names") {
 
@@ -71,18 +63,16 @@ TEST_CASE("Parse Types", "[parser]") {
         TypeSyntax* name = ParseQualifiedName(&parser, NameOptions::None);
 
         Builder builder(&allocator);
-        QualifiedNameSyntaxBuilder * b = builder.QualifiedNameSyntax()
+        QualifiedNameSyntaxBuilder* b = builder.QualifiedNameSyntax()
             ->Left(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("something")))
             ->DotToken(builder.SyntaxToken(SyntaxKind::DotToken))
             ->Right(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("somethingelse")));
 
-        NodePrinter p(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
-        p.PrintNode(name);
-        p.Dump();
+        // NodePrinter p(tokens.ToCheckedArray());
+        // p.PrintNode(name);
+        // p.Dump();
 
-        QualifiedNameSyntax * m = (QualifiedNameSyntax*)b->Build();
-        bool equal = NodesEqual(name, m , NodeEqualityOptions::Default);
-        REQUIRE(equal == true);
+        REQUIRE(NodesEqual(name, b->Build(), NodeEqualityOptions::Default));
 
     }
 
@@ -93,20 +83,18 @@ TEST_CASE("Scan Type Arguments", "[tokenizer]") {
     Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator();
     Alchemy::TempAllocator::ScopedMarker marker(tempAllocator);
 
-    Alchemy::PodList<SyntaxToken> hotTokens;
-    Alchemy::PodList<SyntaxTokenCold> coldTokens;
-    Alchemy::PodList<Trivia> triviaBuffer;
+    Alchemy::PodList<SyntaxToken> tokens;
     Diagnostics diagnostics(&allocator);
 
     SECTION("Definitely type arg list") {
         TextWindow textWindow = MakeTextWindow("<int, thing, string>");
-        Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
-        Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
+        Tokenize(&textWindow, &diagnostics, &tokens);
+        Parser parser(&allocator, tempAllocator, &diagnostics, tokens.ToCheckedArray());
         REQUIRE(ScanTypeArgumentList(&parser, NameOptions::None) == ScanTypeArgumentListKind::DefiniteTypeArgumentList);
     }SECTION("Definitely not arg list") {
         TextWindow textWindow = MakeTextWindow("<12, thing, string>");
-        Tokenize(&textWindow, &allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
-        Parser parser(&allocator, tempAllocator, &diagnostics, hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray());
+        Tokenize(&textWindow, &diagnostics, &tokens);
+        Parser parser(&allocator, tempAllocator, &diagnostics, tokens.ToCheckedArray());
         REQUIRE(ScanTypeArgumentList(&parser, NameOptions::InExpression) == ScanTypeArgumentListKind::NotTypeArgumentList);
     }
 }
@@ -116,50 +104,71 @@ TEST_CASE("Tokenize", "[tokenizer]") {
     Alchemy::TempAllocator::ScopedMarker marker(allocator);
     Diagnostics diagnostics(allocator);
 
-    Alchemy::PodList<SyntaxToken> hotTokens;
-    Alchemy::PodList<SyntaxTokenCold> coldTokens;
-    Alchemy::PodList<Trivia> triviaBuffer;
+    Alchemy::PodList<SyntaxToken> tokens;
 
     SECTION("Count Columns") {
         TextWindow textWindow = MakeTextWindow(R"(this is a test)");
-        Tokenize(&textWindow, allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
-        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(hotTokens.size), hotTokens.size);
-        ComputeTokenLineColumns(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        Tokenize(&textWindow, &diagnostics, &tokens);
+        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(tokens.size), tokens.size);
+        ComputeTokenLineColumns(tokens.ToCheckedArray(), lc);
         REQUIRE(lc[0].column == 1);
-        REQUIRE(lc[1].column == 6);
-        REQUIRE(lc[2].column == 9);
-        REQUIRE(lc[3].column == 11);
+        REQUIRE(lc[1].column == 5);
+        REQUIRE(lc[2].column == 6);
+        REQUIRE(lc[3].column == 8);
+        REQUIRE(lc[4].column == 9);
+        REQUIRE(lc[5].column == 10);
+        REQUIRE(lc[6].column == 11);
     }
 
     SECTION("Count Lines / newline") {
         TextWindow textWindow = MakeTextWindow("this is\n a test");
-        Tokenize(&textWindow, allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
-        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(hotTokens.size), hotTokens.size);
-        ComputeTokenLineColumns(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        Tokenize(&textWindow, &diagnostics, &tokens);
+        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(tokens.size), tokens.size);
+        ComputeTokenLineColumns(tokens.ToCheckedArray(), lc);
         REQUIRE(lc[0].line == 1);
         REQUIRE(lc[1].line == 1);
-        REQUIRE(lc[2].line == 2);
-        REQUIRE(lc[3].line == 2);
+        REQUIRE(lc[2].line == 1);
+        REQUIRE(lc[3].line == 1);
+        REQUIRE(lc[4].line == 2);
+        REQUIRE(lc[5].line == 2);
+        REQUIRE(lc[6].line == 2);
+        REQUIRE(lc[7].line == 2);
+
         REQUIRE(lc[0].column == 1);
-        REQUIRE(lc[1].column == 6);
-        REQUIRE(lc[2].column == 2);
-        REQUIRE(lc[3].column == 4);
+        REQUIRE(lc[1].column == 5);
+        REQUIRE(lc[2].column == 6);
+        REQUIRE(lc[3].column == 8);
+        // line 2
+        REQUIRE(lc[4].column == 1);
+        REQUIRE(lc[5].column == 2);
+        REQUIRE(lc[6].column == 3);
+        REQUIRE(lc[7].column == 4);
     }
 
     SECTION("Count Lines / crlf") {
         TextWindow textWindow = MakeTextWindow("this is\r\n a test");
-        Tokenize(&textWindow, allocator, &diagnostics, &hotTokens, &coldTokens, &triviaBuffer);
-        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(hotTokens.size), hotTokens.size);
-        ComputeTokenLineColumns(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        Tokenize(&textWindow, &diagnostics, &tokens);
+        Alchemy::CheckedArray<LineColumn> lc(allocator->AllocateUncleared<LineColumn>(tokens.size), tokens.size);
+        ComputeTokenLineColumns(tokens.ToCheckedArray(), lc);
         REQUIRE(lc[0].line == 1);
         REQUIRE(lc[1].line == 1);
-        REQUIRE(lc[2].line == 2);
-        REQUIRE(lc[3].line == 2);
+        REQUIRE(lc[2].line == 1);
+        REQUIRE(lc[3].line == 1);
+        REQUIRE(lc[4].line == 2);
+        REQUIRE(lc[5].line == 2);
+        REQUIRE(lc[6].line == 2);
+        REQUIRE(lc[7].line == 2);
+
         REQUIRE(lc[0].column == 1);
-        REQUIRE(lc[1].column == 6);
-        REQUIRE(lc[2].column == 2);
-        REQUIRE(lc[3].column == 4);
-        PrintTokens(hotTokens.ToCheckedArray(), coldTokens.ToCheckedArray(), lc);
+        REQUIRE(lc[1].column == 5);
+        REQUIRE(lc[2].column == 6);
+        REQUIRE(lc[3].column == 8);
+        // line 2
+        REQUIRE(lc[4].column == 1);
+        REQUIRE(lc[5].column == 2);
+        REQUIRE(lc[6].column == 3);
+        REQUIRE(lc[7].column == 4);
+
     }
 
 }
@@ -168,28 +177,28 @@ TEST_CASE("Scan numeric literals", "[scanner]") {
     Alchemy::TempAllocator* allocator = Alchemy::GetThreadLocalAllocator();
     Alchemy::TempAllocator::ScopedMarker marker(allocator);
     Diagnostics diagnostics(allocator);
-    TokenInfo info;
+    SyntaxToken info;
 
     SECTION("Reals") {
         TextWindow textWindow = MakeTextWindow(R"(123.0f)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Float);
-        REQUIRE(info.literalValue.floatValue == 123);
+        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(GetFloatValue(info.text, info.textSize) == 123);
 
         textWindow = MakeTextWindow(R"(123.1f)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Float);
-        REQUIRE(info.literalValue.floatValue == 123.1f);
+        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(GetFloatValue(info.text, info.textSize) == 123.1f);
 
         textWindow = MakeTextWindow(R"(1_23.1f)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Float);
-        REQUIRE(info.literalValue.floatValue == 123.1f);
+        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(GetFloatValue(info.text, info.textSize) == 123.1f);
 
         textWindow = MakeTextWindow(R"(1e4ff)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Float);
-        REQUIRE(info.literalValue.floatValue == 1e4f);
+        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(GetFloatValue(info.text, info.textSize) == 1e4f);
 
         // todo -- parsing currently truncates, we want to do what c# does with real parsing
         // but that's too much work for now.
@@ -199,53 +208,53 @@ TEST_CASE("Scan numeric literals", "[scanner]") {
     SECTION("Integers") {
         TextWindow textWindow = MakeTextWindow(R"(123)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Int32);
-        REQUIRE(info.literalValue.int32Value == 123);
+        REQUIRE(info.contextualKind == SyntaxKind::Int32Literal);
+        REQUIRE(GetInt32Value(info.text, info.textSize) == 123);
 
         textWindow = MakeTextWindow(R"(2147483648)");// max int + 1
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::UInt32);
-        REQUIRE(info.literalValue.uint32Value == 2147483648);
+        REQUIRE(info.contextualKind == SyntaxKind::UInt32Literal);
+        REQUIRE(GetUInt32Value(info.text, info.textSize) == 2147483648);
 
         textWindow = MakeTextWindow(R"(2147483647)");// max int
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Int32);
-        REQUIRE(info.literalValue.uint32Value == 2147483647);
+        REQUIRE(info.contextualKind == SyntaxKind::Int32Literal);
+        REQUIRE(GetInt32Value(info.text, info.textSize) == 2147483647);
 
         textWindow = MakeTextWindow(R"(214748364782)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Int64);
-        REQUIRE(info.literalValue.int64Value == 214748364782);
+        REQUIRE(info.contextualKind == SyntaxKind::Int64Literal);
+        REQUIRE(GetInt64Value(info.text, info.textSize) == 214748364782);
 
         textWindow = MakeTextWindow(R"(214ul)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::UInt64);
-        REQUIRE(info.literalValue.int64Value == 214ull);
+        REQUIRE(info.contextualKind == SyntaxKind::UInt64Literal);
+        REQUIRE(GetUInt64Value(info.text, info.textSize) == 214ull);
 
         textWindow = MakeTextWindow(R"(214l)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Int64);
-        REQUIRE(info.literalValue.int64Value == 214ll);
+        REQUIRE(info.contextualKind == SyntaxKind::Int64Literal);
+        REQUIRE(GetInt64Value(info.text, info.textSize) == 214ll);
 
         textWindow = MakeTextWindow(R"(0xfeedbeef)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::UInt32);
-        REQUIRE(info.literalValue.uint32Value == 0xfeedbeef);
+        REQUIRE(info.contextualKind == SyntaxKind::UInt32Literal);
+        REQUIRE(GetHexValue(info.text, info.textSize) == 0xfeedbeef);
 
         textWindow = MakeTextWindow(R"(0xfeed_beef)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::UInt32);
-        REQUIRE(info.literalValue.uint32Value == 0xfeedbeef);
+        REQUIRE(info.contextualKind == SyntaxKind::UInt32Literal);
+        REQUIRE(GetHexValue(info.text, info.textSize) == 0xfeedbeef);
 
         textWindow = MakeTextWindow(R"(0xbeeful)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::UInt64);
-        REQUIRE(info.literalValue.uint64Value == 0xbeefull);
+        REQUIRE(info.contextualKind == SyntaxKind::UInt64Literal);
+        REQUIRE(GetHexValue(info.text, info.textSize) == 0xbeefull);
 
         textWindow = MakeTextWindow(R"(0b1101)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.valueKind == LiteralType::Int32);
-        REQUIRE(info.literalValue.int32Value == 13);
+        REQUIRE(info.contextualKind == SyntaxKind::Int32Literal);
+        REQUIRE(GetBinaryValue(info.text, info.textSize) == 13);
 
         textWindow = MakeTextWindow(R"(214748364899999999999999999)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));

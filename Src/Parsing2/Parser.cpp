@@ -9,29 +9,67 @@
 
 namespace Alchemy::Compilation {
 
-    Parser::Parser(LinearAllocator* allocator, TempAllocator* tempAllocator, Diagnostics* diagnostics, CheckedArray<SyntaxToken> hotTokens, CheckedArray<SyntaxTokenCold> coldTokens)
-        : hotTokens(hotTokens)
-        , coldTokens(coldTokens)
+    // it would be nice if we could not have to deal w/ trivia while parsing
+    // ideally we filter out non trivial tokens then when we're done parsing we write back the flags
+    // we already have GetId() which gives us the token index
+    bool TryFindNextNonTrivia(int32* ptr, CheckedArray<SyntaxToken> tokens) {
+        int32 p = *ptr;
+        for (int32 i = p + 1; i < tokens.size; i++) {
+            if (tokens.array[i].kind == SyntaxKind::Trivia) {
+                continue;
+            }
+            *ptr = i;
+            return true;
+        }
+        return false;
+    }
+
+    SyntaxToken MakeEof() {
+        SyntaxToken eof;
+        eof.kind = SyntaxKind::EndOfFileToken;
+        eof.SetFlags(SyntaxTokenFlags::Omitted);
+        return eof;
+    }
+
+    Parser::Parser(LinearAllocator* allocator, TempAllocator* tempAllocator, Diagnostics* diagnostics, CheckedArray<SyntaxToken> tokens)
+        : tokens(tokens)
         , ptr(0)
         , allocator(allocator)
         , tempAllocator(tempAllocator)
         , diagnostics(diagnostics)
         , _termState(TerminatorState::EndOfFile)
-        , currentToken(hotTokens[0]) {}
+        , currentToken() {
 
+        for (ptr = 0; ptr < tokens.size; ptr++) {
+            if (tokens.array[ptr].kind != SyntaxKind::Trivia) {
+                break;
+            }
+        }
 
-    SyntaxToken MakeEof() {
-        SyntaxToken eof;
-        eof.id = -1; // its not really missing, its just kind of ephemeral
-        eof.kind = SyntaxKind::EndOfFileToken;
-        return eof;
+        if(ptr >= tokens.size) {
+            ptr = tokens.size;
+            currentToken = MakeEof();
+        }
+        else {
+            currentToken = tokens[ptr];
+        }
+
     }
 
     SyntaxToken Parser::PeekToken(int32 steps) {
-        if (ptr + steps >= hotTokens.size) {
-            return MakeEof();
+
+        int32 p = ptr;
+
+        for (int32 i = 0; i < steps; i++) {
+
+            if (!TryFindNextNonTrivia(&p, tokens)) {
+                return MakeEof();
+            }
+
         }
-        return hotTokens.array[ptr + steps];
+
+        return tokens[p];
+
     }
 
     SyntaxToken Parser::EatToken(SyntaxKind kind) {
@@ -48,7 +86,7 @@ namespace Alchemy::Compilation {
         SyntaxToken token = currentToken;
 
         if (token.kind != kind) {
-            FixedCharSpan span = GetTokenText(token);
+            FixedCharSpan span = token.GetText();
             AddError(token, Diagnostic(GetExpectedTokenErrorCode(kind, token.kind), span.ptr, span.ptr + span.size));
         }
 
@@ -58,37 +96,21 @@ namespace Alchemy::Compilation {
 
     SyntaxToken Parser::EatToken() {
         SyntaxToken retn = currentToken;
-
-        if (ptr + 1 < hotTokens.size) {
-            ptr++;
-            currentToken = hotTokens.array[ptr];
+        if(TryFindNextNonTrivia(&ptr, tokens)) {
+            currentToken = tokens[ptr];
         }
         else {
+            ptr = tokens.size;
             currentToken = MakeEof();
-            ptr = hotTokens.size;
         }
-
         return retn;
-
-    }
-
-    SyntaxTokenCold Parser::PeekTokenCold(int32 steps) {
-        return coldTokens[PeekToken(steps).id];
-    }
-
-    SyntaxTokenCold Parser::GetColdToken(SyntaxToken token) {
-        return token.id < 0
-               ? SyntaxTokenCold()
-               : coldTokens[token.id];
     }
 
     SyntaxToken Parser::CreateMissingToken(SyntaxKind expected) {
         SyntaxToken missing;
         missing.kind = expected;
-        missing.flags |= SyntaxTokenFlags::Missing;
-        missing.contextualKind = SyntaxKind::None;
-        missing.id = -1;
-        missing.literalType = LiteralType::None;
+        missing.SetFlags(SyntaxTokenFlags::Missing);
+        missing.SetId(ptr);
         return missing;
     }
 
@@ -96,8 +118,7 @@ namespace Alchemy::Compilation {
         SyntaxToken missing = CreateMissingToken(expected);
 
         if (reportError) {
-            SyntaxTokenCold cold = GetColdToken(actual);
-            AddError(actual, Diagnostic(GetExpectedTokenErrorCode(expected, actual.kind), cold.text, cold.text + cold.textSize));
+            AddError(actual, Diagnostic(GetExpectedTokenErrorCode(expected, actual.kind), actual.text, actual.text + actual.textSize));
         }
 
         return missing;
@@ -126,71 +147,30 @@ namespace Alchemy::Compilation {
     }
 
     Diagnostic Parser::MakeDiagnostic(ErrorCode code, SyntaxToken token) {
-        SyntaxTokenCold cold = GetColdToken(token);
-        return Diagnostic(code, cold.text, cold.text + cold.textSize);
-    }
-
-    FixedCharSpan Parser::GetTokenTextWithTrivia(SyntaxToken token) {
-        SyntaxTokenCold cold = GetColdToken(token);
-        char* min = cold.text;
-        char* max = cold.text + cold.textSize;
-
-        for (int32 i = 0; i < cold.triviaCount; i++) {
-            Trivia* trivia = &cold.triviaList[i];
-            if (trivia->type != TriviaType::Whitespace) {
-                continue;
-            }
-
-            if (trivia->span < min) {
-                min = trivia->span;
-            }
-            if (trivia->span + trivia->length > max) {
-                max = trivia->span + trivia->length;
-            }
-        }
-        return FixedCharSpan(min, (int32) (max - min));
-    }
-
-    FixedCharSpan Parser::GetTokenText(SyntaxToken token) {
-        SyntaxTokenCold cold = GetColdToken(token);
-        return FixedCharSpan(cold.text, cold.textSize);
+        return Diagnostic(code, token.text, token.text + token.textSize);
     }
 
     void Parser::AddError(SyntaxToken token, Diagnostic diagnostic) {
 
-        if (token.id == ptr) {
-            currentToken.flags |= SyntaxTokenFlags::Error;
+        if (token.GetId() == ptr) {
+            currentToken.AddFlag(SyntaxTokenFlags::Error);
         }
 
-        if (token.id >= 0) {
-            hotTokens.array[token.id].flags |= SyntaxTokenFlags::Error;
+        if (token.GetId() >= 0) {
+            tokens[token.GetId()].AddFlag(SyntaxTokenFlags::Error);
         }
 
         diagnostics->AddError(diagnostic);
     }
 
-    SyntaxToken Parser::GetLastNonSkipped() {
-        for (int32 i = ptr - 1; i >= 0; i--) {
-            if ((hotTokens.array[i].flags & SyntaxTokenFlags::Skipped) == 0) {
-                return hotTokens.array[i];
-            }
-        }
-
-        UNREACHABLE("GetLastNonSkipped");
-
-        return hotTokens[0];
-
-    }
-
     void Parser::SkipToken() {
+        tokens[ptr].AddFlag(SyntaxTokenFlags::Skipped);
         EatToken();
-        hotTokens[ptr - 1].flags |= SyntaxTokenFlags::Skipped;
     }
 
     bool Parser::HasMoreTokens() {
-        return ptr < hotTokens.size;
+        return ptr < tokens.size;
     }
-
 
 }
 
