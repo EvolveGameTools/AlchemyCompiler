@@ -86,7 +86,7 @@ bool MatchesGT16(const char* keyword, char* test, int32 length) {
     return true;
 
 }
-constexpr int32 kLongestKeywordLength = 10;
+constexpr int32 kLongestKeywordLength = 11;
 
 constexpr int32 kShortestKeywordLength = 2;
 
@@ -486,6 +486,13 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, SyntaxKind * keyword
                 case 8: {
                     if(Matches6("ntinue", truncatedBuffer)) { // ContinueKeyword
                         *keywordType = SyntaxKind::ContinueKeyword;
+                        return true;
+                    }
+                    return false;
+                }
+                case 11: {
+                    if(Matches9("nstructor", truncatedBuffer)) { // ConstructorKeyword
+                        *keywordType = SyntaxKind::ConstructorKeyword;
                         return true;
                     }
                     return false;

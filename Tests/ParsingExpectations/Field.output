@@ -1,0 +1,17 @@
+FieldDeclarationSyntax
+_    [modifiers] = PublicKeyword -> "public"
+_    [declaration] = VariableDeclarationSyntax
+_        [type] = GenericNameSyntax
+_            [identifier] = IdentifierToken (IdentifierToken) -> "List"
+_            [typeArgumentList] = TypeArgumentListSyntax
+_                [lessThanToken] = LessThanToken -> "<"
+_                [arguments] = SeparatedSyntaxList
+_                    IdentifierNameSyntax
+_                        [identifier] = IdentifierToken (IdentifierToken) -> "Something"
+_                [greaterThanToken] = GreaterThanToken -> ">"
+_        [variables] = SeparatedSyntaxList
+_            VariableDeclaratorSyntax
+_                [identifier] = IdentifierToken (IdentifierToken) -> "myList"
+_                [argumentList] = nullptr
+_                [initializer] = nullptr
+_    [semicolonToken] = SemicolonToken -> ";"

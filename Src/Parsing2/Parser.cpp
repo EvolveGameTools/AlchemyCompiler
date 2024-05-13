@@ -150,6 +150,37 @@ namespace Alchemy::Compilation {
         return Diagnostic(code, token.text, token.text + token.textSize);
     }
 
+    void Parser::AddError(SyntaxBase * node, ErrorCode errorCode) {
+        if(node == nullptr) {
+            return;
+        }
+
+        SyntaxToken start = tokens[node->startTokenId];
+        SyntaxToken end = tokens[node->endTokenId];
+
+        if (start.GetId() == ptr) {
+            currentToken.AddFlag(SyntaxTokenFlags::Error);
+        }
+
+        if (start.GetId() >= 0) {
+            tokens[start.GetId()].AddFlag(SyntaxTokenFlags::Error);
+        }
+
+        diagnostics->AddError(Diagnostic(errorCode, start.text, end.text + end.textSize));
+    }
+
+    void Parser::AddError(SyntaxToken token, ErrorCode errorCode) {
+        if (token.GetId() == ptr) {
+            currentToken.AddFlag(SyntaxTokenFlags::Error);
+        }
+
+        if (token.GetId() >= 0) {
+            tokens[token.GetId()].AddFlag(SyntaxTokenFlags::Error);
+        }
+
+        diagnostics->AddError(Diagnostic(errorCode, token.text, token.text + token.textSize));
+    }
+
     void Parser::AddError(SyntaxToken token, Diagnostic diagnostic) {
 
         if (token.GetId() == ptr) {
@@ -170,6 +201,19 @@ namespace Alchemy::Compilation {
 
     bool Parser::HasMoreTokens() {
         return ptr < tokens.size;
+    }
+
+    bool Parser::IsAfterNewLine(int32 idx) {
+        for (int32 i = idx + 1; i < tokens.size; i++) {
+            SyntaxToken t = tokens[i];
+            if (t.kind != SyntaxKind::Trivia) {
+                return false;
+            }
+            if (t.contextualKind == SyntaxKind::NewKeyword) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

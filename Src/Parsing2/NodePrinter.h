@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include "../PrimitiveTypes.h"
 #include "./SyntaxNodes.h"
 #include "./SyntaxKind.h"
@@ -45,6 +46,18 @@ namespace Alchemy::Compilation {
             if (list == nullptr) {
                 return;
             }
+
+            PrintLine("SeparatedSyntaxList");
+            indent++;
+            for(int32 i = 0; i < list->itemCount; i++) {
+                PrintIndent();
+                PrintNode(list->items[i]);
+                if(i < list->separatorCount) {
+                    PrintIndent();
+                    PrintToken(list->separators[i]);
+                }
+            }
+            indent--;
         }
 
         void PrintLine() {
@@ -77,6 +90,12 @@ namespace Alchemy::Compilation {
             PrintInline((char*) str, strlen(str));
         }
 
+        void PrintTokenList(TokenList * tokenList) {
+            for(int32 i = 0; i < tokenList->size; i++) {
+                PrintToken(tokenList->array[i]);
+            }
+        }
+
         void PrintTrivia(Trivia trivia) {
 
             if (trivia.type == TriviaType::Whitespace || trivia.type == TriviaType::NewLine && printWhitespace) {
@@ -91,7 +110,7 @@ namespace Alchemy::Compilation {
             PrintIndent();
             PrintInline("[");
             PrintInline(fieldName);
-            PrintInline("] ");
+            PrintInline("] = ");
         }
 
         void PrintToken(SyntaxToken token) {
@@ -121,7 +140,10 @@ namespace Alchemy::Compilation {
 
         void PrintNode(SyntaxBase* syntaxBase);
 
-        void Dump();
+        void Dump() {
+            printf("%.*s", buffer.size - 2, buffer.array);
+        }
+
     };
 
 }

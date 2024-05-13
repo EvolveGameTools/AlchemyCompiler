@@ -28,4 +28,6 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     const char* GetText(SyntaxKind kind);
 
+    bool IsBinaryExpressionOperatorToken(SyntaxKind kind);
+
 }

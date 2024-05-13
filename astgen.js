@@ -118,10 +118,9 @@ function createBuilders(structs) {
                 field.builderType = "SeparatedSyntaxListBuilder*";
             } else if (field.fieldType.startsWith("SyntaxList")) {
                 field.builderType = "SyntaxListBuilder*";
-            } else if(field.fieldType === "SyntaxToken") {
+            } else if (field.fieldType === "SyntaxToken") {
                 field.builderType = "SyntaxToken";
-            }
-            else {
+            } else {
                 field.builderType = stripSuffix(field.fieldType, "*") + "Builder *";
             }
             str += field.builderType;
@@ -151,15 +150,14 @@ function createBuilders(structs) {
         str += "\n        inline SyntaxBase* Build() override {\n";
         str += `            ${struct.structName}* retn = allocator->Allocate<${struct.structName}>(1);\n`;
         str += `            retn->_kind = SyntaxKind::${stripSuffix(struct.structName, "Syntax")};\n`;
-        for(f = 0; f < struct.fields.length; f++) {
+        for (f = 0; f < struct.fields.length; f++) {
             const field = struct.fields[f];
 
             str += "            ";
             str += `retn->${field.fieldName} = `;
-            if(field.fieldType === "SyntaxToken") {
+            if (field.fieldType === "SyntaxToken") {
                 str += field.fieldName + ";\n";
-            }
-            else {
+            } else {
                 str += `${field.fieldName} != nullptr ? (${field.fieldType})${field.fieldName}->Build() : nullptr;\n`;
             }
         }
@@ -202,6 +200,8 @@ function createCompareBlocks(structs) {
 
             if (field.fieldType === "SyntaxToken") {
                 comp += `if(!TokensEqual(pA->${field.fieldName}, pB->${field.fieldName}, options)) return false;\n`;
+            } else if (field.fieldType.startsWith("TokenList")) {
+                comp += `if(!TokenListsEqual(pA->${field.fieldName}, pB->${field.fieldName}, options)) return false;\n`;
             } else if (field.fieldType.startsWith("SyntaxList")) {
                 comp += `if(!SyntaxListEqual((SyntaxListUntyped*)pA->${field.fieldName}, (SyntaxListUntyped*)pB->${field.fieldName}, options)) return false;\n`;
             } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
@@ -239,6 +239,8 @@ function createPrintBlocks(structs) {
 
             if (field.fieldType === "SyntaxToken") {
                 struct.printBlock += `PrintToken(p->${field.fieldName});\n`;
+            } else if (field.fieldType.startsWith("TokenList")) {
+                struct.printBlock += `PrintTokenList(p->${field.fieldName});\n`
             } else if (field.fieldType.startsWith("SyntaxList")) {
                 struct.printBlock += `PrintSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
             } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
@@ -257,27 +259,88 @@ function createPrintBlocks(structs) {
     }
 }
 
-function createGetFirstTokens(structs) {
+function createGetLastTokens(structs) {
     for (let i = 0; i < structs.length; i++) {
         const struct = structs[i];
+
+        if (struct.fields.length === 0) {
+            continue
+        }
 
         var block = "";
         block = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
         block += statementIndent;
         block += struct.structName;
         block += `* p = (${struct.structName}*)syntaxBase;\n`
-        block += statementIndent;
 
-        const field = struct.fields[0];
-        if (field.fieldType === "SyntaxToken") {
-            block += `return p->${field.fieldName};\n`;
-        } else if (field.fieldType.startsWith("SyntaxList")) {
-            block += `return GetFirstTokenFromSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
-        } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
-            block += `return GetFirstTokenFromSyntaxList((SeparatedSyntaxListUntyped*)p->${field.fieldName});\n`;
-        } else {
-            block += `return GetFirstToken((SyntaxBase*)p->${field.fieldName});\n`;
+        for(var f = struct.fields.length - 1; f >= 0; f--) {
+            const field = struct.fields[f];
+            const x = `p->${field.fieldName}`;
+            block += statementIndent;
+            if (field.fieldType === "SyntaxToken") {
+                block += `if(${x}.IsValid()) return ${x};\n`;
+            } else if (field.fieldType.startsWith("TokenList")) {
+                block += `if(${x}->size != 0) return ${x}->array[${x}->size - 1];\n`;
+            } else if (field.fieldType.startsWith("SyntaxList")) {
+                block += `if(${x}->size != 0) return GetLastToken(${x}->array[${x}->size - 1]);\n`;
+            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                // we want the last of separator or item, we don't know which is last
+                block += `if(${x}->itemCount != 0) {\n`
+                block += statementIndent + "    ";
+                block += `SyntaxToken a = GetLastToken(${x}->items[${x}->itemCount - 1]);\n`
+                block += statementIndent + "    ";
+                block += `SyntaxToken b = ${x}->separatorCount == 0 ? SyntaxToken() : ${x}->separators[${x}->separatorCount - 1];\n`
+                block += statementIndent + "    ";
+                block += `return a.GetId() > b.GetId() ? a : b;\n`;
+                block += statementIndent;
+                block += "}\n";
+            } else {
+                block += `if(${x} != nullptr) return GetLastToken((SyntaxBase*)${x});\n`;
+            }
         }
+
+        block += statementIndent;
+        block += "return SyntaxToken();\n";
+        block += caseIndent;
+        block += '}\n';
+        struct.lastTokenBlock = block;
+    }
+}
+
+function createGetFirstTokens(structs) {
+    for (let i = 0; i < structs.length; i++) {
+        const struct = structs[i];
+
+        if (struct.fields.length === 0) {
+            console.log(struct.structName + " has no fields");
+            continue
+        }
+
+        var block = "";
+        block = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
+        block += statementIndent;
+        block += struct.structName;
+        block += `* p = (${struct.structName}*)syntaxBase;\n`
+
+        for(var f = 0; f < struct.fields.length; f++) {
+            const field = struct.fields[f];
+            const x = `p->${field.fieldName}`;
+            block += statementIndent;
+            if (field.fieldType === "SyntaxToken") {
+                block += `if(${x}.IsValid()) return ${x};\n`;
+            } else if (field.fieldType.startsWith("TokenList")) {
+                block += `if(${x}->size != 0) return ${x}->array[0];\n`;
+            } else if (field.fieldType.startsWith("SyntaxList")) {
+                block += `if(${x}->size != 0) return GetFirstToken(${x}->array[0]);\n`;
+            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                block += `if(${x}->itemCount != 0) return GetFirstToken(${x}->items[0]);\n`;
+            } else {
+                block += `if(${x} != nullptr) return GetFirstToken((SyntaxBase*)${x});\n`;
+            }
+        }
+
+        block += statementIndent;
+        block += "return SyntaxToken();\n";
         block += caseIndent;
         block += '}\n';
         struct.firstTokenBlock = block;
@@ -292,6 +355,7 @@ namespace Alchemy::Compilation {
     void NodePrinter::PrintNode(SyntaxBase* syntaxBase) {
 
         if (syntaxBase == nullptr) {
+            PrintLine("nullptr");
             return;
         }
 
@@ -317,7 +381,23 @@ namespace Alchemy::Compilation {
         }
         
         switch(syntaxBase->GetKind()) {
-__REPLACE__
+__REPLACE_GET_FIRST__
+            default: {
+                return SyntaxToken();
+            }
+            
+        }        
+        
+    }
+    
+    SyntaxToken GetLastToken(SyntaxBase * syntaxBase) {
+    
+        if(syntaxBase == nullptr) {
+            return SyntaxToken();
+        }
+        
+        switch(syntaxBase->GetKind()) {
+__REPLACE_GET_LAST__
             default: {
                 return SyntaxToken();
             }
@@ -377,7 +457,10 @@ __REPLACE__
 
 function makeFirstTokenSource() {
     createGetFirstTokens(structs);
-    return firstTokenTemplate.replace("__REPLACE__", structs.map(s => s.firstTokenBlock).join('\n'));
+    createGetLastTokens(structs);
+    return firstTokenTemplate
+            .replace("__REPLACE_GET_FIRST__", structs.map(s => s.firstTokenBlock).join('\n'))
+            .replace("__REPLACE_GET_LAST__", structs.map(s => s.lastTokenBlock).join('\n'));
 }
 
 function makeNodePrinter() {
@@ -390,7 +473,7 @@ function makeBuilders() {
     return builderTemplate
         .replace("__REPLACE__", structs.map(s => s.builder).join('\n'))
         .replace("__REPLACE_BUILDER_API__", structs.map(s => s.builderGen).join('\n')
-    );
+        );
 }
 
 function makeEqualityComparisons() {

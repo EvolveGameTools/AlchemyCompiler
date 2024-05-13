@@ -98,6 +98,23 @@ namespace Alchemy::Compilation {
 
     };
 
+
+    struct TokenList {
+        SyntaxToken * array;
+        int32 size;
+
+        TokenList(SyntaxToken * array, int32 size)
+                : array(array)
+                  , size(size)
+        {}
+
+        SyntaxToken& operator[](int32 index) {
+            assert(index >= 0 && index < size && "out of bounds");
+            return array[index];
+        }
+
+    };
+
     struct ExpressionSyntax : SyntaxBase {
 
         explicit ExpressionSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
@@ -122,5 +139,10 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct MemberDeclarationSyntax : SyntaxBase {
+
+        explicit MemberDeclarationSyntax(SyntaxKind kind)
+                : SyntaxBase(kind) {}
+    };
 
 }

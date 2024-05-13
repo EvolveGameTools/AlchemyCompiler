@@ -6,6 +6,51 @@
 
 namespace Alchemy::Compilation {
 
+    struct ResetPoint {
+
+        bool resetOnDispose;
+        size_t allocatorOffset;
+        size_t tempAllocatorOffset;
+        Parser* originalParser;
+        Parser copyParser;
+        Diagnostics diagnosticsCopy;
+        SyntaxTokenFlags* flags;
+
+        explicit ResetPoint(Parser* parser, bool resetOnDispose = true)
+                : originalParser(parser)
+                , copyParser(*parser)
+                , allocatorOffset(parser->allocator->offset)
+                , tempAllocatorOffset(parser->tempAllocator->offset)
+                , diagnosticsCopy(*parser->diagnostics)
+                , resetOnDispose(resetOnDispose) {
+            flags = parser->tempAllocator->AllocateUncleared<SyntaxTokenFlags>(parser->tokens.size - parser->ptr);
+            int32 flagIdx = 0;
+            for (int32 i = parser->ptr; i < parser->tokens.size; i++) {
+                flags[flagIdx++] = parser->tokens.array[i].GetFlags();
+            }
+        }
+
+        ~ResetPoint() {
+            if (resetOnDispose) {
+                Reset();
+            }
+        }
+
+        void Reset() {
+
+            int32 flagIdx = 0;
+            for (int32 i = copyParser.ptr; i < copyParser.tokens.size; i++) {
+                originalParser->tokens.array[i].SetFlags(flags[flagIdx++]);
+            }
+
+            *originalParser = copyParser;
+            *originalParser->diagnostics = diagnosticsCopy;
+            originalParser->tempAllocator->offset = tempAllocatorOffset;
+            originalParser->allocator->offset = allocatorOffset;
+        }
+
+    };
+
     template<typename T>
     struct NodeListBuilder {
         TempAllocator* allocator;
@@ -14,10 +59,10 @@ namespace Alchemy::Compilation {
         int32 size;
 
         explicit NodeListBuilder(TempAllocator* allocator)
-            : allocator(allocator)
-            , size(0)
-            , capacity(8)
-            , array(allocator->AllocateUncleared<T*>(8)) {
+                : allocator(allocator)
+                , size(0)
+                , capacity(8)
+                , array(allocator->AllocateUncleared<T*>(8)) {
         }
 
         void Add(T* item) {
@@ -38,6 +83,12 @@ namespace Alchemy::Compilation {
             new(retn) SyntaxList<T>(ptr, size);
             return retn;
         }
+
+        T* Get(int32 i) {
+            assert(i > 0 && i < size);
+            return array[i];
+        }
+
     };
 
     bool IsPossibleType(Parser* parser) {
@@ -175,9 +226,9 @@ namespace Alchemy::Compilation {
 
     bool IsCurrentTokenWhereOfConstraintClause(Parser* parser) {
         return
-            parser->currentToken.contextualKind == SyntaxKind::WhereKeyword &&
-            parser->PeekToken(1).kind == SyntaxKind::IdentifierToken &&
-            parser->PeekToken(2).kind == SyntaxKind::ColonToken;
+                parser->currentToken.contextualKind == SyntaxKind::WhereKeyword &&
+                parser->PeekToken(1).kind == SyntaxKind::IdentifierToken &&
+                parser->PeekToken(2).kind == SyntaxKind::ColonToken;
     }
 
     bool IsTrueIdentifier(Parser* parser) {
@@ -493,41 +544,770 @@ namespace Alchemy::Compilation {
         return false;
     }
 
+
+    struct NamespaceBodyBuilder {
+        NodeListBuilder<MemberDeclarationSyntax>* members;
+    };
+
+    void AddIncompleteMembers(NodeListBuilder<MemberDeclarationSyntax>* incompleteMembers, NamespaceBodyBuilder* body) {
+        for (int32 i = 0; i < incompleteMembers->size; i++) {
+            body->members->Add(incompleteMembers->array[i]);
+
+        }
+        incompleteMembers->size = 0;
+    }
+
+    MemberDeclarationSyntax* adjustStateAndReportStatementOutOfOrder(Parser* parser, NamespaceParts* seen, MemberDeclarationSyntax* memberOrStatement) {
+        switch (memberOrStatement->GetKind()) {
+            case SyntaxKind::GlobalStatement:
+                if (*seen < NamespaceParts::MembersAndStatements) {
+                    *seen = NamespaceParts::MembersAndStatements;
+                }
+                else if (*seen == NamespaceParts::TypesAndNamespaces) {
+                    *seen = NamespaceParts::TopLevelStatementsAfterTypesAndNamespaces;
+                    parser->AddError(memberOrStatement, ErrorCode::ERR_TopLevelStatementAfterNamespaceOrType);
+                }
+
+                break;
+
+            case SyntaxKind::NamespaceDeclaration:
+            case SyntaxKind::EnumDeclaration:
+            case SyntaxKind::StructDeclaration:
+            case SyntaxKind::ClassDeclaration:
+            case SyntaxKind::InterfaceDeclaration:
+            case SyntaxKind::DelegateDeclaration:
+                if (*seen < NamespaceParts::TypesAndNamespaces) {
+                    *seen = NamespaceParts::TypesAndNamespaces;
+                }
+                break;
+
+            default:
+                if (*seen < NamespaceParts::MembersAndStatements) {
+                    *seen = NamespaceParts::MembersAndStatements;
+                }
+                break;
+        }
+
+        return memberOrStatement;
+    }
+
+    MemberDeclarationSyntax* ParseNamespaceDeclaration(Parser* parser, NodeListBuilder<SyntaxBase>* modifiers) {
+        return nullptr;
+    }
+
+    enum class DeclarationModifiers {
+        None,
+        Public,
+        Internal,
+        Protected,
+        Private,
+        Sealed,
+        Abstract,
+
+        Static,
+        Virtual,
+        Override,
+        ReadOnly,
+        Partial,
+        Ref,
+    };
+
+
+    DeclarationModifiers GetModifier(SyntaxKind kind, SyntaxKind contextualKind) {
+        switch (kind) {
+            case SyntaxKind::PublicKeyword:
+                return DeclarationModifiers::Public;
+            case SyntaxKind::InternalKeyword:
+                return DeclarationModifiers::Internal;
+            case SyntaxKind::ProtectedKeyword:
+                return DeclarationModifiers::Protected;
+            case SyntaxKind::PrivateKeyword:
+                return DeclarationModifiers::Private;
+            case SyntaxKind::SealedKeyword:
+                return DeclarationModifiers::Sealed;
+            case SyntaxKind::AbstractKeyword:
+                return DeclarationModifiers::Abstract;
+            case SyntaxKind::StaticKeyword:
+                return DeclarationModifiers::Static;
+            case SyntaxKind::VirtualKeyword:
+                return DeclarationModifiers::Virtual;
+//            case SyntaxKind.ExternKeyword:
+//                return DeclarationModifiers.Extern;
+//            case SyntaxKind.NewKeyword:
+//                return DeclarationModifiers.New;
+            case SyntaxKind::OverrideKeyword:
+                return DeclarationModifiers::Override;
+            case SyntaxKind::ReadOnlyKeyword:
+                return DeclarationModifiers::ReadOnly;
+            case SyntaxKind::PartialKeyword:
+                return DeclarationModifiers::Partial;
+            case SyntaxKind::RefKeyword:
+                return DeclarationModifiers::Ref;
+            case SyntaxKind::IdentifierToken:
+                switch (contextualKind) {
+                    case SyntaxKind::PartialKeyword:
+                        return DeclarationModifiers::Partial;
+                    default:
+                        return DeclarationModifiers::None;
+                }
+            default:
+                return DeclarationModifiers::None;
+        }
+    }
+
+    DeclarationModifiers GetModifier(SyntaxToken token) {
+        return GetModifier(token.kind, token.contextualKind);
+    }
+
+    SyntaxToken ConvertToKeyword(SyntaxToken token) {
+//        if (token.kind != token.contextualKind)
+//        {
+//            var kw = token.IsMissing()
+//                     ? SyntaxFactory.MissingToken(token.LeadingTrivia.Node, token.ContextualKind, token.TrailingTrivia.Node)
+//                     : SyntaxFactory.Token(token.LeadingTrivia.Node, token.ContextualKind, token.TrailingTrivia.Node);
+//            var d = token.GetDiagnostics();
+//            if (d != null && d.Length > 0)
+//            {
+//                kw = kw.WithDiagnosticsGreen(d);
+//            }
+//
+//            return kw;
+//        }
+
+        return token;
+    }
+
+    void ParseModifiers(Parser* parser, TokenListBuffer* tokens, bool forAccessors, bool* isPossibleTypeDeclaration) {
+
+        *isPossibleTypeDeclaration = true;
+
+        while (true) {
+            DeclarationModifiers newMod = GetModifier(parser->currentToken.kind, parser->currentToken.contextualKind);
+
+            if (newMod == DeclarationModifiers::None) {
+                break;
+            }
+
+            SyntaxToken modTok;
+
+            switch (newMod) {
+                case DeclarationModifiers::Partial: {
+                    SyntaxToken nextToken = parser->PeekToken(1);
+                    if (IsPartialType(parser) || IsPartialMember(parser)) {
+                        // Standard legal cases.
+                        modTok = ConvertToKeyword(parser->EatToken());
+                    }
+                    else if (nextToken.kind == SyntaxKind::NamespaceKeyword) {
+                        // todo -- report error, can't have a partial namespace
+                        modTok = ConvertToKeyword(parser->EatToken());
+                    }
+                    else if (nextToken.kind == SyntaxKind::EnumKeyword || nextToken.kind == SyntaxKind::DelegateKeyword || (IsPossibleStartOfTypeDeclaration(nextToken.kind) && GetModifier(nextToken) != DeclarationModifiers::None)) {
+                        // todo -- report error, can't have a partial here
+                        modTok = ConvertToKeyword(parser->EatToken());
+                    }
+                    else {
+                        return;
+                    }
+                }
+                case DeclarationModifiers::Ref: {
+                    // 'ref' is only a modifier if used on a ref struct
+                    // it must be either immediately before the 'struct'
+                    // keyword, or immediately before 'partial struct' if
+                    // this is a partial ref struct declaration
+
+                    if (forAccessors && IsPossibleAccessorModifier(parser)) {
+                        modTok = parser->EatToken();
+                    }
+                    else {
+                        return;
+                    }
+
+                    break;
+                }
+                default: {
+                    modTok = parser->EatToken();
+                    break;
+                }
+
+            }
+
+            tokens->Add(modTok);
+
+        }
+
+    }
+
+    MemberDeclarationSyntax* ParseTypeDeclaration(Parser* parser, TokenListBuffer* modifiers) {
+        NOT_IMPLEMENTED("ParseTypeDeclaration");
+        return nullptr;
+    }
+
+    MemberDeclarationSyntax* ParseConstructorDeclaration(Parser* parser, TokenListBuffer* modifiers) {
+        NOT_IMPLEMENTED("ParseConstructorDeclaration");
+        return nullptr;
+    }
+
+    MemberDeclarationSyntax* ParseConstantFieldDeclaration(Parser* parser, TokenListBuffer* modifiers) {
+        NOT_IMPLEMENTED("ParseConstantFieldDeclaration");
+        return nullptr;
+    }
+
+    MemberDeclarationSyntax* ParseFixedFieldDeclaration(Parser* parser, TokenListBuffer* modifiers, SyntaxKind parentKind) {
+        NOT_IMPLEMENTED("ParseFixedFieldDeclaration");
+        return nullptr;
+    }
+
+    MemberDeclarationSyntax* TryParseConversionOperatorDeclaration(Parser* parser, TokenListBuffer* modifiers) {
+        // implicit conversion toType (from type) {}
+        if (parser->currentToken.kind != SyntaxKind::ImplicitKeyword && parser->currentToken.kind != SyntaxKind::ExplicitKeyword) {
+            return nullptr;
+        }
+
+        NOT_IMPLEMENTED("TryParseConversionOperatorDeclaration");
+        return nullptr;
+    }
+
+    MemberDeclarationSyntax* ParseOperatorDeclaration(Parser* parser, TokenListBuffer* modifiers, TypeSyntax* typeSyntax) {
+        NOT_IMPLEMENTED("ParseOperatorDeclaration");
+        return nullptr;
+    }
+
+    TypeSyntax * ParseTypeOrVoid(Parser * parser) {
+        if (parser->currentToken.kind == SyntaxKind::VoidKeyword) {
+            return parser->CreateNode<PredefinedTypeSyntax>(parser->EatToken());
+        }
+
+        return ParseType(parser, ParseTypeMode::Normal);
+    }
+
+    TypeSyntax* ParseReturnType(Parser* parser) {
+        TerminatorState saveTerm = parser->_termState;
+        parser->_termState |= TerminatorState::IsEndOfReturnType;
+        TypeSyntax* type = ParseTypeOrVoid(parser);
+        parser->_termState = saveTerm;
+        return type;
+    }
+
+    bool unexpectedVariableToken(Parser* parser) {
+        return parser->currentToken.kind != SyntaxKind::CommaToken;
+    }
+
+    bool abortVariable(Parser* parser, SyntaxKind kind) {
+        return parser->currentToken.kind == SyntaxKind::SemicolonToken;
+    }
+
+    PostSkipAction SkipBadVariableListTokens(Parser* parser, SyntaxKind expected) {
+        return SkipBadSeparatedListTokensWithExpectedKind(parser, &unexpectedVariableToken, &abortVariable, expected);
+    }
+
+    TypeParameterListSyntax* ParseTypeParameterList(Parser* parser) {
+        NOT_IMPLEMENTED("ParseTypeParameterList");
+        return nullptr;
+    }
+
+    ParameterListSyntax* ParseParenthesizedParameterList(Parser* parser) {
+        NOT_IMPLEMENTED("ParameterListSyntax");
+        return nullptr;
+    }
+
+    LocalFunctionStatementSyntax* TryParseLocalFunctionStatementBody(Parser* parser, TokenListBuffer* mods, TypeSyntax* parentType, SyntaxToken name) {
+        NOT_IMPLEMENTED("LocalFunctionStatementSyntax");
+        return nullptr;
+    }
+
+    ExpressionSyntax* ParseArrayInitializer(Parser* parser) {
+        NOT_IMPLEMENTED("ParseArrayInitializer");
+        return nullptr;
+    }
+
+    bool IsLocalFunctionAfterIdentifier(Parser* parser) {
+        assert(parser->currentToken.kind == SyntaxKind::OpenParenToken || parser->currentToken.kind == SyntaxKind::LessThanToken);
+
+        ResetPoint resetPoint(parser);
+
+        TypeParameterListSyntax* typeParameterListOpt = ParseTypeParameterList(parser);
+        ParameterListSyntax* paramList = ParseParenthesizedParameterList(parser);
+
+        SyntaxKind k = parser->currentToken.kind;
+
+        if (!paramList->IsMissing() && (k == SyntaxKind::OpenBraceToken || k == SyntaxKind::EqualsGreaterThanToken || parser->currentToken.contextualKind == SyntaxKind::WhereKeyword)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    ExpressionSyntax* ParseVariableInitializer(Parser* parser) {
+        return parser->currentToken.kind == SyntaxKind::OpenBraceToken
+               ? ParseArrayInitializer(parser)
+               : ParseExpression(parser);
+    }
+
+    BracketedArgumentListSyntax* ParseBracketedArgumentList(Parser* parser) {
+        NOT_IMPLEMENTED("ParseBracketedArgumentList");
+        return nullptr;
+    }
+
+    VariableDeclaratorSyntax* ParseVariableDeclarator(Parser* parser, TypeSyntax* parentType, VariableFlags flags, bool isFirst, bool allowLocalFunctions, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction, bool isExpressionContext) {
+        if (!isExpressionContext) {
+            // Check for the common pattern of:
+            //
+            // C                    //<-- here
+            // Console.WriteLine();
+            //
+            // Standard greedy parsing will assume that this should be parsed as a variable
+            // declaration: "C Console".  We want to avoid that as it can confused parts of the
+            // system further up.  So, if we see certain things following the identifier, then we can
+            // assume it's not the actual name.
+            //
+            // So, if we're after a newline and we see a name followed by the list below, then we
+            // assume that we're accidentally consuming too far into the next statement.
+            //
+            // <dot>, <arrow>, any binary operator (except =), <question>.  None of these characters
+            // are allowed in a normal variable declaration.  This also provides a more useful error
+            // message to the user.  Instead of telling them that a semicolon is expected after the
+            // following token, then instead get a useful message about an identifier being missing.
+            // The above list prevents:
+            //
+            // C                    //<-- here
+            // Console.WriteLine();
+            //
+            // C                    //<-- here
+            // Console->WriteLine();
+            //
+            // C
+            // A + B;
+            //
+            // C
+            // A ? B : D;
+            //
+            // C
+            // A()
+
+            ResetPoint reset(parser);
+
+            SyntaxKind currentTokenKind = parser->currentToken.kind;
+            if (currentTokenKind == SyntaxKind::IdentifierToken && !parentType->IsMissing()) {
+
+                bool isAfterNewLine = parser->IsAfterNewLine(parentType->endTokenId);
+
+                if (isAfterNewLine) {
+
+                    parser->EatToken();
+                    currentTokenKind = parser->currentToken.kind;
+
+                    bool isNonEqualsBinaryToken = currentTokenKind != SyntaxKind::EqualsToken && SyntaxFacts::IsBinaryExpressionOperatorToken(currentTokenKind);
+
+                    if (currentTokenKind == SyntaxKind::DotToken || currentTokenKind == SyntaxKind::OpenParenToken || currentTokenKind == SyntaxKind::MinusGreaterThanToken || isNonEqualsBinaryToken) {
+                        bool isPossibleLocalFunctionToken = currentTokenKind == SyntaxKind::OpenParenToken || currentTokenKind == SyntaxKind::LessThanToken;
+
+                        // Make sure this isn't a local function
+                        if (!isPossibleLocalFunctionToken || !IsLocalFunctionAfterIdentifier(parser)) {
+                            SyntaxToken missingIdentifier = MakeMissingToken(SyntaxKind::IdentifierToken, parser->ptr);
+                            parser->AddError(missingIdentifier, ErrorCode::ERR_IdentifierExpected);
+
+                            *localFunction = nullptr;
+                            return parser->CreateNode<VariableDeclaratorSyntax>(missingIdentifier, nullptr, nullptr);
+                        }
+                    }
+                }
+            }
+        }
+
+        SyntaxToken name = ParseIdentifierToken(parser);
+        BracketedArgumentListSyntax* argumentList = nullptr;
+        EqualsValueClauseSyntax* initializer = nullptr;
+        TerminatorState saveTerm = parser->_termState;
+        bool isFixed = (flags & VariableFlags::Fixed) != 0;
+        bool isConst = (flags & VariableFlags::Const) != 0;
+        bool isLocalOrField = (flags & VariableFlags::LocalOrField) != 0;
+
+        // Give better error message in the case where the user did something like:
+        //
+        // X x = 1, Y y = 2;
+        // using (X x = expr1, Y y = expr2) ...
+        //
+        // The superfluous type name is treated as variable (it is an identifier) and a missing ',' is injected after it.
+        if (!isFirst && IsTrueIdentifier(parser)) {
+            parser->AddError(name, ErrorCode::ERR_MultiTypeInDeclaration);
+        }
+        switch (parser->currentToken.kind) {
+            case SyntaxKind::EqualsToken: {
+                if (isFixed) {
+                    goto default_label;
+                }
+                equals_label:
+                SyntaxToken equals = parser->EatToken();
+                // check for lambda expression with explicit ref return type: `ref int () => { ... }`
+                SyntaxToken refKeyword = isLocalOrField && !isConst && parser->currentToken.kind == SyntaxKind::RefKeyword && !IsPossibleLambdaExpression(parser, Precedence::Expression)
+                                         ? parser->EatToken()
+                                         : SyntaxToken();
+                ExpressionSyntax* init = ParseVariableInitializer(parser);
+                initializer = parser->CreateNode<EqualsValueClauseSyntax>(equals, !refKeyword.IsValid() ? init : parser->CreateNode<RefExpressionSyntax>(refKeyword, init));
+                break;
+            }
+            case SyntaxKind::LessThanToken: {
+                if (allowLocalFunctions && isFirst) {
+                    *localFunction = TryParseLocalFunctionStatementBody(parser, mods, parentType, name);
+                    if (*localFunction != nullptr) {
+                        return nullptr;
+                    }
+                }
+                goto default_label;
+            }
+            case SyntaxKind::OpenParenToken: {
+                if (allowLocalFunctions && isFirst) {
+                    *localFunction = TryParseLocalFunctionStatementBody(parser, mods, parentType, name);
+                    if (*localFunction != nullptr) {
+                        return nullptr;
+                    }
+                }
+                // Special case for accidental use of C-style constructors
+                // Fake up something to hold the arguments.
+                parser->_termState |= TerminatorState::IsPossibleEndOfVariableDeclaration;
+                argumentList = ParseBracketedArgumentList(parser);
+                parser->_termState = saveTerm;
+                parser->AddError(argumentList, ErrorCode::ERR_BadVarDecl);
+                break;
+            }
+            case SyntaxKind::OpenBracketToken: {
+                open_bracket_label:
+                bool sawNonOmittedSize;
+                parser->_termState |= TerminatorState::IsPossibleEndOfVariableDeclaration;
+                ArrayRankSpecifierSyntax* specifier = ParseArrayRankSpecifier(parser, &sawNonOmittedSize);
+                parser->_termState = saveTerm;
+                SyntaxToken open = specifier->open;
+                SeparatedSyntaxList<ExpressionSyntax>* sizes = specifier->ranks;
+                SyntaxToken close = specifier->close;
+
+                if (isFixed && !sawNonOmittedSize) {
+                    parser->AddError(close, ErrorCode::ERR_ValueExpected);
+                }
+
+                // int[] values;
+                // int[,] values;
+
+                ArgumentSyntax** args = parser->allocator->AllocateUncleared<ArgumentSyntax*>(sizes->itemCount);
+
+                for (int32 i = 0; i < sizes->itemCount; i++) {
+
+                    bool isOmitted = sizes->items[i]->GetKind() == SyntaxKind::OmittedArraySizeExpression;
+                    if (!isFixed && !isOmitted) {
+                        parser->AddError(sizes->items[i], ErrorCode::ERR_ArraySizeInDeclaration);
+                    }
+
+                    args[i] = parser->CreateNode<ArgumentSyntax>(SyntaxToken(), SyntaxToken(), sizes->items[i]);
+                }
+
+                SeparatedSyntaxList<ArgumentSyntax>* argList = parser->allocator->New<SeparatedSyntaxList<ArgumentSyntax>>(sizes->itemCount, args, sizes->separatorCount, sizes->separators);
+
+                argumentList = parser->CreateNode<BracketedArgumentListSyntax>(open, argList, close);
+
+                if (!isFixed) {
+                    parser->AddError(argumentList, ErrorCode::ERR_CStyleArray);
+                    if (parser->currentToken.kind == SyntaxKind::EqualsToken) {
+                        goto equals_label;
+                    }
+                }
+
+                break;
+            }
+            default: {
+                default_label:
+                if (isConst) {
+                    parser->AddError(name, ErrorCode::ERR_ConstValueRequired);
+                }
+                else if (isFixed) {
+                    if (parentType->GetKind() == SyntaxKind::ArrayType) {
+                        // They accidentally put the array before the identifier
+                        parser->AddError(name, ErrorCode::ERR_FixedDimsRequired);
+                    }
+                    else {
+                        goto open_bracket_label;
+                    }
+                }
+                break;
+            }
+        }
+        *localFunction = nullptr;
+        return parser->CreateNode<VariableDeclaratorSyntax>(name, argumentList, initializer);
+    }
+
+    void ParseVariableDeclarators(Parser* parser, TypeSyntax* type, VariableFlags flags, SeparatedNodeListBuilder<VariableDeclaratorSyntax>* variables, bool variableDeclarationsExpected, bool allowLocalFunctions, bool stopOnCloseParen, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction) {
+
+        *localFunction = nullptr;
+
+        variables->Add(ParseVariableDeclarator(parser, type, flags, true, allowLocalFunctions, mods, localFunction));
+
+        if (*localFunction != nullptr) {
+            assert(variables->itemCount == 0);
+            return;
+        }
+
+        while (true) {
+            if (parser->currentToken.kind == SyntaxKind::SemicolonToken) {
+                break;
+            }
+
+            if (stopOnCloseParen && parser->currentToken.kind == SyntaxKind::CloseParenToken) {
+                break;
+            }
+
+            if (parser->currentToken.kind == SyntaxKind::CommaToken) {
+                variables->AddSeparator(parser->EatToken());
+                variables->Add(ParseVariableDeclarator(parser, type, flags, false, allowLocalFunctions, mods, localFunction));
+            }
+            else if (!variableDeclarationsExpected || SkipBadVariableListTokens(parser, SyntaxKind::CommaToken) == PostSkipAction::Abort) {
+                break;
+            }
+        }
+    }
+
+    SeparatedSyntaxList<VariableDeclaratorSyntax>* ParseFieldDeclarationVariableDeclarators(Parser* parser, TypeSyntax* type, VariableFlags flags, SyntaxKind parentKind) {
+        bool variableDeclarationsExpected = parentKind != SyntaxKind::NamespaceDeclaration && parentKind != SyntaxKind::CompilationUnit;
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        SeparatedNodeListBuilder<VariableDeclaratorSyntax> variables(parser->tempAllocator);
+        TerminatorState saveTerm = parser->_termState;
+        parser->_termState |= TerminatorState::IsEndOfFieldDeclaration;
+
+        LocalFunctionStatementSyntax* local = nullptr;
+        ParseVariableDeclarators(parser, type, flags, &variables, variableDeclarationsExpected, false, false, nullptr, &local);
+
+        parser->_termState = saveTerm;
+        return variables.ToList(parser->allocator);
+    }
+
+    MemberDeclarationSyntax* ParseNormalFieldDeclaration(Parser* parser, TokenListBuffer* modifiers, TypeSyntax* type, SyntaxKind parentKind) {
+        SeparatedSyntaxList<VariableDeclaratorSyntax>* variables = ParseFieldDeclarationVariableDeclarators(parser, type, VariableFlags::LocalOrField, parentKind);
+        VariableDeclarationSyntax* variableDeclaration = parser->CreateNode<VariableDeclarationSyntax>(type, variables);
+        return parser->CreateNode<FieldDeclarationSyntax>(modifiers->Persist(parser->allocator), variableDeclaration, parser->EatToken(SyntaxKind::SemicolonToken));
+    }
+
+    bool IsFieldDeclaration(Parser* parser) {
+        if (parser->currentToken.kind != SyntaxKind::IdentifierToken) {
+            return false;
+        }
+
+        // Treat this as a field, unless we have anything following that
+        // makes us:
+        //   a) explicit
+        //   b) generic
+        //   c) a property
+        //   d) a method (unless we already know we're parsing an event)
+        SyntaxKind kind = parser->PeekToken(1).kind;
+
+        // Error recovery, don't allow a misplaced semicolon after the name in a property to throw off the entire parse.
+        //
+        // e.g. `public int MyProperty; { get; set; }` should still be parsed as a property with a skipped token.
+        if (kind == SyntaxKind::SemicolonToken && IsStartOfPropertyBody(parser->PeekToken(2).kind)) {
+            return false;
+        }
+
+        switch (kind) {
+            case SyntaxKind::LessThanToken:              // Goo<     explicit or generic method
+            case SyntaxKind::OpenBraceToken:             // Goo {    property
+            case SyntaxKind::EqualsGreaterThanToken:     // Goo =>   property
+            case SyntaxKind::OpenParenToken:             // Goo(     method
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    bool IsOperatorStart(Parser* parser) {
+        return parser->currentToken.kind == SyntaxKind::OperatorKeyword;
+    }
+
+    bool IsStartOfPropertyBody(SyntaxKind kind) {
+        return kind == SyntaxKind::OpenBraceToken || kind == SyntaxKind::EqualsGreaterThanToken;
+    }
+
+    MemberDeclarationSyntax* ParseMemberDeclaration(Parser* parser, SyntaxKind parentKind) {
+        assert(parentKind != SyntaxKind::CompilationUnit);
+
+        TerminatorState saveTermState = parser->_termState;
+
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        TokenListBuffer modifiers(parser->tempAllocator);
+
+        bool isPossibleTypeDeclaration = false;
+        ParseModifiers(parser, &modifiers, false, &isPossibleTypeDeclaration);
+
+        if (parser->currentToken.kind == SyntaxKind::ConstructorKeyword) {
+            return ParseConstructorDeclaration(parser, &modifiers);
+        }
+
+        if (parser->currentToken.kind == SyntaxKind::ConstKeyword) {
+            return ParseConstantFieldDeclaration(parser, &modifiers);
+        }
+
+        if (parser->currentToken.kind == SyntaxKind::FixedKeyword) {
+            return ParseFixedFieldDeclaration(parser, &modifiers, parentKind);
+        }
+
+        // Check for conversion operators (implicit/explicit)
+        MemberDeclarationSyntax* result = TryParseConversionOperatorDeclaration(parser, &modifiers);
+        if (result != nullptr) {
+            return result;
+        }
+
+        // It's valid to have a type declaration here -- check for those
+        if (isPossibleTypeDeclaration && IsTypeDeclarationStart(parser)) {
+            return ParseTypeDeclaration(parser, &modifiers);
+        }
+
+        // Everything that's left -- methods, fields, properties,
+        // indexers, and non-conversion operators -- starts with a type (possibly void).
+        TypeSyntax* type = ParseReturnType(parser);
+
+        ResetPoint afterTypeResetPoint(parser);
+
+        // Check for misplaced modifiers. if we see any, then consider this member terminated and restart parsing.
+        // if (IsMisplacedModifier(&modifiers, type, result)) {
+        //     return result;
+        // }
+        parse_member_name:
+
+        // If we've seen the ref keyword, we know we must have an indexer, method, field, or property.
+        if (type->GetKind() != SyntaxKind::RefType) {
+            // Check here for operators
+            if (IsOperatorStart(parser)) {
+                return ParseOperatorDeclaration(parser, &modifiers, type);
+            }
+
+        }
+
+        if (IsFieldDeclaration(parser)) {
+            return ParseNormalFieldDeclaration(parser, &modifiers, type, parentKind);
+        }
+
+        return nullptr;
+    }
+
+    void AddSkippedNamespaceText(Parser* parser, SyntaxToken token, NamespaceBodyBuilder* body, NodeListBuilder<SyntaxBase>* initialBadNodes, SyntaxBase* skippedSyntax) {
+        // todo -- just flag the token as skipped
+        return;
+    }
+
+    void ReduceIncompleteMembers(Parser* parser, NodeListBuilder<MemberDeclarationSyntax>* incompleteMembers, SyntaxToken token, NamespaceBodyBuilder* body, NodeListBuilder<SyntaxBase>* initialBadNodes) {
+        for (int32 i = 0; i < incompleteMembers->size; i++) {
+            AddSkippedNamespaceText(parser, token, body, initialBadNodes, incompleteMembers->Get(i));
+        }
+        incompleteMembers->size = 0;
+    }
+
+    void ParseNamespaceBody(Parser* parser, SyntaxToken openBraceOrSemiColon, NamespaceBodyBuilder* bodyBuilder, NodeListBuilder<SyntaxBase>* initialBadNodes, SyntaxKind parentKind) {
+
+        TerminatorState saveTerm = parser->_termState;
+        parser->_termState |= TerminatorState::IsNamespaceMemberStartOrStop;
+        NamespaceParts seen = NamespaceParts::None;
+
+        TempAllocator::ScopedMarker marker(parser->tempAllocator);
+        NodeListBuilder<MemberDeclarationSyntax> pendingIncompleteMembers(parser->tempAllocator);
+        bool reportUnexpectedToken = true;
+
+        while (true) {
+            switch (parser->currentToken.kind) {
+                case SyntaxKind::NamespaceKeyword: {
+                    AddIncompleteMembers(&pendingIncompleteMembers, bodyBuilder);
+
+                    NodeListBuilder<SyntaxBase> modifiers(parser->tempAllocator);
+                    bodyBuilder->members->Add(adjustStateAndReportStatementOutOfOrder(parser, &seen, ParseNamespaceDeclaration(parser, &modifiers)));
+                    reportUnexpectedToken = true;
+
+                    break;
+                }
+                case SyntaxKind::EndOfFileToken:
+                case SyntaxKind::CloseBraceToken: {
+                    // This token marks the end of a namespace body
+                    return;
+                }
+                case SyntaxKind::ExternKeyword: {
+                    NOT_IMPLEMENTED("extern");
+                    break; // todo
+                }
+
+                case SyntaxKind::UsingKeyword: {
+//                    ParseUsingDirective(parser, openBraceOrSemiColon, bodyBuilder, initialBadNodes, &seen, &pendingIncompleteMembers);
+                    reportUnexpectedToken = true;
+                    break;
+                }
+
+                default: {
+                    MemberDeclarationSyntax* memberOrStatement = ParseMemberDeclaration(parser, parentKind);
+                    if (memberOrStatement == nullptr) {
+                        // incomplete members must be processed before we add any nodes to the body:
+                        ReduceIncompleteMembers(parser, &pendingIncompleteMembers, openBraceOrSemiColon, bodyBuilder, initialBadNodes);
+
+                        // eat one token and try to parse declaration or statement again:
+                        SyntaxToken skippedToken = parser->EatToken();
+                        if (reportUnexpectedToken && !skippedToken.ContainsDiagnostics()) {
+                            parser->AddError(skippedToken, ErrorCode::ERR_EOFExpected);
+
+                            // do not report the error multiple times for subsequent tokens:
+                            reportUnexpectedToken = false;
+                        }
+
+
+                        // I think we just skip these tokens, everything from the last valid / used token to this point
+                        // AddSkippedNamespaceText(parser, openBraceOrSemiColon, bodyBuilder, initialBadNodes, skippedToken);
+
+                    }
+                    else if (memberOrStatement->GetKind() == SyntaxKind::IncompleteMember && seen < NamespaceParts::MembersAndStatements) {
+                        pendingIncompleteMembers.Add(memberOrStatement);
+                        reportUnexpectedToken = true;
+                    }
+                    else {
+                        // incomplete members must be processed before we add any nodes to the body:
+                        AddIncompleteMembers(&pendingIncompleteMembers, bodyBuilder);
+
+                        bodyBuilder->members->Add(adjustStateAndReportStatementOutOfOrder(parser, &seen, memberOrStatement));
+                        reportUnexpectedToken = true;
+                    }
+                }
+
+            }
+        }
+
+    }
+
     // For better error recovery 'static =>' is also considered a possible lambda expression.
-    // pass by copy to avoid mutation since we advance token stream a bit
-    bool IsPossibleLambdaExpression(Parser parser, Precedence precedence) {
+    bool IsPossibleLambdaExpression(Parser* parser, Precedence precedence) {
         if (precedence > Precedence::Lambda) {
             return false;
         }
 
-        SyntaxToken token1 = parser.PeekToken(1);
+
+        SyntaxToken token1 = parser->PeekToken(1);
 
         // x =>
         if (token1.kind == SyntaxKind::EqualsGreaterThanToken) {
             return true;
         }
 
+        ResetPoint resetPoint(parser);
+
         bool seenStatic = false;
-        if (parser.currentToken.kind == SyntaxKind::StaticKeyword) {
-            parser.EatToken();
+        if (parser->currentToken.kind == SyntaxKind::StaticKeyword) {
+            parser->EatToken();
             seenStatic = true;
         }
 
         if (seenStatic) {
-            if (parser.currentToken.kind == SyntaxKind::EqualsGreaterThanToken) {
+            if (parser->currentToken.kind == SyntaxKind::EqualsGreaterThanToken) {
                 // `static =>`
                 // This is an error case, but we have enough code in front of us to be certain
                 // the user was trying to write a static lambda.
                 return true;
             }
 
-            if (parser.currentToken.kind == SyntaxKind::OpenParenToken) {
+            if (parser->currentToken.kind == SyntaxKind::OpenParenToken) {
                 // static (...
                 return true;
             }
         }
 
-        if (parser.currentToken.kind == SyntaxKind::IdentifierToken && parser.PeekToken(1).kind == SyntaxKind::EqualsGreaterThanToken) {
+        if (parser->currentToken.kind == SyntaxKind::IdentifierToken && parser->PeekToken(1).kind == SyntaxKind::EqualsGreaterThanToken) {
             // 1. `a => ...`
             // 2. `static a => ...`
             return true;
@@ -539,10 +1319,9 @@ namespace Alchemy::Compilation {
         //            EatToken();
         //        }
 
-        struct Parser cpy = parser;
         SyntaxToken k;
-        ScanTypeFlags st = ScanType(&cpy, &k, false);
-        if (st == ScanTypeFlags::NotType || parser.currentToken.kind != SyntaxKind::OpenParenToken) {
+        ScanTypeFlags st = ScanType(parser, &k, false);
+        if (st == ScanTypeFlags::NotType || parser->currentToken.kind != SyntaxKind::OpenParenToken) {
             // reset
         }
 
@@ -557,18 +1336,18 @@ namespace Alchemy::Compilation {
         //      async ();
 
         // ' <identifier> => ...' looks like an async simple lambda
-        if (parser.currentToken.kind == SyntaxKind::IdentifierToken && parser.PeekToken(1).kind == SyntaxKind::EqualsGreaterThanToken) {
+        if (parser->currentToken.kind == SyntaxKind::IdentifierToken && parser->PeekToken(1).kind == SyntaxKind::EqualsGreaterThanToken) {
             //  a => ...
             return true;
         }
 
         // Non-simple async lambda must be of the form 'async (...'
-        if (parser.currentToken.kind != SyntaxKind::OpenParenToken) {
+        if (parser->currentToken.kind != SyntaxKind::OpenParenToken) {
             return false;
         }
 
         // Check whether looks like implicitly or explicitly typed lambda
-        return ScanParenthesizedLambda(&parser, precedence);
+        return ScanParenthesizedLambda(parser, precedence);
     }
 
     bool IsPossibleExpression(Parser* parser, bool allowBinaryExpressions, bool allowAssignmentExpressions) {
@@ -603,7 +1382,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::OpenBracketToken: // collection expression
                 return true;
             case SyntaxKind::StaticKeyword:
-                return IsPossibleAnonymousMethodExpression(parser) || IsPossibleLambdaExpression(*parser, Precedence::Expression);
+                return IsPossibleAnonymousMethodExpression(parser) || IsPossibleLambdaExpression(parser, Precedence::Expression);
             case SyntaxKind::IdentifierToken:
                 return IsTrueIdentifier(parser);
             default:
@@ -612,6 +1391,51 @@ namespace Alchemy::Compilation {
                        || (allowBinaryExpressions && SyntaxFacts::IsBinaryExpression(tk))
                        || (allowAssignmentExpressions && SyntaxFacts::IsAssignmentExpressionOperatorToken(tk));
         }
+    }
+
+    bool IsPossibleAccessorModifier(Parser* parser) {
+        // We only want to accept a modifier as the start of an accessor if the modifiers are
+        // actually followed by "get/set/add/remove".  Otherwise, we might thing think we're
+        // starting an accessor when we're actually starting a normal class member.  For example:
+        //
+        //      class C {
+        //          public int Prop { get { this.
+        //          private DateTime x;
+        //
+        // We don't want to think of the "private" in "private DateTime x" as starting an accessor
+        // here.  If we do, we'll get totally thrown off in parsing the remainder and that will
+        // throw off the rest of the features that depend on a good syntax tree.
+        //
+        // Note: we allow all modifiers here.  That's because we want to parse things like
+        // "abstract get" as an accessor.  This way we can provide a good error message
+        // to the user that this is not allowed.
+
+        if (GetModifier(parser->currentToken) == DeclarationModifiers::None) {
+            return false;
+        }
+
+        int32 peekIndex = 1;
+        while (GetModifier(parser->PeekToken(peekIndex)) != DeclarationModifiers::None) {
+            peekIndex++;
+        }
+
+        SyntaxToken token = parser->PeekToken(peekIndex);
+
+        if (token.kind == SyntaxKind::CloseBraceToken || token.kind == SyntaxKind::EndOfFileToken) {
+            // If we see "{ get { } public }
+            // then we will think that "public" likely starts an accessor.
+            return true;
+        }
+
+        switch (token.contextualKind) {
+            case SyntaxKind::GetKeyword:
+            case SyntaxKind::SetKeyword:
+            case SyntaxKind::InitKeyword:
+                return true;
+            default:
+                return false;
+        }
+
     }
 
     bool IsPossibleExpression(Parser* parser) {
@@ -993,9 +1817,7 @@ namespace Alchemy::Compilation {
         return false;
     }
 
-    struct MemberDeclarationSyntax {};
-
-    SyntaxToken ParseIdentifierToken(Parser* parser, ErrorCode errorCode = ErrorCode::ERR_IdentifierExpected) {
+    SyntaxToken ParseIdentifierToken(Parser* parser, ErrorCode errorCode) {
         if (parser->currentToken.kind == SyntaxKind::IdentifierToken) {
             return parser->EatToken();
         }
@@ -1062,50 +1884,6 @@ namespace Alchemy::Compilation {
 
     }
 
-    struct ResetPoint {
-
-        bool resetOnDispose;
-        size_t allocatorOffset;
-        size_t tempAllocatorOffset;
-        Parser* originalParser;
-        Parser copyParser;
-        Diagnostics diagnosticsCopy;
-        SyntaxTokenFlags* flags;
-
-        explicit ResetPoint(Parser* parser, bool resetOnDispose = true)
-            : originalParser(parser)
-            , copyParser(*parser)
-            , allocatorOffset(parser->allocator->offset)
-            , tempAllocatorOffset(parser->tempAllocator->offset)
-            , diagnosticsCopy(*parser->diagnostics)
-            , resetOnDispose(resetOnDispose) {
-            flags = parser->tempAllocator->AllocateUncleared<SyntaxTokenFlags>(parser->tokens.size - parser->ptr);
-            int32 flagIdx = 0;
-            for (int32 i = parser->ptr; i < parser->tokens.size; i++) {
-                flags[flagIdx++] = parser->tokens.array[i].GetFlags();
-            }
-        }
-
-        ~ResetPoint() {
-            if (resetOnDispose) {
-                Reset();
-            }
-        }
-
-        void Reset() {
-
-            int32 flagIdx = 0;
-            for (int32 i = copyParser.ptr; i < copyParser.tokens.size; i++) {
-                originalParser->tokens.array[i].SetFlags(flags[flagIdx++]);
-            }
-
-            *originalParser = copyParser;
-            *originalParser->diagnostics = diagnosticsCopy;
-            originalParser->tempAllocator->offset = tempAllocatorOffset;
-            originalParser->allocator->offset = allocatorOffset;
-        }
-
-    };
 
     IdentifierNameSyntax* ParseIdentifierName(Parser* parser, ErrorCode code = ErrorCode::ERR_IdentifierExpected) {
         return parser->CreateNode<IdentifierNameSyntax>(parser->EatToken(SyntaxKind::IdentifierToken));
@@ -1384,7 +2162,8 @@ namespace Alchemy::Compilation {
 
     }
 
-    ExpressionSyntax* ParseExpressionCore(Parser* parser) {
+    ExpressionSyntax* ParseExpression(Parser* parser) {
+        NOT_IMPLEMENTED("ParseExpression");
         return nullptr;
     }
 
@@ -1411,8 +2190,8 @@ namespace Alchemy::Compilation {
                 ParseTypeArgumentList(parser, &open, &builder, &close);
 
                 name = parser->CreateNode<GenericNameSyntax>(
-                    id->identifier,
-                    parser->CreateNode<TypeArgumentListSyntax>(open, builder.ToList(parser->allocator), close)
+                        id->identifier,
+                        parser->CreateNode<TypeArgumentListSyntax>(open, builder.ToList(parser->allocator), close)
                 );
             }
 
@@ -1509,10 +2288,10 @@ namespace Alchemy::Compilation {
 
     TupleElementSyntax* ParseTupleElement(Parser* parser) {
         return parser->CreateNode<TupleElementSyntax>(
-            ParseType(parser, ParseTypeMode::Normal),
-            IsTrueIdentifier(parser)
-            ? ParseIdentifierToken(parser)
-            : SyntaxToken()
+                ParseType(parser, ParseTypeMode::Normal),
+                IsTrueIdentifier(parser)
+                ? ParseIdentifierToken(parser)
+                : SyntaxToken()
         );
     }
 
@@ -1602,9 +2381,9 @@ namespace Alchemy::Compilation {
                 SyntaxKind kind = parser->currentToken.kind;
 
                 return
-                    kind == SyntaxKind::OpenParenToken ||   // ctor parameters
-                    kind == SyntaxKind::OpenBracketToken ||   // array type
-                    kind == SyntaxKind::OpenBraceToken;   // object initializer
+                        kind == SyntaxKind::OpenParenToken ||   // ctor parameters
+                        kind == SyntaxKind::OpenBracketToken ||   // array type
+                        kind == SyntaxKind::OpenBraceToken;   // object initializer
             }
             default: {
                 return true;
@@ -1687,10 +2466,10 @@ namespace Alchemy::Compilation {
 
     PostSkipAction SkipBadArrayRankSpecifierTokens(Parser* parser, SyntaxKind expected) {
         return SkipBadSeparatedListTokensWithExpectedKind(
-            parser,
-            &arrayRankNotExpectedFn,
-            &arrayRankAbortFn,
-            expected
+                parser,
+                &arrayRankNotExpectedFn,
+                &arrayRankAbortFn,
+                expected
         );
     }
 
@@ -1718,7 +2497,7 @@ namespace Alchemy::Compilation {
                 list.AddSeparator(parser->EatToken());
             }
             else if (IsPossibleExpression(parser)) {
-                ExpressionSyntax* size = ParseExpressionCore(parser);
+                ExpressionSyntax* size = ParseExpression(parser);
                 *pSawNonOmittedSize = true;
                 list.Add(size);
                 if (parser->currentToken.kind != SyntaxKind::CloseBracketToken) {
@@ -1825,9 +2604,9 @@ namespace Alchemy::Compilation {
         if (parser->currentToken.kind == SyntaxKind::RefKeyword) {
 
             return parser->CreateNode<RefTypeSyntax>(
-                parser->EatToken(),
-                parser->currentToken.kind == SyntaxKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken(),
-                ParseTypeCore(parser, ParseTypeMode::AfterRef)
+                    parser->EatToken(),
+                    parser->currentToken.kind == SyntaxKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken(),
+                    ParseTypeCore(parser, ParseTypeMode::AfterRef)
             );
 
         }

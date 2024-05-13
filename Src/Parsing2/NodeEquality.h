@@ -34,6 +34,18 @@ namespace Alchemy::Compilation {
         return aText == bText;
     }
 
+    inline bool TokenListsEqual(TokenList* a, TokenList* b, NodeEqualityOptions options) {
+        if (a->size != b->size) {
+            return false;
+        }
+        for (int32 i = 0; i < a->size; i++) {
+            if (!TokensEqual(a->array[i], b->array[i], options)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     inline bool SeparatedSyntaxListEqual(SeparatedSyntaxListUntyped* a, SeparatedSyntaxListUntyped* b, NodeEqualityOptions options) {
         if (a == nullptr && b == nullptr) {
             return true;

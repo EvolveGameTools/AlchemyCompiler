@@ -10,6 +10,7 @@
 namespace Alchemy::Compilation {
 
     SyntaxToken GetFirstToken(SyntaxBase * syntaxBase);
+    SyntaxToken GetLastToken(SyntaxBase * syntaxBase);
 
     struct Parser  {
 
@@ -34,7 +35,9 @@ namespace Alchemy::Compilation {
 
         SyntaxToken EatTokenWithPrejudice(SyntaxKind kind);
 
+        void AddError(SyntaxToken token, ErrorCode errorCode);
         void AddError(SyntaxToken token, Diagnostic diagnostic);
+        void AddError(SyntaxBase* node, ErrorCode errorCode);
 
         void SkipToken();
 
@@ -46,11 +49,16 @@ namespace Alchemy::Compilation {
             new(retn) T(std::forward<Args>(args)...);
             SyntaxBase * pBase = (SyntaxBase*)retn;
             SyntaxToken startToken = GetFirstToken(pBase);
-            pBase->startTokenId = startToken.GetId();
+            SyntaxToken endToken = GetLastToken(pBase);
             assert(startToken.IsValid() && !startToken.IsMissing());
-            pBase->endTokenId = ptr;
+            assert(endToken.IsValid());
+            pBase->startTokenId = startToken.GetId();
+            pBase->endTokenId = endToken.GetId();
             return retn;
         }
+
+
+        bool IsAfterNewLine(int32 i);
     };
 
 }

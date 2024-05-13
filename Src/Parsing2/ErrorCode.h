@@ -26,6 +26,14 @@ namespace Alchemy::Compilation {
         ERR_BadNewExpr,
         ERR_TypeExpected,
         ERR_TupleTooFewElements,
+        ERR_TopLevelStatementAfterNamespaceOrType,
+        ERR_EOFExpected,
+        ERR_MultiTypeInDeclaration,
+        ERR_BadVarDecl,
+        ERR_ArraySizeInDeclaration,
+        ERR_CStyleArray,
+        ERR_ConstValueRequired,
+        ERR_FixedDimsRequired,
     };
 
 }

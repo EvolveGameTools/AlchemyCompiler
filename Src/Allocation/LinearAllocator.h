@@ -57,6 +57,18 @@ namespace Alchemy {
             return (T*) AllocateBytesUncleared(sizeof(T) * count, alignof(T));
         }
 
+        template<typename T>
+        T* ResizeList(T * array, int32 size, int32 * capacity) {
+            if (size + 1 > *capacity) {
+                T* ptr = AllocateUncleared<T>(*capacity * 2);
+                memcpy(ptr, array, sizeof(T) * size);
+                array = ptr;
+                *capacity *= 2;
+            }
+            return array;
+        }
+
+
         size_t GetOffset(void* ptr);
 
         uint8* GetBase();

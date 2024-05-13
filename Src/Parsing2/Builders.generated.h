@@ -316,6 +316,408 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct ArgumentSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken nameColon {};
+        SyntaxToken refKindKeyword {};
+        ExpressionSyntaxBuilder * expression {};
+
+        inline ArgumentSyntaxBuilder* NameColon(SyntaxToken builder) {
+            nameColon = builder;
+            return this;
+        }
+
+        inline ArgumentSyntaxBuilder* RefKindKeyword(SyntaxToken builder) {
+            refKindKeyword = builder;
+            return this;
+        }
+
+        inline ArgumentSyntaxBuilder* Expression(ExpressionSyntaxBuilder * builder) {
+            expression = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            ArgumentSyntax* retn = allocator->Allocate<ArgumentSyntax>(1);
+            retn->_kind = SyntaxKind::Argument;
+            retn->nameColon = nameColon;
+            retn->refKindKeyword = refKindKeyword;
+            retn->expression = expression != nullptr ? (ExpressionSyntax*)expression->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct BracketedArgumentListSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken openBracket {};
+        SeparatedSyntaxListBuilder* arguments {};
+        SyntaxToken closeBracket {};
+
+        inline BracketedArgumentListSyntaxBuilder* OpenBracket(SyntaxToken builder) {
+            openBracket = builder;
+            return this;
+        }
+
+        inline BracketedArgumentListSyntaxBuilder* Arguments(SeparatedSyntaxListBuilder* builder) {
+            arguments = builder;
+            return this;
+        }
+
+        inline BracketedArgumentListSyntaxBuilder* CloseBracket(SyntaxToken builder) {
+            closeBracket = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            BracketedArgumentListSyntax* retn = allocator->Allocate<BracketedArgumentListSyntax>(1);
+            retn->_kind = SyntaxKind::BracketedArgumentList;
+            retn->openBracket = openBracket;
+            retn->arguments = arguments != nullptr ? (SeparatedSyntaxList<ArgumentSyntax>*)arguments->Build() : nullptr;
+            retn->closeBracket = closeBracket;
+            return retn;
+        }
+
+    };
+
+    struct EqualsValueClauseSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken equalsToken {};
+        ExpressionSyntaxBuilder * value {};
+
+        inline EqualsValueClauseSyntaxBuilder* EqualsToken(SyntaxToken builder) {
+            equalsToken = builder;
+            return this;
+        }
+
+        inline EqualsValueClauseSyntaxBuilder* Value(ExpressionSyntaxBuilder * builder) {
+            value = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            EqualsValueClauseSyntax* retn = allocator->Allocate<EqualsValueClauseSyntax>(1);
+            retn->_kind = SyntaxKind::EqualsValueClause;
+            retn->equalsToken = equalsToken;
+            retn->value = value != nullptr ? (ExpressionSyntax*)value->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct RefExpressionSyntaxBuilder: ExpressionSyntaxBuilder {
+
+        SyntaxToken refKeyword {};
+        ExpressionSyntaxBuilder * expression {};
+
+        inline RefExpressionSyntaxBuilder* RefKeyword(SyntaxToken builder) {
+            refKeyword = builder;
+            return this;
+        }
+
+        inline RefExpressionSyntaxBuilder* Expression(ExpressionSyntaxBuilder * builder) {
+            expression = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            RefExpressionSyntax* retn = allocator->Allocate<RefExpressionSyntax>(1);
+            retn->_kind = SyntaxKind::RefExpression;
+            retn->refKeyword = refKeyword;
+            retn->expression = expression != nullptr ? (ExpressionSyntax*)expression->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct VariableDeclaratorSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken identifier {};
+        BracketedArgumentListSyntaxBuilder * argumentList {};
+        EqualsValueClauseSyntaxBuilder * initializer {};
+
+        inline VariableDeclaratorSyntaxBuilder* Identifier(SyntaxToken builder) {
+            identifier = builder;
+            return this;
+        }
+
+        inline VariableDeclaratorSyntaxBuilder* ArgumentList(BracketedArgumentListSyntaxBuilder * builder) {
+            argumentList = builder;
+            return this;
+        }
+
+        inline VariableDeclaratorSyntaxBuilder* Initializer(EqualsValueClauseSyntaxBuilder * builder) {
+            initializer = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            VariableDeclaratorSyntax* retn = allocator->Allocate<VariableDeclaratorSyntax>(1);
+            retn->_kind = SyntaxKind::VariableDeclarator;
+            retn->identifier = identifier;
+            retn->argumentList = argumentList != nullptr ? (BracketedArgumentListSyntax*)argumentList->Build() : nullptr;
+            retn->initializer = initializer != nullptr ? (EqualsValueClauseSyntax*)initializer->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct TypeParameterSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken identifier {};
+
+        inline TypeParameterSyntaxBuilder* Identifier(SyntaxToken builder) {
+            identifier = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            TypeParameterSyntax* retn = allocator->Allocate<TypeParameterSyntax>(1);
+            retn->_kind = SyntaxKind::TypeParameter;
+            retn->identifier = identifier;
+            return retn;
+        }
+
+    };
+
+    struct TypeParameterListSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken lessThanToken {};
+        SeparatedSyntaxListBuilder* parameters {};
+        SyntaxToken greaterThanToken {};
+
+        inline TypeParameterListSyntaxBuilder* LessThanToken(SyntaxToken builder) {
+            lessThanToken = builder;
+            return this;
+        }
+
+        inline TypeParameterListSyntaxBuilder* Parameters(SeparatedSyntaxListBuilder* builder) {
+            parameters = builder;
+            return this;
+        }
+
+        inline TypeParameterListSyntaxBuilder* GreaterThanToken(SyntaxToken builder) {
+            greaterThanToken = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            TypeParameterListSyntax* retn = allocator->Allocate<TypeParameterListSyntax>(1);
+            retn->_kind = SyntaxKind::TypeParameterList;
+            retn->lessThanToken = lessThanToken;
+            retn->parameters = parameters != nullptr ? (SeparatedSyntaxList<TypeParameterSyntax>*)parameters->Build() : nullptr;
+            retn->greaterThanToken = greaterThanToken;
+            return retn;
+        }
+
+    };
+
+    struct ParameterSyntaxBuilder: SyntaxBaseBuilder {
+
+        TokenListBuilder * modifiers {};
+        TypeSyntaxBuilder * type {};
+        SyntaxToken identifier {};
+        EqualsValueClauseSyntaxBuilder * defaultValue {};
+
+        inline ParameterSyntaxBuilder* Modifiers(TokenListBuilder * builder) {
+            modifiers = builder;
+            return this;
+        }
+
+        inline ParameterSyntaxBuilder* Type(TypeSyntaxBuilder * builder) {
+            type = builder;
+            return this;
+        }
+
+        inline ParameterSyntaxBuilder* Identifier(SyntaxToken builder) {
+            identifier = builder;
+            return this;
+        }
+
+        inline ParameterSyntaxBuilder* DefaultValue(EqualsValueClauseSyntaxBuilder * builder) {
+            defaultValue = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            ParameterSyntax* retn = allocator->Allocate<ParameterSyntax>(1);
+            retn->_kind = SyntaxKind::Parameter;
+            retn->modifiers = modifiers != nullptr ? (TokenList*)modifiers->Build() : nullptr;
+            retn->type = type != nullptr ? (TypeSyntax*)type->Build() : nullptr;
+            retn->identifier = identifier;
+            retn->defaultValue = defaultValue != nullptr ? (EqualsValueClauseSyntax*)defaultValue->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct ParameterListSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken openParen {};
+        SeparatedSyntaxListBuilder* parameters {};
+        SyntaxToken closeParen {};
+
+        inline ParameterListSyntaxBuilder* OpenParen(SyntaxToken builder) {
+            openParen = builder;
+            return this;
+        }
+
+        inline ParameterListSyntaxBuilder* Parameters(SeparatedSyntaxListBuilder* builder) {
+            parameters = builder;
+            return this;
+        }
+
+        inline ParameterListSyntaxBuilder* CloseParen(SyntaxToken builder) {
+            closeParen = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            ParameterListSyntax* retn = allocator->Allocate<ParameterListSyntax>(1);
+            retn->_kind = SyntaxKind::ParameterList;
+            retn->openParen = openParen;
+            retn->parameters = parameters != nullptr ? (SeparatedSyntaxList<ParameterSyntax>*)parameters->Build() : nullptr;
+            retn->closeParen = closeParen;
+            return retn;
+        }
+
+    };
+
+    struct ConstraintClausesSyntaxBuilder: SyntaxBaseBuilder {
+
+        SyntaxToken dummy {};
+
+        inline ConstraintClausesSyntaxBuilder* Dummy(SyntaxToken builder) {
+            dummy = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            ConstraintClausesSyntax* retn = allocator->Allocate<ConstraintClausesSyntax>(1);
+            retn->_kind = SyntaxKind::ConstraintClauses;
+            retn->dummy = dummy;
+            return retn;
+        }
+
+    };
+
+    struct LocalFunctionStatementSyntaxBuilder: SyntaxBaseBuilder {
+
+        TokenListBuilder * modifiers {};
+        TypeSyntaxBuilder * returnType {};
+        SyntaxToken identifier {};
+        TypeParameterListSyntaxBuilder * typeParameters {};
+        ParameterListSyntaxBuilder * parameters {};
+        ConstraintClausesSyntaxBuilder * constraints {};
+        SyntaxBaseBuilder * body {};
+
+        inline LocalFunctionStatementSyntaxBuilder* Modifiers(TokenListBuilder * builder) {
+            modifiers = builder;
+            return this;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* ReturnType(TypeSyntaxBuilder * builder) {
+            returnType = builder;
+            return this;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* Identifier(SyntaxToken builder) {
+            identifier = builder;
+            return this;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* TypeParameters(TypeParameterListSyntaxBuilder * builder) {
+            typeParameters = builder;
+            return this;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* Parameters(ParameterListSyntaxBuilder * builder) {
+            parameters = builder;
+            return this;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* Constraints(ConstraintClausesSyntaxBuilder * builder) {
+            constraints = builder;
+            return this;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* Body(SyntaxBaseBuilder * builder) {
+            body = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            LocalFunctionStatementSyntax* retn = allocator->Allocate<LocalFunctionStatementSyntax>(1);
+            retn->_kind = SyntaxKind::LocalFunctionStatement;
+            retn->modifiers = modifiers != nullptr ? (TokenList*)modifiers->Build() : nullptr;
+            retn->returnType = returnType != nullptr ? (TypeSyntax*)returnType->Build() : nullptr;
+            retn->identifier = identifier;
+            retn->typeParameters = typeParameters != nullptr ? (TypeParameterListSyntax*)typeParameters->Build() : nullptr;
+            retn->parameters = parameters != nullptr ? (ParameterListSyntax*)parameters->Build() : nullptr;
+            retn->constraints = constraints != nullptr ? (ConstraintClausesSyntax*)constraints->Build() : nullptr;
+            retn->body = body != nullptr ? (SyntaxBase*)body->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct VariableDeclarationSyntaxBuilder: SyntaxBaseBuilder {
+
+        TypeSyntaxBuilder * type {};
+        SeparatedSyntaxListBuilder* variables {};
+
+        inline VariableDeclarationSyntaxBuilder* Type(TypeSyntaxBuilder * builder) {
+            type = builder;
+            return this;
+        }
+
+        inline VariableDeclarationSyntaxBuilder* Variables(SeparatedSyntaxListBuilder* builder) {
+            variables = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            VariableDeclarationSyntax* retn = allocator->Allocate<VariableDeclarationSyntax>(1);
+            retn->_kind = SyntaxKind::VariableDeclaration;
+            retn->type = type != nullptr ? (TypeSyntax*)type->Build() : nullptr;
+            retn->variables = variables != nullptr ? (SeparatedSyntaxList<VariableDeclaratorSyntax>*)variables->Build() : nullptr;
+            return retn;
+        }
+
+    };
+
+    struct FieldDeclarationSyntaxBuilder: MemberDeclarationSyntaxBuilder {
+
+        TokenListBuilder * modifiers {};
+        VariableDeclarationSyntaxBuilder * declaration {};
+        SyntaxToken semicolonToken {};
+
+        inline FieldDeclarationSyntaxBuilder* Modifiers(TokenListBuilder * builder) {
+            modifiers = builder;
+            return this;
+        }
+
+        inline FieldDeclarationSyntaxBuilder* Declaration(VariableDeclarationSyntaxBuilder * builder) {
+            declaration = builder;
+            return this;
+        }
+
+        inline FieldDeclarationSyntaxBuilder* SemicolonToken(SyntaxToken builder) {
+            semicolonToken = builder;
+            return this;
+        }
+
+        inline SyntaxBase* Build() override {
+            FieldDeclarationSyntax* retn = allocator->Allocate<FieldDeclarationSyntax>(1);
+            retn->_kind = SyntaxKind::FieldDeclaration;
+            retn->modifiers = modifiers != nullptr ? (TokenList*)modifiers->Build() : nullptr;
+            retn->declaration = declaration != nullptr ? (VariableDeclarationSyntax*)declaration->Build() : nullptr;
+            retn->semicolonToken = semicolonToken;
+            return retn;
+        }
+
+    };
+
     struct Builder : BuilderBase {
     
         explicit Builder(LinearAllocator * allocator) : BuilderBase((allocator)) {}
@@ -402,8 +804,99 @@ namespace Alchemy::Compilation {
             new (retn) NullableTypeBuilder();
             retn->allocator = allocator;
             return retn;
-        }        
-        
+        }
+
+        inline ArgumentSyntaxBuilder* ArgumentSyntax() { 
+            ArgumentSyntaxBuilder * retn = allocator->Allocate<ArgumentSyntaxBuilder>(1);
+            new (retn) ArgumentSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline BracketedArgumentListSyntaxBuilder* BracketedArgumentListSyntax() { 
+            BracketedArgumentListSyntaxBuilder * retn = allocator->Allocate<BracketedArgumentListSyntaxBuilder>(1);
+            new (retn) BracketedArgumentListSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline EqualsValueClauseSyntaxBuilder* EqualsValueClauseSyntax() { 
+            EqualsValueClauseSyntaxBuilder * retn = allocator->Allocate<EqualsValueClauseSyntaxBuilder>(1);
+            new (retn) EqualsValueClauseSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline RefExpressionSyntaxBuilder* RefExpressionSyntax() { 
+            RefExpressionSyntaxBuilder * retn = allocator->Allocate<RefExpressionSyntaxBuilder>(1);
+            new (retn) RefExpressionSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline VariableDeclaratorSyntaxBuilder* VariableDeclaratorSyntax() { 
+            VariableDeclaratorSyntaxBuilder * retn = allocator->Allocate<VariableDeclaratorSyntaxBuilder>(1);
+            new (retn) VariableDeclaratorSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline TypeParameterSyntaxBuilder* TypeParameterSyntax() { 
+            TypeParameterSyntaxBuilder * retn = allocator->Allocate<TypeParameterSyntaxBuilder>(1);
+            new (retn) TypeParameterSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline TypeParameterListSyntaxBuilder* TypeParameterListSyntax() { 
+            TypeParameterListSyntaxBuilder * retn = allocator->Allocate<TypeParameterListSyntaxBuilder>(1);
+            new (retn) TypeParameterListSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline ParameterSyntaxBuilder* ParameterSyntax() { 
+            ParameterSyntaxBuilder * retn = allocator->Allocate<ParameterSyntaxBuilder>(1);
+            new (retn) ParameterSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline ParameterListSyntaxBuilder* ParameterListSyntax() { 
+            ParameterListSyntaxBuilder * retn = allocator->Allocate<ParameterListSyntaxBuilder>(1);
+            new (retn) ParameterListSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline ConstraintClausesSyntaxBuilder* ConstraintClausesSyntax() { 
+            ConstraintClausesSyntaxBuilder * retn = allocator->Allocate<ConstraintClausesSyntaxBuilder>(1);
+            new (retn) ConstraintClausesSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline LocalFunctionStatementSyntaxBuilder* LocalFunctionStatementSyntax() { 
+            LocalFunctionStatementSyntaxBuilder * retn = allocator->Allocate<LocalFunctionStatementSyntaxBuilder>(1);
+            new (retn) LocalFunctionStatementSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline VariableDeclarationSyntaxBuilder* VariableDeclarationSyntax() { 
+            VariableDeclarationSyntaxBuilder * retn = allocator->Allocate<VariableDeclarationSyntaxBuilder>(1);
+            new (retn) VariableDeclarationSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
+        inline FieldDeclarationSyntaxBuilder* FieldDeclarationSyntax() { 
+            FieldDeclarationSyntaxBuilder * retn = allocator->Allocate<FieldDeclarationSyntaxBuilder>(1);
+            new (retn) FieldDeclarationSyntaxBuilder();
+            retn->allocator = allocator;
+            return retn;
+        }
+
     };
 
 }

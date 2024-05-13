@@ -37,6 +37,43 @@ namespace Alchemy::Compilation {
         FirstElementOfPossibleTupleLiteral = 1 << 7
     })
 
+    DEFINE_ENUM_FLAGS(VariableFlags, int32, {
+        Fixed = 0x01,
+        Const = 0x02,
+        LocalOrField = 0x04
+    })
+
+    struct TokenListBuffer {
+        TempAllocator* allocator;
+        SyntaxToken* array;
+        int32 capacity;
+        int32 size;
+
+        explicit TokenListBuffer(TempAllocator* allocator)
+                : allocator(allocator)
+                  , size(0)
+                  , capacity(8)
+                  , array(allocator->AllocateUncleared<SyntaxToken>(8)) {}
+
+        void Add(SyntaxToken item) {
+            if (size + 1 > capacity) {
+                SyntaxToken* ptr = allocator->AllocateUncleared<SyntaxToken>(capacity * 2);
+                memcpy(ptr, array, sizeof(SyntaxToken) * size);
+                array = ptr;
+                capacity *= 2;
+            }
+            array[size] = item;
+            size++;
+        }
+
+        TokenList* Persist(LinearAllocator * pAllocator) {
+            SyntaxToken * p = pAllocator->AllocateUncleared<SyntaxToken>(size);
+            memcpy(p, array, sizeof(SyntaxToken) * size);
+            return pAllocator->New<TokenList>(p, size);
+        }
+
+    };
+
     typedef bool (* abortFn)(Parser* parser, SyntaxKind kind);
 
     typedef bool (* notExpectedFn)(Parser* parser);
@@ -52,9 +89,17 @@ namespace Alchemy::Compilation {
     TypeSyntax* ParseType(Parser* parser, ParseTypeMode mode = ParseTypeMode::Normal);
 
     IdentifierNameSyntax* CreateMissingIdentifierName(Parser* parser);
+
     TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options);
+
     NameSyntax* ParseQualifiedNameRight(Parser* parser, NameOptions options, NameSyntax* left, SyntaxToken separator);
+
+    VariableDeclaratorSyntax* ParseVariableDeclarator(Parser* parser, TypeSyntax* parentType, VariableFlags flags, bool isFirst, bool allowLocalFunctions, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction, bool isExpressionContext = false);
+    ExpressionSyntax* ParseExpression(Parser* parser);
+    ExpressionSyntax* ParseArrayInitializer(Parser * parser);
+    ArrayRankSpecifierSyntax* ParseArrayRankSpecifier(Parser* parser, bool* pSawNonOmittedSize);
     SimpleNameSyntax* ParseSimpleName(Parser* parser, NameOptions options = NameOptions::None);
+    MemberDeclarationSyntax* ParseMemberDeclaration(Parser* parser, SyntaxKind parentKind);
 
     SyntaxToken MakeMissingToken(SyntaxKind kind, int32 tokenId);
 
@@ -68,6 +113,19 @@ namespace Alchemy::Compilation {
 
     PostSkipAction SkipBadTokensWithExpectedKind(Parser* parser, notExpectedFn isNotExpectedFunction, abortFn abortFunction, SyntaxKind expected, SyntaxKind closeKind);
 
+    SyntaxToken ParseIdentifierToken(Parser* parser, ErrorCode errorCode = ErrorCode::ERR_IdentifierExpected);
+
+    bool IsPossibleLambdaExpression(Parser* parser, Precedence precedence);
+
+    bool IsPossibleStartOfTypeDeclaration(SyntaxKind kind);
+
+    bool IsPossibleAccessorModifier(Parser* parser);
+
+    bool IsTypeDeclarationStart(Parser* parser);
+
+    bool IsStartOfPropertyBody(SyntaxKind kind);
+
+
     template<typename T>
     struct SeparatedNodeListBuilder {
 
@@ -80,12 +138,12 @@ namespace Alchemy::Compilation {
         int32 separatorCount;
 
         explicit SeparatedNodeListBuilder(TempAllocator* allocator)
-            : allocator(allocator)
-            , itemCount(0)
-            , separatorCount(0)
-            , capacity(8)
-            , items(allocator->AllocateUncleared<T*>(8))
-            , separators(allocator->AllocateUncleared<SyntaxToken>(8)) {
+                : allocator(allocator)
+                  , itemCount(0)
+                  , separatorCount(0)
+                  , capacity(8)
+                  , items(allocator->AllocateUncleared<T*>(8))
+                  , separators(allocator->AllocateUncleared<SyntaxToken>(8)) {
         }
 
         void EnsureAdditionalCapacity(int32 additional) {

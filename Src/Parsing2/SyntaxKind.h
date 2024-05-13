@@ -97,6 +97,7 @@ namespace Alchemy::Compilation {
         ElifKeyword,
         EndIfKeyword,
         NameOfKeyword,
+        ConstructorKeyword,
 
         __LastKeyword__,
         // --- End Reserved Keywords
@@ -228,18 +229,19 @@ namespace Alchemy::Compilation {
         LogicalAndExpression,
         LogicalOrExpression,
         OmittedArraySizeExpression,
+        RefExpression,
 
         __LastExpression__,
         // -- End Expressions
-
 
         IdentifierName,
         QualifiedName,
         GenericName,
         ArrayRankSpecifier,
         TupleElement,
-
+        MemberDeclaration,
         TypeArgumentList,
+        VariableDeclarator,
 
         TupleType,
         NullableType,
@@ -251,8 +253,29 @@ namespace Alchemy::Compilation {
         MultiLineComment,
         SingleLineComment,
         Whitespace,
-
         NewLine,
+
+        NamespaceDeclaration,
+        EnumDeclaration,
+        StructDeclaration,
+        ClassDeclaration,
+        InterfaceDeclaration,
+        DelegateDeclaration,
+        GlobalStatement,
+        IncompleteMember,
+        CompilationUnit,
+
+        LocalFunctionStatement,
+        TypeParameterList,
+        ParameterList,
+        EqualsValueClause,
+        Argument,
+        BracketedArgumentList,
+        VariableDeclaration,
+        FieldDeclaration,
+        TypeParameter,
+        Parameter,
+        ConstraintClauses,
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

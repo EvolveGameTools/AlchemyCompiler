@@ -115,6 +115,121 @@ namespace Alchemy::Compilation {
                 return true;
             }
 
+            case SyntaxKind::Argument: {
+                ArgumentSyntax* pA = (ArgumentSyntax*)a;
+                ArgumentSyntax* pB = (ArgumentSyntax*)b;
+                if(!TokensEqual(pA->nameColon, pB->nameColon, options)) return false;
+                if(!TokensEqual(pA->refKindKeyword, pB->refKindKeyword, options)) return false;
+                if(!NodesEqual(pA->expression, pB->expression, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::BracketedArgumentList: {
+                BracketedArgumentListSyntax* pA = (BracketedArgumentListSyntax*)a;
+                BracketedArgumentListSyntax* pB = (BracketedArgumentListSyntax*)b;
+                if(!TokensEqual(pA->openBracket, pB->openBracket, options)) return false;
+                if(!SeparatedSyntaxListEqual((SeparatedSyntaxListUntyped*)pA->arguments, (SeparatedSyntaxListUntyped*)pB->arguments, options)) return false;
+                if(!TokensEqual(pA->closeBracket, pB->closeBracket, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::EqualsValueClause: {
+                EqualsValueClauseSyntax* pA = (EqualsValueClauseSyntax*)a;
+                EqualsValueClauseSyntax* pB = (EqualsValueClauseSyntax*)b;
+                if(!TokensEqual(pA->equalsToken, pB->equalsToken, options)) return false;
+                if(!NodesEqual(pA->value, pB->value, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::RefExpression: {
+                RefExpressionSyntax* pA = (RefExpressionSyntax*)a;
+                RefExpressionSyntax* pB = (RefExpressionSyntax*)b;
+                if(!TokensEqual(pA->refKeyword, pB->refKeyword, options)) return false;
+                if(!NodesEqual(pA->expression, pB->expression, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::VariableDeclarator: {
+                VariableDeclaratorSyntax* pA = (VariableDeclaratorSyntax*)a;
+                VariableDeclaratorSyntax* pB = (VariableDeclaratorSyntax*)b;
+                if(!TokensEqual(pA->identifier, pB->identifier, options)) return false;
+                if(!NodesEqual(pA->argumentList, pB->argumentList, options)) return false;
+                if(!NodesEqual(pA->initializer, pB->initializer, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::TypeParameter: {
+                TypeParameterSyntax* pA = (TypeParameterSyntax*)a;
+                TypeParameterSyntax* pB = (TypeParameterSyntax*)b;
+                if(!TokensEqual(pA->identifier, pB->identifier, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::TypeParameterList: {
+                TypeParameterListSyntax* pA = (TypeParameterListSyntax*)a;
+                TypeParameterListSyntax* pB = (TypeParameterListSyntax*)b;
+                if(!TokensEqual(pA->lessThanToken, pB->lessThanToken, options)) return false;
+                if(!SeparatedSyntaxListEqual((SeparatedSyntaxListUntyped*)pA->parameters, (SeparatedSyntaxListUntyped*)pB->parameters, options)) return false;
+                if(!TokensEqual(pA->greaterThanToken, pB->greaterThanToken, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::Parameter: {
+                ParameterSyntax* pA = (ParameterSyntax*)a;
+                ParameterSyntax* pB = (ParameterSyntax*)b;
+                if(!TokenListsEqual(pA->modifiers, pB->modifiers, options)) return false;
+                if(!NodesEqual(pA->type, pB->type, options)) return false;
+                if(!TokensEqual(pA->identifier, pB->identifier, options)) return false;
+                if(!NodesEqual(pA->defaultValue, pB->defaultValue, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::ParameterList: {
+                ParameterListSyntax* pA = (ParameterListSyntax*)a;
+                ParameterListSyntax* pB = (ParameterListSyntax*)b;
+                if(!TokensEqual(pA->openParen, pB->openParen, options)) return false;
+                if(!SeparatedSyntaxListEqual((SeparatedSyntaxListUntyped*)pA->parameters, (SeparatedSyntaxListUntyped*)pB->parameters, options)) return false;
+                if(!TokensEqual(pA->closeParen, pB->closeParen, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::ConstraintClauses: {
+                ConstraintClausesSyntax* pA = (ConstraintClausesSyntax*)a;
+                ConstraintClausesSyntax* pB = (ConstraintClausesSyntax*)b;
+                if(!TokensEqual(pA->dummy, pB->dummy, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::LocalFunctionStatement: {
+                LocalFunctionStatementSyntax* pA = (LocalFunctionStatementSyntax*)a;
+                LocalFunctionStatementSyntax* pB = (LocalFunctionStatementSyntax*)b;
+                if(!TokenListsEqual(pA->modifiers, pB->modifiers, options)) return false;
+                if(!NodesEqual(pA->returnType, pB->returnType, options)) return false;
+                if(!TokensEqual(pA->identifier, pB->identifier, options)) return false;
+                if(!NodesEqual(pA->typeParameters, pB->typeParameters, options)) return false;
+                if(!NodesEqual(pA->parameters, pB->parameters, options)) return false;
+                if(!NodesEqual(pA->constraints, pB->constraints, options)) return false;
+                if(!NodesEqual(pA->body, pB->body, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::VariableDeclaration: {
+                VariableDeclarationSyntax* pA = (VariableDeclarationSyntax*)a;
+                VariableDeclarationSyntax* pB = (VariableDeclarationSyntax*)b;
+                if(!NodesEqual(pA->type, pB->type, options)) return false;
+                if(!SeparatedSyntaxListEqual((SeparatedSyntaxListUntyped*)pA->variables, (SeparatedSyntaxListUntyped*)pB->variables, options)) return false;
+                return true;
+            }
+
+            case SyntaxKind::FieldDeclaration: {
+                FieldDeclarationSyntax* pA = (FieldDeclarationSyntax*)a;
+                FieldDeclarationSyntax* pB = (FieldDeclarationSyntax*)b;
+                if(!TokenListsEqual(pA->modifiers, pB->modifiers, options)) return false;
+                if(!NodesEqual(pA->declaration, pB->declaration, options)) return false;
+                if(!TokensEqual(pA->semicolonToken, pB->semicolonToken, options)) return false;
+                return true;
+            }
+
             default: {
                 UNREACHABLE("NodesEqual");
                 return true;

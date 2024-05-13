@@ -5,6 +5,7 @@ namespace Alchemy::Compilation {
     void NodePrinter::PrintNode(SyntaxBase* syntaxBase) {
 
         if (syntaxBase == nullptr) {
+            PrintLine("nullptr");
             return;
         }
 
@@ -157,14 +158,188 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::Argument: {
+                ArgumentSyntax* p = (ArgumentSyntax*)syntaxBase;
+                PrintLine("ArgumentSyntax");
+                indent++;
+                PrintFieldName("nameColon");
+                PrintToken(p->nameColon);
+                PrintFieldName("refKindKeyword");
+                PrintToken(p->refKindKeyword);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::BracketedArgumentList: {
+                BracketedArgumentListSyntax* p = (BracketedArgumentListSyntax*)syntaxBase;
+                PrintLine("BracketedArgumentListSyntax");
+                indent++;
+                PrintFieldName("openBracket");
+                PrintToken(p->openBracket);
+                PrintFieldName("arguments");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->arguments);
+                PrintFieldName("closeBracket");
+                PrintToken(p->closeBracket);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::EqualsValueClause: {
+                EqualsValueClauseSyntax* p = (EqualsValueClauseSyntax*)syntaxBase;
+                PrintLine("EqualsValueClauseSyntax");
+                indent++;
+                PrintFieldName("equalsToken");
+                PrintToken(p->equalsToken);
+                PrintFieldName("value");
+                PrintNode(p->value);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::RefExpression: {
+                RefExpressionSyntax* p = (RefExpressionSyntax*)syntaxBase;
+                PrintLine("RefExpressionSyntax");
+                indent++;
+                PrintFieldName("refKeyword");
+                PrintToken(p->refKeyword);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::VariableDeclarator: {
+                VariableDeclaratorSyntax* p = (VariableDeclaratorSyntax*)syntaxBase;
+                PrintLine("VariableDeclaratorSyntax");
+                indent++;
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("argumentList");
+                PrintNode(p->argumentList);
+                PrintFieldName("initializer");
+                PrintNode(p->initializer);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::TypeParameter: {
+                TypeParameterSyntax* p = (TypeParameterSyntax*)syntaxBase;
+                PrintLine("TypeParameterSyntax");
+                indent++;
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::TypeParameterList: {
+                TypeParameterListSyntax* p = (TypeParameterListSyntax*)syntaxBase;
+                PrintLine("TypeParameterListSyntax");
+                indent++;
+                PrintFieldName("lessThanToken");
+                PrintToken(p->lessThanToken);
+                PrintFieldName("parameters");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->parameters);
+                PrintFieldName("greaterThanToken");
+                PrintToken(p->greaterThanToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::Parameter: {
+                ParameterSyntax* p = (ParameterSyntax*)syntaxBase;
+                PrintLine("ParameterSyntax");
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("type");
+                PrintNode(p->type);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("defaultValue");
+                PrintNode(p->defaultValue);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ParameterList: {
+                ParameterListSyntax* p = (ParameterListSyntax*)syntaxBase;
+                PrintLine("ParameterListSyntax");
+                indent++;
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("parameters");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->parameters);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ConstraintClauses: {
+                ConstraintClausesSyntax* p = (ConstraintClausesSyntax*)syntaxBase;
+                PrintLine("ConstraintClausesSyntax");
+                indent++;
+                PrintFieldName("dummy");
+                PrintToken(p->dummy);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::LocalFunctionStatement: {
+                LocalFunctionStatementSyntax* p = (LocalFunctionStatementSyntax*)syntaxBase;
+                PrintLine("LocalFunctionStatementSyntax");
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("returnType");
+                PrintNode(p->returnType);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("typeParameters");
+                PrintNode(p->typeParameters);
+                PrintFieldName("parameters");
+                PrintNode(p->parameters);
+                PrintFieldName("constraints");
+                PrintNode(p->constraints);
+                PrintFieldName("body");
+                PrintNode(p->body);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::VariableDeclaration: {
+                VariableDeclarationSyntax* p = (VariableDeclarationSyntax*)syntaxBase;
+                PrintLine("VariableDeclarationSyntax");
+                indent++;
+                PrintFieldName("type");
+                PrintNode(p->type);
+                PrintFieldName("variables");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->variables);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::FieldDeclaration: {
+                FieldDeclarationSyntax* p = (FieldDeclarationSyntax*)syntaxBase;
+                PrintLine("FieldDeclarationSyntax");
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("declaration");
+                PrintNode(p->declaration);
+                PrintFieldName("semicolonToken");
+                PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
             default: {
                 break;
             }
             
         }
-    }
-
-    void NodePrinter::Dump() {
-        printf("%.*s", buffer.size - 2, buffer.array);
     }
 }
