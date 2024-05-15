@@ -59,6 +59,8 @@ namespace Alchemy::Compilation {
 
 
         bool IsAfterNewLine(int32 i);
+
+        SyntaxToken SkipTokenWithPrejudice(SyntaxKind kind);
     };
 
 }

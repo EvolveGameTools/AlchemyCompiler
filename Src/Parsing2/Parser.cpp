@@ -94,6 +94,18 @@ namespace Alchemy::Compilation {
         return token;
     }
 
+    SyntaxToken Parser::SkipTokenWithPrejudice(SyntaxKind kind) {
+        SyntaxToken token = currentToken;
+
+        if (token.kind != kind) {
+            FixedCharSpan span = token.GetText();
+            AddError(token, Diagnostic(GetExpectedTokenErrorCode(kind, token.kind), span.ptr, span.ptr + span.size));
+        }
+
+        SkipToken();
+        return token;
+    }
+
     SyntaxToken Parser::EatToken() {
         SyntaxToken retn = currentToken;
         if(TryFindNextNonTrivia(&ptr, tokens)) {

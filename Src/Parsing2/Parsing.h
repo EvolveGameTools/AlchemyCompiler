@@ -92,6 +92,8 @@ namespace Alchemy::Compilation {
 
     TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options);
 
+    SeparatedSyntaxList<VariableDeclaratorSyntax>* ParseFieldDeclarationVariableDeclarators(Parser* parser, TypeSyntax* type, VariableFlags flags, SyntaxKind parentKind);
+    ParameterListSyntax* ParseParenthesizedParameterList(Parser* parser);
     NameSyntax* ParseQualifiedNameRight(Parser* parser, NameOptions options, NameSyntax* left, SyntaxToken separator);
 
     VariableDeclaratorSyntax* ParseVariableDeclarator(Parser* parser, TypeSyntax* parentType, VariableFlags flags, bool isFirst, bool allowLocalFunctions, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction, bool isExpressionContext = false);

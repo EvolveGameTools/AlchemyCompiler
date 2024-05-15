@@ -12,7 +12,7 @@ namespace Alchemy::Compilation {
         switch (syntaxBase->GetKind()) {
             case SyntaxKind::ArrayRankSpecifier: {
                 ArrayRankSpecifierSyntax* p = (ArrayRankSpecifierSyntax*)syntaxBase;
-                PrintLine("ArrayRankSpecifierSyntax");
+                PrintNodeHeader("ArrayRankSpecifierSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("open");
                 PrintToken(p->open);
@@ -26,7 +26,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::TypeArgumentList: {
                 TypeArgumentListSyntax* p = (TypeArgumentListSyntax*)syntaxBase;
-                PrintLine("TypeArgumentListSyntax");
+                PrintNodeHeader("TypeArgumentListSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("lessThanToken");
                 PrintToken(p->lessThanToken);
@@ -40,7 +40,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::GenericName: {
                 GenericNameSyntax* p = (GenericNameSyntax*)syntaxBase;
-                PrintLine("GenericNameSyntax");
+                PrintNodeHeader("GenericNameSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("identifier");
                 PrintToken(p->identifier);
@@ -52,7 +52,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::QualifiedName: {
                 QualifiedNameSyntax* p = (QualifiedNameSyntax*)syntaxBase;
-                PrintLine("QualifiedNameSyntax");
+                PrintNodeHeader("QualifiedNameSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("left");
                 PrintNode(p->left);
@@ -66,7 +66,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::IdentifierName: {
                 IdentifierNameSyntax* p = (IdentifierNameSyntax*)syntaxBase;
-                PrintLine("IdentifierNameSyntax");
+                PrintNodeHeader("IdentifierNameSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("identifier");
                 PrintToken(p->identifier);
@@ -76,7 +76,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::PredefinedType: {
                 PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
-                PrintLine("PredefinedTypeSyntax");
+                PrintNodeHeader("PredefinedTypeSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("typeToken");
                 PrintToken(p->typeToken);
@@ -86,7 +86,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::TupleElement: {
                 TupleElementSyntax* p = (TupleElementSyntax*)syntaxBase;
-                PrintLine("TupleElementSyntax");
+                PrintNodeHeader("TupleElementSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("type");
                 PrintNode(p->type);
@@ -98,7 +98,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::TupleType: {
                 TupleTypeSyntax* p = (TupleTypeSyntax*)syntaxBase;
-                PrintLine("TupleTypeSyntax");
+                PrintNodeHeader("TupleTypeSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("openParenToken");
                 PrintToken(p->openParenToken);
@@ -112,7 +112,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::ArrayType: {
                 ArrayTypeSyntax* p = (ArrayTypeSyntax*)syntaxBase;
-                PrintLine("ArrayTypeSyntax");
+                PrintNodeHeader("ArrayTypeSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("elementType");
                 PrintNode(p->elementType);
@@ -124,7 +124,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::RefType: {
                 RefTypeSyntax* p = (RefTypeSyntax*)syntaxBase;
-                PrintLine("RefTypeSyntax");
+                PrintNodeHeader("RefTypeSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("refKeyword");
                 PrintToken(p->refKeyword);
@@ -138,7 +138,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::OmittedArraySizeExpression: {
                 OmittedArraySizeExpressionSyntax* p = (OmittedArraySizeExpressionSyntax*)syntaxBase;
-                PrintLine("OmittedArraySizeExpressionSyntax");
+                PrintNodeHeader("OmittedArraySizeExpressionSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("token");
                 PrintToken(p->token);
@@ -148,7 +148,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::NullableType: {
                 NullableType* p = (NullableType*)syntaxBase;
-                PrintLine("NullableType");
+                PrintNodeHeader("NullableType", syntaxBase);
                 indent++;
                 PrintFieldName("elementType");
                 PrintNode(p->elementType);
@@ -160,7 +160,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::Argument: {
                 ArgumentSyntax* p = (ArgumentSyntax*)syntaxBase;
-                PrintLine("ArgumentSyntax");
+                PrintNodeHeader("ArgumentSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("nameColon");
                 PrintToken(p->nameColon);
@@ -174,7 +174,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::BracketedArgumentList: {
                 BracketedArgumentListSyntax* p = (BracketedArgumentListSyntax*)syntaxBase;
-                PrintLine("BracketedArgumentListSyntax");
+                PrintNodeHeader("BracketedArgumentListSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("openBracket");
                 PrintToken(p->openBracket);
@@ -188,7 +188,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::EqualsValueClause: {
                 EqualsValueClauseSyntax* p = (EqualsValueClauseSyntax*)syntaxBase;
-                PrintLine("EqualsValueClauseSyntax");
+                PrintNodeHeader("EqualsValueClauseSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("equalsToken");
                 PrintToken(p->equalsToken);
@@ -200,7 +200,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::RefExpression: {
                 RefExpressionSyntax* p = (RefExpressionSyntax*)syntaxBase;
-                PrintLine("RefExpressionSyntax");
+                PrintNodeHeader("RefExpressionSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("refKeyword");
                 PrintToken(p->refKeyword);
@@ -212,7 +212,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::VariableDeclarator: {
                 VariableDeclaratorSyntax* p = (VariableDeclaratorSyntax*)syntaxBase;
-                PrintLine("VariableDeclaratorSyntax");
+                PrintNodeHeader("VariableDeclaratorSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("identifier");
                 PrintToken(p->identifier);
@@ -226,7 +226,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::TypeParameter: {
                 TypeParameterSyntax* p = (TypeParameterSyntax*)syntaxBase;
-                PrintLine("TypeParameterSyntax");
+                PrintNodeHeader("TypeParameterSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("identifier");
                 PrintToken(p->identifier);
@@ -236,7 +236,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::TypeParameterList: {
                 TypeParameterListSyntax* p = (TypeParameterListSyntax*)syntaxBase;
-                PrintLine("TypeParameterListSyntax");
+                PrintNodeHeader("TypeParameterListSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("lessThanToken");
                 PrintToken(p->lessThanToken);
@@ -250,7 +250,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::Parameter: {
                 ParameterSyntax* p = (ParameterSyntax*)syntaxBase;
-                PrintLine("ParameterSyntax");
+                PrintNodeHeader("ParameterSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("modifiers");
                 PrintTokenList(p->modifiers);
@@ -266,7 +266,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::ParameterList: {
                 ParameterListSyntax* p = (ParameterListSyntax*)syntaxBase;
-                PrintLine("ParameterListSyntax");
+                PrintNodeHeader("ParameterListSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("openParen");
                 PrintToken(p->openParen);
@@ -280,7 +280,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::ConstraintClauses: {
                 ConstraintClausesSyntax* p = (ConstraintClausesSyntax*)syntaxBase;
-                PrintLine("ConstraintClausesSyntax");
+                PrintNodeHeader("ConstraintClausesSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("dummy");
                 PrintToken(p->dummy);
@@ -290,7 +290,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::LocalFunctionStatement: {
                 LocalFunctionStatementSyntax* p = (LocalFunctionStatementSyntax*)syntaxBase;
-                PrintLine("LocalFunctionStatementSyntax");
+                PrintNodeHeader("LocalFunctionStatementSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("modifiers");
                 PrintTokenList(p->modifiers);
@@ -312,7 +312,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::VariableDeclaration: {
                 VariableDeclarationSyntax* p = (VariableDeclarationSyntax*)syntaxBase;
-                PrintLine("VariableDeclarationSyntax");
+                PrintNodeHeader("VariableDeclarationSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("type");
                 PrintNode(p->type);
@@ -324,7 +324,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::FieldDeclaration: {
                 FieldDeclarationSyntax* p = (FieldDeclarationSyntax*)syntaxBase;
-                PrintLine("FieldDeclarationSyntax");
+                PrintNodeHeader("FieldDeclarationSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("modifiers");
                 PrintTokenList(p->modifiers);

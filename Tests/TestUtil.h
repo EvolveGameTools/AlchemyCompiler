@@ -6,12 +6,7 @@
 
 using namespace Alchemy;
 
-struct Line {
-    char* line;
-    int32_t length;
-};
-
-struct CheckedArray<Line> SplitIntoLines(char* str, int32 size, LinearAllocator* allocator) {
+struct CheckedArray<FixedCharSpan> SplitIntoLines(char* str, int32 size, LinearAllocator* allocator) {
     // Count the number of lines
     int count = 1;
     for (int i = 0; i < size; ++i) {
@@ -21,13 +16,13 @@ struct CheckedArray<Line> SplitIntoLines(char* str, int32 size, LinearAllocator*
     }
 
     if (count == 0) {
-        Line* line = allocator->AllocateUncleared<Line>(1);
-        line->line = str;
-        return CheckedArray<Line>(line, 1);
+        FixedCharSpan* line = allocator->AllocateUncleared<FixedCharSpan>(1);
+        line[0] = FixedCharSpan(str, size);
+        return CheckedArray<FixedCharSpan>(line, 1);
     }
 
     // Allocate memory for the array of structs
-    struct Line* lines = allocator->AllocateUncleared<Line>(count);
+    FixedCharSpan* lines = allocator->AllocateUncleared<FixedCharSpan>(count);
 
     // Copy each line into the array
     int32 index = 0;
@@ -35,21 +30,24 @@ struct CheckedArray<Line> SplitIntoLines(char* str, int32 size, LinearAllocator*
     char* end = strchr(start, '\n');
     while (end != nullptr) {
         int32 length = (int32) (end - start);
-        lines[index].line = start;
-        lines[index].length = length;
+        if (end > start && end[-1] == '\r') {
+            --length; // Exclude '\r' from the line length
+        }
+        lines[index] = FixedCharSpan(start, length);
         ++index;
         start = end + 1;
         end = strchr(start, '\n');
     }
 
     char* last = str + size;
-    lines[index].line = start;
-    lines[index].length = (int32) (last - start);
+    if (last > start && last[-1] == '\r') {
+        --last; // Exclude '\r' from the last line's end
+    }
+    lines[index] = FixedCharSpan(start, (int32) (last - start));
 
-    return CheckedArray<Line>(lines, count);
+    return CheckedArray<FixedCharSpan>(lines, count);
 }
 
-#pragma once
 #ifndef _WIN32
 
 errno_t fopen_s(FILE** f, const char* name, const char* mode) {
@@ -93,30 +91,37 @@ char* ReadFileIntoCString(const char* filename, int32* length) {
     return buffer;
 }
 
-CheckedArray<Line> ReadLines(const char* filePath) {
+CheckedArray<FixedCharSpan> ReadLines(const char* filePath) {
     int32 length = 0;
     char* src = ReadFileIntoCString(filePath, &length);
     assert(src != nullptr && "file not found");
     return SplitIntoLines(src, length, GetThreadLocalAllocator());
 }
 
-CheckedArray<Line> TreeToLine(PodList<Alchemy::Compilation::SyntaxToken> & tokens, Alchemy::Compilation::SyntaxBase * syntaxBase) {
-    Alchemy::Compilation::NodePrinter p(tokens.ToCheckedArray());
+CheckedArray<FixedCharSpan> TreeToLine(PodList<Alchemy::Compilation::SyntaxToken> & tokens, Alchemy::Compilation::SyntaxBase * syntaxBase, Alchemy::Compilation::TreePrintOptions printOptions = Alchemy::Compilation::TreePrintOptions::None) {
+    Alchemy::Compilation::NodePrinter p(tokens.ToCheckedArray(), printOptions);
     p.PrintTree(syntaxBase);
-    return SplitIntoLines(p.buffer.array, p.buffer.size, GetThreadLocalAllocator());
+    char * pBuffer = GetThreadLocalAllocator()->AllocateUncleared<char>(p.buffer.size);
+    memcpy(pBuffer, p.buffer.array, p.buffer.size);
+    CheckedArray<FixedCharSpan> retn = SplitIntoLines(pBuffer, p.buffer.size, GetThreadLocalAllocator());
+    return retn;
 }
 
-bool CompareLines(CheckedArray<Line> expectedLines, CheckedArray<Line> actualLines) {
+bool CompareLines(CheckedArray<FixedCharSpan> expectedLines, CheckedArray<FixedCharSpan> actualLines) {
 
     if (expectedLines.size != actualLines.size) {
         return false;
     }
 
     for (int32 i = 0; i < actualLines.size; i++) {
-        Line actual = actualLines[i];
-        Line expected = expectedLines[i];
-        if (actual.length != expected.length || memcmp(actual.line, expected.line, actual.length) != 0) {
-            printf("Error comparing line %d:\n Expected: %.*s\n Actual  : %.*s", i, expected.length, expected.line, actual.length, actual.line);
+        FixedCharSpan actual = actualLines[i];
+        FixedCharSpan expected = expectedLines[i];
+        if (actual.size != expected.size || memcmp(actual.ptr, expected.ptr, actual.size) != 0) {
+            int32 x = expectedLines.size;
+            int32 y = actualLines.size;
+            char * c = actual.ptr;
+            char * c2 = expected.ptr;
+            printf("Error comparing line %d:\n Expected: %.*s\n Actual  : %.*s", i, expected.size, expected.ptr, actual.size, actual.ptr);
             return false;
         }
     }
@@ -124,8 +129,8 @@ bool CompareLines(CheckedArray<Line> expectedLines, CheckedArray<Line> actualLin
     return true;
 }
 
-bool CompareLines(const char * filePath, CheckedArray<Line> actualLines) {
-    CheckedArray<Line> expected = ReadLines(filePath);
+bool CompareLines(const char * filePath, CheckedArray<FixedCharSpan> actualLines) {
+    CheckedArray<FixedCharSpan> expected = ReadLines(filePath);
     return CompareLines(expected, actualLines);
 }
 
@@ -139,4 +144,10 @@ bool WriteStringToFile(const char* fileName, char* content, size_t length) {
     file.write(content, length);
     file.close();
     return true;
+}
+
+void WriteTreeToFile(const char * file, PodList<Alchemy::Compilation::SyntaxToken> & tokens, Alchemy::Compilation::SyntaxBase * syntaxBase, Alchemy::Compilation::TreePrintOptions printOptions = Alchemy::Compilation::TreePrintOptions::None) {
+    Alchemy::Compilation::NodePrinter p(tokens.ToCheckedArray(), printOptions);
+    p.PrintTree(syntaxBase);
+    WriteStringToFile(file, p.buffer.array, p.buffer.size);
 }

@@ -895,8 +895,8 @@ namespace Alchemy::Compilation {
             new (retn) FieldDeclarationSyntaxBuilder();
             retn->allocator = allocator;
             return retn;
-        }
-
+        }        
+        
     };
 
 }

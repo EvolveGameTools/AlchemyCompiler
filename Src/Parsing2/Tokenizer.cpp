@@ -74,24 +74,24 @@ namespace Alchemy::Compilation {
         NOT_IMPLEMENTED("LexConflictMarkerTrivia");
     }
 
-    void ScanEndOfLine(TextWindow * textWindow, FixedCharSpan * span) {
-        char * start = textWindow->ptr;
+    void ScanEndOfLine(TextWindow* textWindow, FixedCharSpan* span) {
+        char* start = textWindow->ptr;
         char c = textWindow->PeekChar();
-        if(c == '\r') {
+        if (c == '\r') {
             textWindow->Advance();
             c = textWindow->PeekChar();
-            if(c == '\n') {
+            if (c == '\n') {
                 textWindow->Advance();
-                *span = FixedCharSpan(start, (int32)(textWindow->ptr - start));
+                *span = FixedCharSpan(start, (int32) (textWindow->ptr - start));
                 return;
             }
         }
         char32 c32;
         int32 advance;
         textWindow->TryPeekChar32(&c32, &advance);
-        if(IsNewline(c32)) {
+        if (IsNewline(c32)) {
             textWindow->Advance(advance);
-            *span = FixedCharSpan(start, (int32)(textWindow->ptr - start));
+            *span = FixedCharSpan(start, (int32) (textWindow->ptr - start));
         }
         else {
             *span = FixedCharSpan(start, 0);
@@ -191,7 +191,7 @@ namespace Alchemy::Compilation {
 
     void PrintTokens(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
 
-        for(int32 i = 0; i < tokens.size; i++) {
+        for (int32 i = 0; i < tokens.size; i++) {
             //[line:column] kind, contextualKind -> "text"
 
             SyntaxToken token = tokens[i];
@@ -203,8 +203,44 @@ namespace Alchemy::Compilation {
     }
 
     void ComputeTokenLineColumns(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
+        int32 column = 1;
+        int32 line = 1;
 
-        // given a utf8 byte offset compute line/column for the token. tokens never span multiple lines (but trivia might)
+        for (int32 i = 0; i < tokens.size; i++) {
+            // multi line comment is the only weird one
+            SyntaxToken token = tokens[i];
+            LineColumn * lc = &lineCols[i];
+            lc->line = line;
+            lc->column = column;
+            if(token.contextualKind == SyntaxKind::NewLine) {
+                lc->endLine = line;
+                lc->endColumn = column + token.textSize;
+                column = 1;
+                line++; // I think this is right
+            }
+            else if(token.contextualKind == SyntaxKind::MultiLineComment) {
+                for(int32 s = 0; s < token.textSize; s++) {
+                    if(token.text[s] == '\n') {
+                        line++;
+                    }
+                }
+                lc->endLine = line;
+                lc->endColumn = column + token.textSize;
+                if(line != lc->line) {
+                    column = 1;
+                }
+            }
+            else {
+                column += token.textSize;
+                // token won't break across lines
+                lc->endLine = line;
+                lc->endColumn = column;
+            }
+        }
+
+    }
+
+    void ComputeTokenLineColumns2(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
 
         char* last = tokens[0].text;
         char* lastNewLineEnd = last;
@@ -213,10 +249,11 @@ namespace Alchemy::Compilation {
         for (int32 i = 0; i < tokens.size; i++) {
             SyntaxToken token = tokens[i];
             char* ptr = last;
+            lineCols[i].line = lineNumber + 1;
             while (ptr != token.text) {
 
-                if(*ptr == '\r') {
-                    if(ptr + 1 != token.text && ptr[1] == '\n') {
+                if (*ptr == '\r') {
+                    if (ptr + 1 != token.text && ptr[1] == '\n') {
                         lineNumber++;
                         lastNewLineEnd = ptr + 2; // we want byte width to end of the last new line char
                         ptr += 2;
@@ -228,8 +265,7 @@ namespace Alchemy::Compilation {
                     }
                     continue;
                 }
-                // todo -- other line break chars, but they are 2 byte sequences i think
-                if(*ptr == '\n') {
+                if (*ptr == '\n') {
                     lineNumber++;
                     lastNewLineEnd = ptr + 1;
                 }
@@ -237,7 +273,7 @@ namespace Alchemy::Compilation {
                 ptr++;
             }
 
-            int32 col = (int32)(token.text - lastNewLineEnd);
+            int32 col = (int32) (token.text - lastNewLineEnd);
 
             // 1 based
             lineCols[i].line = lineNumber + 1;
@@ -248,7 +284,7 @@ namespace Alchemy::Compilation {
 
     }
 
-    void Tokenize(TextWindow * textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens) {
+    void Tokenize(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens) {
 
         int32 badTokenCount = 0;
         while (textWindow->HasMoreContent()) {
@@ -259,7 +295,7 @@ namespace Alchemy::Compilation {
 
             tokenInfo.text = textWindow->ptr;
             ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
-            tokenInfo.textSize = (int32)(textWindow->ptr - tokenInfo.text);
+            tokenInfo.textSize = (int32) (textWindow->ptr - tokenInfo.text);
 
             tokens->Add(tokenInfo);
 
@@ -267,7 +303,7 @@ namespace Alchemy::Compilation {
 
         }
 
-        for(int32 i = 0; i < tokens->size; i++) {
+        for (int32 i = 0; i < tokens->size; i++) {
             tokens->Get(i).SetId(i);
         }
 

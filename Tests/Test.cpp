@@ -29,7 +29,7 @@ TextWindow MakeTextWindow(const char* src) {
 #define INITIALIZE_PARSER(str) \
     tokens.size = 0;        \
     diagnostics.size = 0; \
-    TextWindow textWindow = MakeTextWindow((str)); \
+    TextWindow textWindow = TextWindow((char*) str, strlen(str)); \
     Tokenize(&textWindow, &diagnostics, &tokens); \
     Parser parser(&allocator, tempAllocator, &diagnostics, tokens.ToCheckedArray());
 
@@ -44,6 +44,8 @@ TEST_CASE("Parse Field", "[parser]") {
         INITIALIZE_PARSER("public List<Something> myList;")
 
         MemberDeclarationSyntax* x = ParseMemberDeclaration(&parser, SyntaxKind::StructDeclaration);
+
+        WriteTreeToFile(TestFile("Field2"), tokens, x);
 
         REQUIRE(CompareLines(TestFile("Field"), TreeToLine(tokens, x)));
 
@@ -74,10 +76,6 @@ TEST_CASE("Parse Types", "[parser]") {
         REQUIRE(parser.HasMoreTokens() == false);
     }
 
-        // get tokenAt(line/col)
-        // get firstTokenOfTypeOnLine().isTrivia
-        // get firstTokenOfTypeOnLine().isSkipped
-
     SECTION("basic names") {
 
         INITIALIZE_PARSER("something.somethingelse");
@@ -89,10 +87,6 @@ TEST_CASE("Parse Types", "[parser]") {
             ->Left(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("something")))
             ->DotToken(builder.SyntaxToken(SyntaxKind::DotToken))
             ->Right(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("somethingelse")));
-
-        // NodePrinter p(tokens.ToCheckedArray());
-        // p.PrintNode(name);
-        // p.Dump();
 
         REQUIRE(NodesEqual(name, b->Build(), NodeEqualityOptions::Default));
 

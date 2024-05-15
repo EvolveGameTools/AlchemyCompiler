@@ -228,7 +228,7 @@ function createPrintBlocks(structs) {
         struct.printBlock += struct.structName;
         struct.printBlock += `* p = (${struct.structName}*)syntaxBase;\n`
         struct.printBlock += statementIndent;
-        struct.printBlock += `PrintLine("${struct.structName}");\n`
+        struct.printBlock += `PrintNodeHeader("${struct.structName}", syntaxBase);\n`
         struct.printBlock += statementIndent;
         struct.printBlock += "indent++;\n";
         for (var f = 0; f < struct.fields.length; f++) {

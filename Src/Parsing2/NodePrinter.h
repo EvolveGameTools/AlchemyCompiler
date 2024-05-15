@@ -5,8 +5,18 @@
 #include "./SyntaxNodes.h"
 #include "./SyntaxKind.h"
 #include "../Collections/PodList.h"
+#include "Tokenizer.h"
+#include "../Allocation/ThreadLocalTemp.h"
 
 namespace Alchemy::Compilation {
+
+    DEFINE_ENUM_FLAGS(TreePrintOptions, uint32, {
+        None = 0,
+        PrintLineRanges = 1 << 0,
+        PrintDiagnostics = 1 << 1,
+        PrintSkippedTokens = 1 << 2,
+        Default,
+    })
 
     struct NodePrinter {
 
@@ -19,16 +29,25 @@ namespace Alchemy::Compilation {
         PodList<char> buffer;
 
         int32 indent;
+        TreePrintOptions options;
+        CheckedArray<LineColumn> lc;
 
-        NodePrinter(CheckedArray<SyntaxToken> tokens)
+        explicit NodePrinter(CheckedArray<SyntaxToken> tokens, TreePrintOptions options)
             : tokens(tokens)
             , indent(0)
+            , options(options)
             , printComments(true)
             , printWhitespace(true)
             , printTrivia(true)
             , printSkipped(true)
-            , buffer(2048)
-            {}
+            , buffer(2048) {
+            lc = CheckedArray<LineColumn>(MallocateTyped(LineColumn, tokens.size), tokens.size);
+            ComputeTokenLineColumns(tokens, lc);
+        }
+
+        ~NodePrinter() {
+            MfreeTyped(lc.array, lc.size);
+        }
 
         void PrintIndent() {
             for (int32 i = 0; i < 4 * indent; i++) {
@@ -47,12 +66,32 @@ namespace Alchemy::Compilation {
                 return;
             }
 
-            PrintLine("SeparatedSyntaxList");
+            if (list->itemCount > 0) {
+                PrintInline("SeparatedSyntaxList");
+                if (list->separatorCount == 0) {
+                    PrintLineRange(list->items[0]);
+                }
+                else {
+                    SyntaxToken s = list->separators[list->separatorCount - 1];
+                    int32 itemToken = list->items[list->itemCount - 1]->endTokenId;
+                    if (s.GetId() > itemToken) {
+                        PrintLineRange(list->items[0]->startTokenId, s.GetId());
+                    }
+                    else {
+                        PrintLineRange(list->items[0]->startTokenId, itemToken);
+                    }
+                }
+
+                buffer.Add('\n');
+            }
+            else {
+                PrintLine("SeparatedSyntaxList");
+            }
             indent++;
-            for(int32 i = 0; i < list->itemCount; i++) {
+            for (int32 i = 0; i < list->itemCount; i++) {
                 PrintIndent();
                 PrintNode(list->items[i]);
-                if(i < list->separatorCount) {
+                if (i < list->separatorCount) {
                     PrintIndent();
                     PrintToken(list->separators[i]);
                 }
@@ -62,12 +101,16 @@ namespace Alchemy::Compilation {
 
         void PrintLine() {
             buffer.Add('\n');
-            buffer.Add('_');
+        }
+
+        void PrintNodeHeader(const char* str, SyntaxBase* base) {
+            PrintInline(str);
+            PrintLineRange(base);
+            buffer.Add('\n');
         }
 
         void PrintLine(char* str, int32 length) {
             buffer.Add('\n');
-            buffer.Add('_');
             PrintIndent();
             PrintInline(str, length);
         }
@@ -75,7 +118,6 @@ namespace Alchemy::Compilation {
         void PrintLine(const char* str) {
             PrintInline(str);
             buffer.Add('\n');
-            buffer.Add('_');
         }
 
         void PrintInline(char* str, int32 length) {
@@ -90,8 +132,8 @@ namespace Alchemy::Compilation {
             PrintInline((char*) str, strlen(str));
         }
 
-        void PrintTokenList(TokenList * tokenList) {
-            for(int32 i = 0; i < tokenList->size; i++) {
+        void PrintTokenList(TokenList* tokenList) {
+            for (int32 i = 0; i < tokenList->size; i++) {
                 PrintToken(tokenList->array[i]);
             }
         }
@@ -106,11 +148,11 @@ namespace Alchemy::Compilation {
             }
         }
 
-        void PrintFieldName(const char * fieldName) {
+        void PrintFieldName(const char* fieldName) {
             PrintIndent();
-            PrintInline("[");
+            //PrintInline("[");
             PrintInline(fieldName);
-            PrintInline("] = ");
+            PrintInline(" = ");
         }
 
         void PrintToken(SyntaxToken token) {
@@ -121,8 +163,12 @@ namespace Alchemy::Compilation {
 
             PrintInline(SyntaxKindToString(token.kind));
 
-            if(token.IsMissing()) {
+            if (token.IsMissing()) {
                 PrintInline(" <missing> ");
+            }
+
+            if ((token.GetFlags() & SyntaxTokenFlags::Skipped) != 0) {
+                PrintInline(" <skipped> ");
             }
 
             if (token.contextualKind != SyntaxKind::None) {
@@ -134,13 +180,47 @@ namespace Alchemy::Compilation {
             PrintInline(" -> \"");
             PrintInline(token.text, token.textSize);
             PrintInline("\"");
+
+            buffer.EnsureAdditionalCapacity(64);
+
+            buffer.size += snprintf(buffer.array + buffer.size, 64, " [%d:%d - %d:%d] ",
+                lc[token.GetId()].line,
+                lc[token.GetId()].column,
+                lc[token.GetId()].endLine,
+                lc[token.GetId()].endColumn
+            );
+
             PrintLine();
 
         }
 
-        void PrintTree(SyntaxBase * syntaxBase, NodeEqualityOptions options = NodeEqualityOptions::Default) {
+        void PrintLineRange(int32 start, int32 end) {
+            buffer.EnsureAdditionalCapacity(64);
+
+            buffer.size += snprintf(buffer.array + buffer.size, 64, " [%d:%d - %d:%d] ",
+                lc[start].line,
+                lc[start].column,
+                lc[end].endLine,
+                lc[end].endColumn
+            );
+
+        }
+
+        void PrintLineRange(SyntaxBase* syntaxBase) {
+            PrintLineRange(syntaxBase->startTokenId, syntaxBase->endTokenId);
+        }
+
+
+        void PrintTree(SyntaxBase* syntaxBase, NodeEqualityOptions options = NodeEqualityOptions::Default) {
             PrintNode(syntaxBase);
-            buffer.size -= 2;
+
+            for (int32 i = 0; i < tokens.size; i++) {
+                if ((tokens[i].GetFlags() & SyntaxTokenFlags::Skipped) != 0) {
+                    PrintToken(tokens[i]);
+                }
+
+            }
+
         }
 
         void PrintNode(SyntaxBase* syntaxBase);

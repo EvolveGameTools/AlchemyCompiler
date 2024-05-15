@@ -17,12 +17,12 @@ namespace Alchemy::Compilation {
         SyntaxTokenFlags* flags;
 
         explicit ResetPoint(Parser* parser, bool resetOnDispose = true)
-                : originalParser(parser)
-                , copyParser(*parser)
-                , allocatorOffset(parser->allocator->offset)
-                , tempAllocatorOffset(parser->tempAllocator->offset)
-                , diagnosticsCopy(*parser->diagnostics)
-                , resetOnDispose(resetOnDispose) {
+            : originalParser(parser)
+            , copyParser(*parser)
+            , allocatorOffset(parser->allocator->offset)
+            , tempAllocatorOffset(parser->tempAllocator->offset)
+            , diagnosticsCopy(*parser->diagnostics)
+            , resetOnDispose(resetOnDispose) {
             flags = parser->tempAllocator->AllocateUncleared<SyntaxTokenFlags>(parser->tokens.size - parser->ptr);
             int32 flagIdx = 0;
             for (int32 i = parser->ptr; i < parser->tokens.size; i++) {
@@ -59,10 +59,10 @@ namespace Alchemy::Compilation {
         int32 size;
 
         explicit NodeListBuilder(TempAllocator* allocator)
-                : allocator(allocator)
-                , size(0)
-                , capacity(8)
-                , array(allocator->AllocateUncleared<T*>(8)) {
+            : allocator(allocator)
+            , size(0)
+            , capacity(8)
+            , array(allocator->AllocateUncleared<T*>(8)) {
         }
 
         void Add(T* item) {
@@ -226,9 +226,9 @@ namespace Alchemy::Compilation {
 
     bool IsCurrentTokenWhereOfConstraintClause(Parser* parser) {
         return
-                parser->currentToken.contextualKind == SyntaxKind::WhereKeyword &&
-                parser->PeekToken(1).kind == SyntaxKind::IdentifierToken &&
-                parser->PeekToken(2).kind == SyntaxKind::ColonToken;
+            parser->currentToken.contextualKind == SyntaxKind::WhereKeyword &&
+            parser->PeekToken(1).kind == SyntaxKind::IdentifierToken &&
+            parser->PeekToken(2).kind == SyntaxKind::ColonToken;
     }
 
     bool IsTrueIdentifier(Parser* parser) {
@@ -743,18 +743,64 @@ namespace Alchemy::Compilation {
     }
 
     MemberDeclarationSyntax* ParseConstructorDeclaration(Parser* parser, TokenListBuffer* modifiers) {
-        NOT_IMPLEMENTED("ParseConstructorDeclaration");
-        return nullptr;
+
+        // we may end up supporting both C# style construction as well as 'constructor' name syntax
+
+        bool isCtorKeyword = parser->currentToken.kind == SyntaxKind::ConstructorKeyword;
+
+        if(isCtorKeyword) {
+            parser->EatToken();
+            // look for a name or a (
+            if(parser->currentToken.kind == SyntaxKind::IdentifierToken) {
+
+            }
+            else if(parser->currentToken.kind == SyntaxKind::OpenParenToken) {
+
+            }
+            else {
+                // missing ( maybe? not sure
+            }
+        }
+        else {
+            SyntaxToken name = ParseIdentifierToken(parser);
+
+        }
+
+
+
+        TerminatorState saveTerm = parser->_termState;
+        parser->_termState |= TerminatorState::IsEndOfMethodSignature;
+            ParameterListSyntax * paramList = ParseParenthesizedParameterList(parser);
+            ConstructorInitializerSyntax * initializer = parser->currentToken.kind == SyntaxKind::ColonToken
+                              ? ParseConstructorInitializer(parser)
+                              : nullptr;
+
+            ParseBlockAndExpressionBodiesWithSemicolon(out var body, out var expressionBody, out var semicolon);
+
+            parser->_termState = saveTerm;
+            return _syntaxFactory.ConstructorDeclaration(attributes, modifiers.ToList(), name, paramList, initializer, body, expressionBody, semicolon);
+
     }
 
-    MemberDeclarationSyntax* ParseConstantFieldDeclaration(Parser* parser, TokenListBuffer* modifiers) {
-        NOT_IMPLEMENTED("ParseConstantFieldDeclaration");
-        return nullptr;
+    FieldDeclarationSyntax* ParseConstantFieldDeclaration(Parser* parser, TokenListBuffer* modifiers, SyntaxKind parentKind) {
+        modifiers->Add(parser->EatToken(SyntaxKind::ConstKeyword));
+
+        TypeSyntax* type = ParseType(parser, ParseTypeMode::Normal);
+        SeparatedSyntaxList<VariableDeclaratorSyntax>* variableDeclarators = ParseFieldDeclarationVariableDeclarators(parser, type, VariableFlags::Const, parentKind);
+        VariableDeclarationSyntax* declaration = parser->CreateNode<VariableDeclarationSyntax>(type, variableDeclarators);
+        return parser->CreateNode<FieldDeclarationSyntax>(modifiers->Persist(parser->allocator), declaration, parser->EatToken(SyntaxKind::SemicolonToken));
     }
 
-    MemberDeclarationSyntax* ParseFixedFieldDeclaration(Parser* parser, TokenListBuffer* modifiers, SyntaxKind parentKind) {
-        NOT_IMPLEMENTED("ParseFixedFieldDeclaration");
-        return nullptr;
+    FieldDeclarationSyntax* ParseFixedFieldDeclaration(Parser* parser, TokenListBuffer* modifiers, SyntaxKind parentKind) {
+        modifiers->Add(parser->EatToken());
+
+        TypeSyntax* type = ParseType(parser, ParseTypeMode::Normal);
+
+        SeparatedSyntaxList<VariableDeclaratorSyntax>* variableDeclarators = ParseFieldDeclarationVariableDeclarators(parser, type, VariableFlags::Fixed, parentKind);
+        VariableDeclarationSyntax* declaration = parser->CreateNode<VariableDeclarationSyntax>(type, variableDeclarators);
+
+        return parser->CreateNode<FieldDeclarationSyntax>(modifiers->Persist(parser->allocator), declaration, parser->EatToken(SyntaxKind::SemicolonToken));
+
     }
 
     MemberDeclarationSyntax* TryParseConversionOperatorDeclaration(Parser* parser, TokenListBuffer* modifiers) {
@@ -772,7 +818,7 @@ namespace Alchemy::Compilation {
         return nullptr;
     }
 
-    TypeSyntax * ParseTypeOrVoid(Parser * parser) {
+    TypeSyntax* ParseTypeOrVoid(Parser* parser) {
         if (parser->currentToken.kind == SyntaxKind::VoidKeyword) {
             return parser->CreateNode<PredefinedTypeSyntax>(parser->EatToken());
         }
@@ -1133,12 +1179,12 @@ namespace Alchemy::Compilation {
         bool isPossibleTypeDeclaration = false;
         ParseModifiers(parser, &modifiers, false, &isPossibleTypeDeclaration);
 
-        if (parser->currentToken.kind == SyntaxKind::ConstructorKeyword) {
+        if (parser->currentToken.kind == SyntaxKind::ConstructorKeyword || parser->currentToken.kind == SyntaxKind::IdentifierToken && parser->PeekToken(1).kind == SyntaxKind::OpenParenToken) {
             return ParseConstructorDeclaration(parser, &modifiers);
         }
 
         if (parser->currentToken.kind == SyntaxKind::ConstKeyword) {
-            return ParseConstantFieldDeclaration(parser, &modifiers);
+            return ParseConstantFieldDeclaration(parser, &modifiers, parentKind);
         }
 
         if (parser->currentToken.kind == SyntaxKind::FixedKeyword) {
@@ -2190,8 +2236,8 @@ namespace Alchemy::Compilation {
                 ParseTypeArgumentList(parser, &open, &builder, &close);
 
                 name = parser->CreateNode<GenericNameSyntax>(
-                        id->identifier,
-                        parser->CreateNode<TypeArgumentListSyntax>(open, builder.ToList(parser->allocator), close)
+                    id->identifier,
+                    parser->CreateNode<TypeArgumentListSyntax>(open, builder.ToList(parser->allocator), close)
                 );
             }
 
@@ -2288,10 +2334,10 @@ namespace Alchemy::Compilation {
 
     TupleElementSyntax* ParseTupleElement(Parser* parser) {
         return parser->CreateNode<TupleElementSyntax>(
-                ParseType(parser, ParseTypeMode::Normal),
-                IsTrueIdentifier(parser)
-                ? ParseIdentifierToken(parser)
-                : SyntaxToken()
+            ParseType(parser, ParseTypeMode::Normal),
+            IsTrueIdentifier(parser)
+            ? ParseIdentifierToken(parser)
+            : SyntaxToken()
         );
     }
 
@@ -2381,9 +2427,9 @@ namespace Alchemy::Compilation {
                 SyntaxKind kind = parser->currentToken.kind;
 
                 return
-                        kind == SyntaxKind::OpenParenToken ||   // ctor parameters
-                        kind == SyntaxKind::OpenBracketToken ||   // array type
-                        kind == SyntaxKind::OpenBraceToken;   // object initializer
+                    kind == SyntaxKind::OpenParenToken ||   // ctor parameters
+                    kind == SyntaxKind::OpenBracketToken ||   // array type
+                    kind == SyntaxKind::OpenBraceToken;   // object initializer
             }
             default: {
                 return true;
@@ -2424,9 +2470,7 @@ namespace Alchemy::Compilation {
         int32 startToken = parser->ptr;
         bool first = true;
         PostSkipAction action = PostSkipAction::Continue;
-        // we can re-allocate trivia list and append
-        // or we can mark these tokens as skipped
-        // or we can
+
         while (isNotExpectedFunction(parser)) {
             if (abortFunction(parser, closeKind) || IsTerminator(parser)) {
                 action = PostSkipAction::Abort;
@@ -2435,10 +2479,10 @@ namespace Alchemy::Compilation {
 
             // if this token already contains diagnostics we don't want to add another one
             if (first && !parser->currentToken.ContainsDiagnostics()) {
-                parser->EatTokenWithPrejudice(expected);
+                parser->SkipTokenWithPrejudice(expected);
             }
             else {
-                parser->EatToken();
+                parser->SkipToken();
             }
 
             first = false;
@@ -2466,10 +2510,10 @@ namespace Alchemy::Compilation {
 
     PostSkipAction SkipBadArrayRankSpecifierTokens(Parser* parser, SyntaxKind expected) {
         return SkipBadSeparatedListTokensWithExpectedKind(
-                parser,
-                &arrayRankNotExpectedFn,
-                &arrayRankAbortFn,
-                expected
+            parser,
+            &arrayRankNotExpectedFn,
+            &arrayRankAbortFn,
+            expected
         );
     }
 
@@ -2604,9 +2648,9 @@ namespace Alchemy::Compilation {
         if (parser->currentToken.kind == SyntaxKind::RefKeyword) {
 
             return parser->CreateNode<RefTypeSyntax>(
-                    parser->EatToken(),
-                    parser->currentToken.kind == SyntaxKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken(),
-                    ParseTypeCore(parser, ParseTypeMode::AfterRef)
+                parser->EatToken(),
+                parser->currentToken.kind == SyntaxKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken(),
+                ParseTypeCore(parser, ParseTypeMode::AfterRef)
             );
 
         }
