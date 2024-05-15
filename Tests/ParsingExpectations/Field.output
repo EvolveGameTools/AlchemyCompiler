@@ -1,7 +1,7 @@
 FieldDeclarationSyntax
 _    [modifiers] = PublicKeyword -> "public"
 _    [declaration] = VariableDeclarationSyntax
-_        [type] = GenericNameSyntax
+_        [tyXX] = GenericNameSyntax
 _            [identifier] = IdentifierToken (IdentifierToken) -> "List"
 _            [typeArgumentList] = TypeArgumentListSyntax
 _                [lessThanToken] = LessThanToken -> "<"

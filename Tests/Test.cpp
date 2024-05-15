@@ -11,24 +11,9 @@
 #include "../Src/Parsing2/NodePrinter.h"
 #include <iostream>
 #include <fstream>
+#include "./TestUtil.h"
 
 using namespace Alchemy::Compilation;
-
-std::string ReadFile(const std::string& fileName) {
-    const std::string basePath = "TestData/Parsing/";
-    const std::string filePath = basePath + fileName;
-
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Error opening file: " << filePath << std::endl;
-        return "";
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-
-    return buffer.str();
-}
 
 TextWindow MakeTextWindow(const char* src) {
     return TextWindow((char*) src, strlen(src));
@@ -48,24 +33,19 @@ TextWindow MakeTextWindow(const char* src) {
     Tokenize(&textWindow, &diagnostics, &tokens); \
     Parser parser(&allocator, tempAllocator, &diagnostics, tokens.ToCheckedArray());
 
+
+#define TestFile(x) "../Tests/ParsingExpectations/" x ".output"
+
 TEST_CASE("Parse Field", "[parser]") {
     INITIALIZE_PARSER_TEST
 
     SECTION("Field") {
 
         INITIALIZE_PARSER("public List<Something> myList;")
-        Builder b(&allocator);
 
         MemberDeclarationSyntax* x = ParseMemberDeclaration(&parser, SyntaxKind::StructDeclaration);
 
-        REQUIRE(x->GetKind() == Alchemy::Compilation::SyntaxKind::FieldDeclaration);
-
-        NodePrinter p(tokens.ToCheckedArray());
-        p.PrintNode(x);
-        p.Dump();
-
-        DiffNodesByLine(p, ReadFile("Field.output"));
-//        DiffDiagnostics(diagnostics, ReadFileContents("Field.diagnostics"));
+        REQUIRE(CompareLines(TestFile("Field"), TreeToLine(tokens, x)));
 
     }
 

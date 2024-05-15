@@ -138,10 +138,15 @@ namespace Alchemy::Compilation {
 
         }
 
+        void PrintTree(SyntaxBase * syntaxBase, NodeEqualityOptions options = NodeEqualityOptions::Default) {
+            PrintNode(syntaxBase);
+            buffer.size -= 2;
+        }
+
         void PrintNode(SyntaxBase* syntaxBase);
 
         void Dump() {
-            printf("%.*s", buffer.size - 2, buffer.array);
+            printf("%.*s", buffer.size, buffer.array);
         }
 
     };
