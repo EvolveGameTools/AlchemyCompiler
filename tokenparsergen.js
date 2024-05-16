@@ -122,7 +122,7 @@ function groupByLength(arr) {
 }
 
 function generateKeywordMatch(cppEnumContent, start, end) {
-    const enumValues = getEnumNames(cppEnumContent, "SyntaxKind");
+    const enumValues = getEnumNames(cppEnumContent, "TokenKind");
 
     const groupedValues = {};
 
@@ -169,7 +169,7 @@ function generateKeywordMatch(cppEnumContent, start, end) {
     functionBody += `constexpr int32 kLongestKeywordLength = ${longestKeywordLength};\n\n`;
 
     functionBody += `constexpr int32 kShortestKeywordLength = ${shortestKeywordLength};\n\n`;
-    functionBody += 'bool TryMatchKeyword_Generated(char * buffer, int32 length, SyntaxKind * keywordType) {\n';
+    functionBody += 'bool TryMatchKeyword_Generated(char * buffer, int32 length, TokenKind * keywordType) {\n';
     functionBody += '\n    if(length < kShortestKeywordLength || length > kLongestKeywordLength) {\n' +
         '        return false;\n' +
         '    }\n\n'
@@ -215,11 +215,11 @@ function generateKeywordMatch(cppEnumContent, start, end) {
                 }
 
                 if (abridged === 0) {
-                    functionBody += `                    *keywordType = SyntaxKind::${keyword};\n`;
+                    functionBody += `                    *keywordType = TokenKind::${keyword};\n`;
                     functionBody += `                    return true;`;
                 } else {
                     functionBody += `                    if(${matchMethod}) { // ${keyword}\n`;
-                    functionBody += `                        *keywordType = SyntaxKind::${keyword};\n`;
+                    functionBody += `                        *keywordType = TokenKind::${keyword};\n`;
                     functionBody += `                        return true;\n`
                     functionBody += `                    }\n`
                 }
@@ -735,6 +735,7 @@ generateIsDeclarationNode("Src/Parsing/NodeType.h");
 // enumToStringFn("Src/Parsing/NodeType.h", "Src/Parsing/impl/NodeType.cpp", "NodeType", ["None"]);
 // enumToStringFn("Src/Parsing/TokenType.h", "Src/Parsing/impl/TokenType.cpp", "TokenType", ["Invalid"]);
 enumToStringFn("Src/Parsing2/SyntaxKind.h", "Src/Parsing2/SyntaxKind.cpp", "SyntaxKind");
+enumToStringFn("Src/Parsing2/SyntaxKind.h", "Src/Parsing2/TokenKind.cpp", "TokenKind");
 
 const astgen = require("./astgen");
 
@@ -750,5 +751,5 @@ function report(str) {
 
 fs.writeFile("Src/Parsing2/GetFirstToken.generated.cpp", astgen.makeFirstTokenSource(), report("GenFirstToken"));
 fs.writeFile("Src/Parsing2/NodePrinter.generated.cpp", astgen.makeNodePrinter(), report("NodePrinter"));
-fs.writeFile("Src/Parsing2/Builders.generated.h", astgen.makeBuilders(), report("Builders"));
-fs.writeFile("Src/Parsing2/NodeEquality.generated.cpp", astgen.makeEqualityComparisons(), report("Node Equality"));
+// fs.writeFile("Src/Parsing2/Builders.generated.h", astgen.makeBuilders(), report("Builders"));
+// fs.writeFile("Src/Parsing2/NodeEquality.generated.cpp", astgen.makeEqualityComparisons(), report("Node Equality"));

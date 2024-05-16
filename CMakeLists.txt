@@ -28,11 +28,11 @@ list(APPEND Sources
         Src/Parsing2/Parser.cpp
         Src/Parsing2/Parsing.cpp
         Src/Parsing2/SyntaxKind.cpp
+        Src/Parsing2/TokenKind.cpp
 
         Src/Parsing2/MatchKeyword.generated.cpp
         Src/Parsing2/GetFirstToken.generated.cpp
         Src/Parsing2/NodePrinter.generated.cpp
-        Src/Parsing2/NodeEquality.generated.cpp
 
 )
 

@@ -4,8 +4,8 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     bool IsHexDigit(char c) {
         return (c >= '0' && c <= '9') ||
-               (c >= 'A' && c <= 'F') ||
-               (c >= 'a' && c <= 'f');
+            (c >= 'A' && c <= 'F') ||
+            (c >= 'a' && c <= 'f');
     }
 
     int32 HexValue(char c) {
@@ -21,13 +21,13 @@ namespace Alchemy::Compilation::SyntaxFacts {
         return c >= '0' && c <= '9';
     }
 
-    SyntaxKind GetPostfixUnaryExpression(SyntaxKind token) {
+    SyntaxKind GetPostfixUnaryExpression(TokenKind token) {
         switch (token) {
-            case SyntaxKind::PlusPlusToken:
+            case TokenKind::PlusPlusToken:
                 return SyntaxKind::PostIncrementExpression;
-            case SyntaxKind::MinusMinusToken:
+            case TokenKind::MinusMinusToken:
                 return SyntaxKind::PostDecrementExpression;
-            case SyntaxKind::ExclamationToken:
+            case TokenKind::ExclamationToken:
                 NOT_IMPLEMENTED("! postfix expression");
                 return SyntaxKind::None; // todo -- this should be our make-it-work-or-panic operator
             default:
@@ -35,472 +35,505 @@ namespace Alchemy::Compilation::SyntaxFacts {
         }
     }
 
-    SyntaxKind GetPrefixUnaryExpression(SyntaxKind token) {
+    SyntaxKind GetPrefixUnaryExpression(TokenKind token) {
         switch (token) {
-            case SyntaxKind::PlusToken:
+            case TokenKind::PlusToken:
                 return SyntaxKind::UnaryPlusExpression;
-            case SyntaxKind::MinusToken:
+            case TokenKind::MinusToken:
                 return SyntaxKind::UnaryMinusExpression;
-            case SyntaxKind::TildeToken:
+            case TokenKind::TildeToken:
                 return SyntaxKind::BitwiseNotExpression;
-            case SyntaxKind::ExclamationToken:
+            case TokenKind::ExclamationToken:
                 return SyntaxKind::LogicalNotExpression;
-            case SyntaxKind::PlusPlusToken:
+            case TokenKind::PlusPlusToken:
                 return SyntaxKind::PreIncrementExpression;
-            case SyntaxKind::MinusMinusToken:
+            case TokenKind::MinusMinusToken:
                 return SyntaxKind::PreDecrementExpression;
-            case SyntaxKind::AmpersandToken:
+            case TokenKind::AmpersandToken:
                 return SyntaxKind::AddressOfExpression;
-            case SyntaxKind::AsteriskToken:
+            case TokenKind::AsteriskToken:
                 return SyntaxKind::PointerIndirectionExpression;
-            case SyntaxKind::CaretToken:
+            case TokenKind::CaretToken:
                 return SyntaxKind::IndexExpression;
             default:
                 return SyntaxKind::None;
         }
     }
 
-    bool IsPrefixUnaryExpression(SyntaxKind token) {
+    bool IsPrefixUnaryExpression(TokenKind token) {
         return GetPrefixUnaryExpression(token) != SyntaxKind::None;
     }
 
-    bool IsPrefixUnaryExpressionOperatorToken(SyntaxKind token) {
+    bool IsPrefixUnaryExpressionOperatorToken(TokenKind token) {
         return GetPrefixUnaryExpression(token) != SyntaxKind::None;
     }
 
-    bool IsPostfixUnaryExpression(SyntaxKind token) {
+    bool IsPostfixUnaryExpression(TokenKind token) {
         return GetPostfixUnaryExpression(token) != SyntaxKind::None;
     }
 
-    bool IsPostfixUnaryExpressionToken(SyntaxKind token) {
+    bool IsPostfixUnaryExpressionToken(TokenKind token) {
         return GetPostfixUnaryExpression(token) != SyntaxKind::None;
     }
 
-    bool IsAnyUnaryExpression(Alchemy::Compilation::SyntaxKind kind) {
+    bool IsAnyUnaryExpression(TokenKind kind) {
         return IsPrefixUnaryExpression(kind) || IsPostfixUnaryExpression(kind);
     }
 
-    SyntaxKind GetBinaryExpression(SyntaxKind kind) {
+    SyntaxKind GetAssignmentExpression(TokenKind token) {
+        switch (token) {
+            case TokenKind::BarEqualsToken:
+                return SyntaxKind::OrAssignmentExpression;
+            case TokenKind::AmpersandEqualsToken:
+                return SyntaxKind::AndAssignmentExpression;
+            case TokenKind::CaretEqualsToken:
+                return SyntaxKind::ExclusiveOrAssignmentExpression;
+            case TokenKind::LessThanLessThanEqualsToken:
+                return SyntaxKind::LeftShiftAssignmentExpression;
+            case TokenKind::GreaterThanGreaterThanEqualsToken:
+                return SyntaxKind::RightShiftAssignmentExpression;
+            case TokenKind::GreaterThanGreaterThanGreaterThanEqualsToken:
+                return SyntaxKind::UnsignedRightShiftAssignmentExpression;
+            case TokenKind::PlusEqualsToken:
+                return SyntaxKind::AddAssignmentExpression;
+            case TokenKind::MinusEqualsToken:
+                return SyntaxKind::SubtractAssignmentExpression;
+            case TokenKind::AsteriskEqualsToken:
+                return SyntaxKind::MultiplyAssignmentExpression;
+            case TokenKind::SlashEqualsToken:
+                return SyntaxKind::DivideAssignmentExpression;
+            case TokenKind::PercentEqualsToken:
+                return SyntaxKind::ModuloAssignmentExpression;
+            case TokenKind::EqualsToken:
+                return SyntaxKind::SimpleAssignmentExpression;
+            case TokenKind::QuestionQuestionEqualsToken:
+                return SyntaxKind::CoalesceAssignmentExpression;
+            default:
+                return SyntaxKind::None;
+        }
+    }
+
+    SyntaxKind GetBinaryExpression(TokenKind kind) {
         switch (kind) {
-            case SyntaxKind::QuestionQuestionToken:
+            case TokenKind::QuestionQuestionToken:
                 return SyntaxKind::CoalesceExpression;
-            case SyntaxKind::IsKeyword:
+            case TokenKind::IsKeyword:
                 return SyntaxKind::IsExpression;
-            case SyntaxKind::AsKeyword:
+            case TokenKind::AsKeyword:
                 return SyntaxKind::AsExpression;
-            case SyntaxKind::BarToken:
+            case TokenKind::BarToken:
                 return SyntaxKind::BitwiseOrExpression;
-            case SyntaxKind::CaretToken:
+            case TokenKind::CaretToken:
                 return SyntaxKind::ExclusiveOrExpression;
-            case SyntaxKind::AmpersandToken:
+            case TokenKind::AmpersandToken:
                 return SyntaxKind::BitwiseAndExpression;
-            case SyntaxKind::EqualsEqualsToken:
+            case TokenKind::EqualsEqualsToken:
                 return SyntaxKind::EqualsExpression;
-            case SyntaxKind::ExclamationEqualsToken:
+            case TokenKind::ExclamationEqualsToken:
                 return SyntaxKind::NotEqualsExpression;
-            case SyntaxKind::LessThanToken:
+            case TokenKind::LessThanToken:
                 return SyntaxKind::LessThanExpression;
-            case SyntaxKind::LessThanEqualsToken:
+            case TokenKind::LessThanEqualsToken:
                 return SyntaxKind::LessThanOrEqualExpression;
-            case SyntaxKind::GreaterThanToken:
+            case TokenKind::GreaterThanToken:
                 return SyntaxKind::GreaterThanExpression;
-            case SyntaxKind::GreaterThanEqualsToken:
+            case TokenKind::GreaterThanEqualsToken:
                 return SyntaxKind::GreaterThanOrEqualExpression;
-            case SyntaxKind::LessThanLessThanToken:
+            case TokenKind::LessThanLessThanToken:
                 return SyntaxKind::LeftShiftExpression;
-            case SyntaxKind::GreaterThanGreaterThanToken:
+            case TokenKind::GreaterThanGreaterThanToken:
                 return SyntaxKind::RightShiftExpression;
-            case SyntaxKind::GreaterThanGreaterThanGreaterThanToken:
+            case TokenKind::GreaterThanGreaterThanGreaterThanToken:
                 return SyntaxKind::UnsignedRightShiftExpression;
-            case SyntaxKind::PlusToken:
+            case TokenKind::PlusToken:
                 return SyntaxKind::AddExpression;
-            case SyntaxKind::MinusToken:
+            case TokenKind::MinusToken:
                 return SyntaxKind::SubtractExpression;
-            case SyntaxKind::AsteriskToken:
+            case TokenKind::AsteriskToken:
                 return SyntaxKind::MultiplyExpression;
-            case SyntaxKind::SlashToken:
+            case TokenKind::SlashToken:
                 return SyntaxKind::DivideExpression;
-            case SyntaxKind::PercentToken:
+            case TokenKind::PercentToken:
                 return SyntaxKind::ModuloExpression;
-            case SyntaxKind::AmpersandAmpersandToken:
+            case TokenKind::AmpersandAmpersandToken:
                 return SyntaxKind::LogicalAndExpression;
-            case SyntaxKind::BarBarToken:
+            case TokenKind::BarBarToken:
                 return SyntaxKind::LogicalOrExpression;
             default:
                 return SyntaxKind::None;
         }
     }
 
-    bool IsBinaryExpression(SyntaxKind token) {
+    bool IsBinaryExpression(TokenKind token) {
         return GetBinaryExpression(token) != SyntaxKind::None;
     }
 
-    bool IsAssignmentExpressionOperatorToken(SyntaxKind token) {
+    bool IsAssignmentExpressionOperatorToken(TokenKind token) {
         switch (token) {
-            case SyntaxKind::QuestionQuestionEqualsToken:
-            case SyntaxKind::BarEqualsToken:
-            case SyntaxKind::AmpersandEqualsToken:
-            case SyntaxKind::CaretEqualsToken:
-            case SyntaxKind::LessThanLessThanEqualsToken:
-            case SyntaxKind::GreaterThanGreaterThanEqualsToken:
-            case SyntaxKind::GreaterThanGreaterThanGreaterThanEqualsToken:
-            case SyntaxKind::PlusEqualsToken:
-            case SyntaxKind::MinusEqualsToken:
-            case SyntaxKind::AsteriskEqualsToken:
-            case SyntaxKind::SlashEqualsToken:
-            case SyntaxKind::PercentEqualsToken:
-            case SyntaxKind::EqualsToken:
+            case TokenKind::QuestionQuestionEqualsToken:
+            case TokenKind::BarEqualsToken:
+            case TokenKind::AmpersandEqualsToken:
+            case TokenKind::CaretEqualsToken:
+            case TokenKind::LessThanLessThanEqualsToken:
+            case TokenKind::GreaterThanGreaterThanEqualsToken:
+            case TokenKind::GreaterThanGreaterThanGreaterThanEqualsToken:
+            case TokenKind::PlusEqualsToken:
+            case TokenKind::MinusEqualsToken:
+            case TokenKind::AsteriskEqualsToken:
+            case TokenKind::SlashEqualsToken:
+            case TokenKind::PercentEqualsToken:
+            case TokenKind::EqualsToken:
                 return true;
             default:
                 return false;
         }
     }
 
-    bool IsPredefinedType(SyntaxKind kind) {
+    bool IsPredefinedType(TokenKind kind) {
         switch (kind) {
             // todo -- aliases, float vectors, colors, dynamic
-            case SyntaxKind::BoolKeyword:
-            case SyntaxKind::ByteKeyword:
-            case SyntaxKind::SByteKeyword:
-            case SyntaxKind::IntKeyword:
-            case SyntaxKind::UIntKeyword:
-            case SyntaxKind::ShortKeyword:
-            case SyntaxKind::UShortKeyword:
-            case SyntaxKind::LongKeyword:
-            case SyntaxKind::ULongKeyword:
-            case SyntaxKind::FloatKeyword:
-            case SyntaxKind::DoubleKeyword:
-            case SyntaxKind::StringKeyword:
-            case SyntaxKind::CharKeyword:
-            case SyntaxKind::ObjectKeyword:
-            case SyntaxKind::VoidKeyword:
+            case TokenKind::BoolKeyword:
+            case TokenKind::ByteKeyword:
+            case TokenKind::SByteKeyword:
+            case TokenKind::IntKeyword:
+            case TokenKind::UIntKeyword:
+            case TokenKind::ShortKeyword:
+            case TokenKind::UShortKeyword:
+            case TokenKind::LongKeyword:
+            case TokenKind::ULongKeyword:
+            case TokenKind::FloatKeyword:
+            case TokenKind::DoubleKeyword:
+            case TokenKind::StringKeyword:
+            case TokenKind::CharKeyword:
+            case TokenKind::ObjectKeyword:
+            case TokenKind::VoidKeyword:
                 return true;
             default:
                 return false;
         }
     }
 
-    bool IsReservedKeyword(SyntaxKind kind) {
+    bool IsReservedKeyword(TokenKind kind) {
         int32 v = (int32) kind;
-        constexpr int32 lower = (int32) SyntaxKind::__FirstKeyword__;
-        constexpr int32 upper = (int32) SyntaxKind::__LastKeyword__;
+        constexpr int32 lower = (int32) TokenKind::__FirstKeyword__;
+        constexpr int32 upper = (int32) TokenKind::__LastKeyword__;
         return v > lower && v < upper;
     }
 
-    bool IsToken(SyntaxKind kind) {
+    bool IsToken(TokenKind kind) {
         int32 v = (int32) kind;
-        constexpr int32 lower = (int32) SyntaxKind::__FirstToken__;
-        constexpr int32 upper = (int32) SyntaxKind::__LastToken__;
+        constexpr int32 lower = (int32) TokenKind::__FirstToken__;
+        constexpr int32 upper = (int32) TokenKind::__LastToken__;
         return v > lower && v < upper;
     }
 
-    bool IsContextualKeyword(SyntaxKind kind) {
+    bool IsContextualKeyword(TokenKind kind) {
         int32 v = (int32) kind;
-        constexpr int32 lower = (int32) SyntaxKind::__FirstContextualKeyword__;
-        constexpr int32 upper = (int32) SyntaxKind::__LastContextualKeyword__;
+        constexpr int32 lower = (int32) TokenKind::__FirstContextualKeyword__;
+        constexpr int32 upper = (int32) TokenKind::__LastContextualKeyword__;
         return v > lower && v < upper;
     }
 
-    const char* GetText(SyntaxKind kind) {
+    const char* GetText(TokenKind kind) {
 
         switch (kind) {
-            case SyntaxKind::TildeToken:
+            case TokenKind::TildeToken:
                 return "~";
-            case SyntaxKind::ExclamationToken:
+            case TokenKind::ExclamationToken:
                 return "!";
-            case SyntaxKind::DollarToken:
+            case TokenKind::DollarToken:
                 return "$";
-            case SyntaxKind::PercentToken:
+            case TokenKind::PercentToken:
                 return "%";
-            case SyntaxKind::CaretToken:
+            case TokenKind::CaretToken:
                 return "^";
-            case SyntaxKind::AmpersandToken:
+            case TokenKind::AmpersandToken:
                 return "&";
-            case SyntaxKind::AsteriskToken:
+            case TokenKind::AsteriskToken:
                 return "*";
-            case SyntaxKind::OpenParenToken:
+            case TokenKind::OpenParenToken:
                 return "(";
-            case SyntaxKind::CloseParenToken:
+            case TokenKind::CloseParenToken:
                 return ")";
-            case SyntaxKind::MinusToken:
+            case TokenKind::MinusToken:
                 return "-";
-            case SyntaxKind::PlusToken:
+            case TokenKind::PlusToken:
                 return "+";
-            case SyntaxKind::EqualsToken:
+            case TokenKind::EqualsToken:
                 return "=";
-            case SyntaxKind::OpenBraceToken:
+            case TokenKind::OpenBraceToken:
                 return "{";
-            case SyntaxKind::CloseBraceToken:
+            case TokenKind::CloseBraceToken:
                 return "}";
-            case SyntaxKind::OpenBracketToken:
+            case TokenKind::OpenBracketToken:
                 return "[";
-            case SyntaxKind::CloseBracketToken:
+            case TokenKind::CloseBracketToken:
                 return "]";
-            case SyntaxKind::BarToken:
+            case TokenKind::BarToken:
                 return "|";
-            case SyntaxKind::BackslashToken:
+            case TokenKind::BackslashToken:
                 return "\\";
-            case SyntaxKind::ColonToken:
+            case TokenKind::ColonToken:
                 return ":";
-            case SyntaxKind::SemicolonToken:
+            case TokenKind::SemicolonToken:
                 return ";";
-            case SyntaxKind::DoubleQuoteToken:
+            case TokenKind::DoubleQuoteToken:
                 return "\"";
-            case SyntaxKind::SingleQuoteToken:
+            case TokenKind::SingleQuoteToken:
                 return "'";
-            case SyntaxKind::LessThanToken:
+            case TokenKind::LessThanToken:
                 return "<";
-            case SyntaxKind::CommaToken:
+            case TokenKind::CommaToken:
                 return ",";
-            case SyntaxKind::GreaterThanToken:
+            case TokenKind::GreaterThanToken:
                 return ">";
-            case SyntaxKind::DotToken:
+            case TokenKind::DotToken:
                 return ".";
-            case SyntaxKind::QuestionToken:
+            case TokenKind::QuestionToken:
                 return "?";
-            case SyntaxKind::HashToken:
+            case TokenKind::HashToken:
                 return "#";
-            case SyntaxKind::SlashToken:
+            case TokenKind::SlashToken:
                 return "/";
 
                 // compound
-            case SyntaxKind::BarBarToken:
+            case TokenKind::BarBarToken:
                 return "||";
-            case SyntaxKind::AmpersandAmpersandToken:
+            case TokenKind::AmpersandAmpersandToken:
                 return "&&";
-            case SyntaxKind::MinusMinusToken:
+            case TokenKind::MinusMinusToken:
                 return "--";
-            case SyntaxKind::PlusPlusToken:
+            case TokenKind::PlusPlusToken:
                 return "++";
-            case SyntaxKind::ColonColonToken:
+            case TokenKind::ColonColonToken:
                 return "::";
-            case SyntaxKind::QuestionQuestionToken:
+            case TokenKind::QuestionQuestionToken:
                 return "??";
-            case SyntaxKind::MinusGreaterThanToken:
+            case TokenKind::MinusGreaterThanToken:
                 return "->";
-            case SyntaxKind::ExclamationEqualsToken:
+            case TokenKind::ExclamationEqualsToken:
                 return "!=";
-            case SyntaxKind::EqualsEqualsToken:
+            case TokenKind::EqualsEqualsToken:
                 return "==";
-            case SyntaxKind::EqualsGreaterThanToken:
+            case TokenKind::EqualsGreaterThanToken:
                 return "=>";
-            case SyntaxKind::LessThanEqualsToken:
+            case TokenKind::LessThanEqualsToken:
                 return "<=";
-            case SyntaxKind::LessThanLessThanToken:
+            case TokenKind::LessThanLessThanToken:
                 return "<<";
-            case SyntaxKind::LessThanLessThanEqualsToken:
+            case TokenKind::LessThanLessThanEqualsToken:
                 return "<<=";
-            case SyntaxKind::GreaterThanEqualsToken:
+            case TokenKind::GreaterThanEqualsToken:
                 return ">=";
-            case SyntaxKind::GreaterThanGreaterThanToken:
+            case TokenKind::GreaterThanGreaterThanToken:
                 return ">>";
-            case SyntaxKind::GreaterThanGreaterThanEqualsToken:
+            case TokenKind::GreaterThanGreaterThanEqualsToken:
                 return ">>=";
-            case SyntaxKind::GreaterThanGreaterThanGreaterThanToken:
+            case TokenKind::GreaterThanGreaterThanGreaterThanToken:
                 return ">>>";
-            case SyntaxKind::GreaterThanGreaterThanGreaterThanEqualsToken:
+            case TokenKind::GreaterThanGreaterThanGreaterThanEqualsToken:
                 return ">>>=";
-            case SyntaxKind::SlashEqualsToken:
+            case TokenKind::SlashEqualsToken:
                 return "/=";
-            case SyntaxKind::AsteriskEqualsToken:
+            case TokenKind::AsteriskEqualsToken:
                 return "*=";
-            case SyntaxKind::BarEqualsToken:
+            case TokenKind::BarEqualsToken:
                 return "|=";
-            case SyntaxKind::AmpersandEqualsToken:
+            case TokenKind::AmpersandEqualsToken:
                 return "&=";
-            case SyntaxKind::PlusEqualsToken:
+            case TokenKind::PlusEqualsToken:
                 return "+=";
-            case SyntaxKind::MinusEqualsToken:
+            case TokenKind::MinusEqualsToken:
                 return "-=";
-            case SyntaxKind::CaretEqualsToken:
+            case TokenKind::CaretEqualsToken:
                 return "^=";
-            case SyntaxKind::PercentEqualsToken:
+            case TokenKind::PercentEqualsToken:
                 return "%=";
-            case SyntaxKind::QuestionQuestionEqualsToken:
+            case TokenKind::QuestionQuestionEqualsToken:
                 return "??=";
-            case SyntaxKind::DotDotToken:
+            case TokenKind::DotDotToken:
                 return "..";
 
                 // Keywords
-            case SyntaxKind::BoolKeyword:
+            case TokenKind::BoolKeyword:
                 return "bool";
-            case SyntaxKind::ByteKeyword:
+            case TokenKind::ByteKeyword:
                 return "byte";
-            case SyntaxKind::SByteKeyword:
+            case TokenKind::SByteKeyword:
                 return "sbyte";
-            case SyntaxKind::ShortKeyword:
+            case TokenKind::ShortKeyword:
                 return "short";
-            case SyntaxKind::UShortKeyword:
+            case TokenKind::UShortKeyword:
                 return "ushort";
-            case SyntaxKind::IntKeyword:
+            case TokenKind::IntKeyword:
                 return "int";
-            case SyntaxKind::UIntKeyword:
+            case TokenKind::UIntKeyword:
                 return "uint";
-            case SyntaxKind::LongKeyword:
+            case TokenKind::LongKeyword:
                 return "long";
-            case SyntaxKind::ULongKeyword:
+            case TokenKind::ULongKeyword:
                 return "ulong";
-            case SyntaxKind::DoubleKeyword:
+            case TokenKind::DoubleKeyword:
                 return "double";
-            case SyntaxKind::FloatKeyword:
+            case TokenKind::FloatKeyword:
                 return "float";
-            case SyntaxKind::StringKeyword:
+            case TokenKind::StringKeyword:
                 return "string";
-            case SyntaxKind::CharKeyword:
+            case TokenKind::CharKeyword:
                 return "char";
-            case SyntaxKind::VoidKeyword:
+            case TokenKind::VoidKeyword:
                 return "void";
-            case SyntaxKind::ObjectKeyword:
+            case TokenKind::ObjectKeyword:
                 return "object";
-            case SyntaxKind::TypeOfKeyword:
+            case TokenKind::TypeOfKeyword:
                 return "typeof";
-            case SyntaxKind::SizeOfKeyword:
+            case TokenKind::SizeOfKeyword:
                 return "sizeof";
-            case SyntaxKind::NullKeyword:
+            case TokenKind::NullKeyword:
                 return "null";
-            case SyntaxKind::TrueKeyword:
+            case TokenKind::TrueKeyword:
                 return "true";
-            case SyntaxKind::FalseKeyword:
+            case TokenKind::FalseKeyword:
                 return "false";
-            case SyntaxKind::IfKeyword:
+            case TokenKind::IfKeyword:
                 return "if";
-            case SyntaxKind::ElseKeyword:
+            case TokenKind::ElseKeyword:
                 return "else";
-            case SyntaxKind::WhileKeyword:
+            case TokenKind::WhileKeyword:
                 return "while";
-            case SyntaxKind::ForKeyword:
+            case TokenKind::ForKeyword:
                 return "for";
-            case SyntaxKind::ForEachKeyword:
+            case TokenKind::ForEachKeyword:
                 return "foreach";
-            case SyntaxKind::DoKeyword:
+            case TokenKind::DoKeyword:
                 return "do";
-            case SyntaxKind::SwitchKeyword:
+            case TokenKind::SwitchKeyword:
                 return "switch";
-            case SyntaxKind::CaseKeyword:
+            case TokenKind::CaseKeyword:
                 return "case";
-            case SyntaxKind::DefaultKeyword:
+            case TokenKind::DefaultKeyword:
                 return "default";
-            case SyntaxKind::TryKeyword:
+            case TokenKind::TryKeyword:
                 return "try";
-            case SyntaxKind::CatchKeyword:
+            case TokenKind::CatchKeyword:
                 return "catch";
-            case SyntaxKind::FinallyKeyword:
+            case TokenKind::FinallyKeyword:
                 return "finally";
-            case SyntaxKind::BreakKeyword:
+            case TokenKind::BreakKeyword:
                 return "break";
-            case SyntaxKind::ContinueKeyword:
+            case TokenKind::ContinueKeyword:
                 return "continue";
-            case SyntaxKind::ReturnKeyword:
+            case TokenKind::ReturnKeyword:
                 return "return";
-            case SyntaxKind::ThrowKeyword:
+            case TokenKind::ThrowKeyword:
                 return "throw";
-            case SyntaxKind::PublicKeyword:
+            case TokenKind::PublicKeyword:
                 return "public";
-            case SyntaxKind::PrivateKeyword:
+            case TokenKind::PrivateKeyword:
                 return "private";
-            case SyntaxKind::InternalKeyword:
+            case TokenKind::InternalKeyword:
                 return "internal";
-            case SyntaxKind::ProtectedKeyword:
+            case TokenKind::ProtectedKeyword:
                 return "protected";
-            case SyntaxKind::StaticKeyword:
+            case TokenKind::StaticKeyword:
                 return "static";
-            case SyntaxKind::ReadOnlyKeyword:
+            case TokenKind::ReadOnlyKeyword:
                 return "readonly";
-            case SyntaxKind::SealedKeyword:
+            case TokenKind::SealedKeyword:
                 return "sealed";
-            case SyntaxKind::ConstKeyword:
+            case TokenKind::ConstKeyword:
                 return "const";
-            case SyntaxKind::FixedKeyword:
+            case TokenKind::FixedKeyword:
                 return "fixed";
-            case SyntaxKind::StackAllocKeyword:
+            case TokenKind::StackAllocKeyword:
                 return "stackalloc";
-            case SyntaxKind::NewKeyword:
+            case TokenKind::NewKeyword:
                 return "new";
-            case SyntaxKind::OverrideKeyword:
+            case TokenKind::OverrideKeyword:
                 return "override";
-            case SyntaxKind::AbstractKeyword:
+            case TokenKind::AbstractKeyword:
                 return "abstract";
-            case SyntaxKind::VirtualKeyword:
+            case TokenKind::VirtualKeyword:
                 return "virtual";
-            case SyntaxKind::ExternKeyword:
+            case TokenKind::ExternKeyword:
                 return "extern";
-            case SyntaxKind::RefKeyword:
+            case TokenKind::RefKeyword:
                 return "ref";
-            case SyntaxKind::OutKeyword:
+            case TokenKind::OutKeyword:
                 return "out";
-            case SyntaxKind::InKeyword:
+            case TokenKind::InKeyword:
                 return "in";
-            case SyntaxKind::IsKeyword:
+            case TokenKind::IsKeyword:
                 return "is";
-            case SyntaxKind::AsKeyword:
+            case TokenKind::AsKeyword:
                 return "as";
-            case SyntaxKind::ParamsKeyword:
+            case TokenKind::ParamsKeyword:
                 return "params";
-            case SyntaxKind::ThisKeyword:
+            case TokenKind::ThisKeyword:
                 return "this";
-            case SyntaxKind::BaseKeyword:
+            case TokenKind::BaseKeyword:
                 return "base";
-            case SyntaxKind::NamespaceKeyword:
+            case TokenKind::NamespaceKeyword:
                 return "namespace";
-            case SyntaxKind::UsingKeyword:
+            case TokenKind::UsingKeyword:
                 return "using";
-            case SyntaxKind::ClassKeyword:
+            case TokenKind::ClassKeyword:
                 return "class";
-            case SyntaxKind::StructKeyword:
+            case TokenKind::StructKeyword:
                 return "struct";
-            case SyntaxKind::InterfaceKeyword:
+            case TokenKind::InterfaceKeyword:
                 return "interface";
-            case SyntaxKind::EnumKeyword:
+            case TokenKind::EnumKeyword:
                 return "enum";
-            case SyntaxKind::DelegateKeyword:
+            case TokenKind::DelegateKeyword:
                 return "delegate";
-            case SyntaxKind::OperatorKeyword:
+            case TokenKind::OperatorKeyword:
                 return "operator";
-            case SyntaxKind::ImplicitKeyword:
+            case TokenKind::ImplicitKeyword:
                 return "implicit";
-            case SyntaxKind::ExplicitKeyword:
+            case TokenKind::ExplicitKeyword:
                 return "explicit";
-            case SyntaxKind::ElifKeyword:
+            case TokenKind::ElifKeyword:
                 return "elif";
-            case SyntaxKind::EndIfKeyword:
+            case TokenKind::EndIfKeyword:
                 return "endif";
 
                 // contextual keywords
-            case SyntaxKind::PartialKeyword:
+            case TokenKind::PartialKeyword:
                 return "partial";
-            case SyntaxKind::FromKeyword:
+            case TokenKind::FromKeyword:
                 return "from";
-            case SyntaxKind::WhereKeyword:
+            case TokenKind::WhereKeyword:
                 return "where";
-            case SyntaxKind::GetKeyword:
+            case TokenKind::GetKeyword:
                 return "get";
-            case SyntaxKind::SetKeyword:
+            case TokenKind::SetKeyword:
                 return "set";
-            case SyntaxKind::AliasKeyword:
+            case TokenKind::AliasKeyword:
                 return "alias";
-            case SyntaxKind::NameOfKeyword:
+            case TokenKind::NameOfKeyword:
                 return "nameof";
-            case SyntaxKind::WhenKeyword:
+            case TokenKind::WhenKeyword:
                 return "when";
-            case SyntaxKind::UnderscoreToken:
+            case TokenKind::UnderscoreToken:
                 return "_";
-            case SyntaxKind::VarKeyword:
+            case TokenKind::VarKeyword:
                 return "var";
-            case SyntaxKind::AndKeyword:
+            case TokenKind::AndKeyword:
                 return "and";
-            case SyntaxKind::OrKeyword:
+            case TokenKind::OrKeyword:
                 return "or";
-            case SyntaxKind::NotKeyword:
+            case TokenKind::NotKeyword:
                 return "not";
-            case SyntaxKind::WithKeyword:
+            case TokenKind::WithKeyword:
                 return "with";
-            case SyntaxKind::InitKeyword:
+            case TokenKind::InitKeyword:
                 return "init";
-            case SyntaxKind::RequiredKeyword:
+            case TokenKind::RequiredKeyword:
                 return "required";
             default:
 
-                if(IsToken(kind) || IsContextualKeyword(kind) || IsReservedKeyword(kind)) {
+                if (IsToken(kind) || IsContextualKeyword(kind) || IsReservedKeyword(kind)) {
                     NOT_IMPLEMENTED("text for symbol kind");
                 }
 
@@ -508,9 +541,301 @@ namespace Alchemy::Compilation::SyntaxFacts {
         }
     }
 
-    bool IsBinaryExpressionOperatorToken(SyntaxKind token) {
+    bool IsBinaryExpressionOperatorToken(TokenKind token) {
         return GetBinaryExpression(token) != SyntaxKind::None;
     }
 
+    bool IsValidArgumentRefKindKeyword(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::RefKeyword:
+            case TokenKind::OutKeyword:
+//            case SyntaxKind.InKeyword:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsInvalidSubExpression(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::BreakKeyword:
+            case TokenKind::CaseKeyword:
+            case TokenKind::CatchKeyword:
+            case TokenKind::ConstKeyword:
+            case TokenKind::ContinueKeyword:
+            case TokenKind::DoKeyword:
+            case TokenKind::FinallyKeyword:
+            case TokenKind::ForKeyword:
+            case TokenKind::ForEachKeyword:
+            case TokenKind::GotoKeyword:
+            case TokenKind::IfKeyword:
+            case TokenKind::ElseKeyword:
+            case TokenKind::LockKeyword:
+            case TokenKind::ReturnKeyword:
+            case TokenKind::SwitchKeyword:
+            case TokenKind::TryKeyword:
+            case TokenKind::UsingKeyword:
+            case TokenKind::WhileKeyword:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsExpectedPrefixUnaryOperator(TokenKind kind) {
+        return SyntaxFacts::IsPrefixUnaryExpression(kind) && kind != TokenKind::RefKeyword && kind != TokenKind::OutKeyword;
+    }
+
+    Precedence GetPrecedence(SyntaxKind op) {
+        switch (op) {
+            case SyntaxKind::ParenthesizedLambdaExpression:
+            case SyntaxKind::SimpleLambdaExpression:
+            case SyntaxKind::AnonymousMethodExpression:
+                return Precedence::Lambda;
+            case SyntaxKind::SimpleAssignmentExpression:
+            case SyntaxKind::AddAssignmentExpression:
+            case SyntaxKind::SubtractAssignmentExpression:
+            case SyntaxKind::MultiplyAssignmentExpression:
+            case SyntaxKind::DivideAssignmentExpression:
+            case SyntaxKind::ModuloAssignmentExpression:
+            case SyntaxKind::AndAssignmentExpression:
+            case SyntaxKind::ExclusiveOrAssignmentExpression:
+            case SyntaxKind::OrAssignmentExpression:
+            case SyntaxKind::LeftShiftAssignmentExpression:
+            case SyntaxKind::RightShiftAssignmentExpression:
+            case SyntaxKind::UnsignedRightShiftAssignmentExpression:
+            case SyntaxKind::CoalesceAssignmentExpression:
+                return Precedence::Assignment;
+            case SyntaxKind::CoalesceExpression:
+            case SyntaxKind::ThrowExpression:
+                return Precedence::Coalescing;
+            case SyntaxKind::LogicalOrExpression:
+                return Precedence::ConditionalOr;
+            case SyntaxKind::LogicalAndExpression:
+                return Precedence::ConditionalAnd;
+            case SyntaxKind::BitwiseOrExpression:
+                return Precedence::LogicalOr;
+            case SyntaxKind::ExclusiveOrExpression:
+                return Precedence::LogicalXor;
+            case SyntaxKind::BitwiseAndExpression:
+                return Precedence::LogicalAnd;
+            case SyntaxKind::EqualsExpression:
+            case SyntaxKind::NotEqualsExpression:
+                return Precedence::Equality;
+            case SyntaxKind::LessThanExpression:
+            case SyntaxKind::LessThanOrEqualExpression:
+            case SyntaxKind::GreaterThanExpression:
+            case SyntaxKind::GreaterThanOrEqualExpression:
+            case SyntaxKind::IsExpression:
+            case SyntaxKind::AsExpression:
+            case SyntaxKind::IsPatternExpression:
+                return Precedence::Relational;
+            case SyntaxKind::SwitchExpression:
+            case SyntaxKind::WithExpression:
+                return Precedence::Switch;
+            case SyntaxKind::LeftShiftExpression:
+            case SyntaxKind::RightShiftExpression:
+            case SyntaxKind::UnsignedRightShiftExpression:
+                return Precedence::Shift;
+            case SyntaxKind::AddExpression:
+            case SyntaxKind::SubtractExpression:
+                return Precedence::Additive;
+            case SyntaxKind::MultiplyExpression:
+            case SyntaxKind::DivideExpression:
+            case SyntaxKind::ModuloExpression:
+                return Precedence::Multiplicative;
+            case SyntaxKind::UnaryPlusExpression:
+            case SyntaxKind::UnaryMinusExpression:
+            case SyntaxKind::BitwiseNotExpression:
+            case SyntaxKind::LogicalNotExpression:
+            case SyntaxKind::PreIncrementExpression:
+            case SyntaxKind::PreDecrementExpression:
+            case SyntaxKind::TypeOfExpression:
+            case SyntaxKind::SizeOfExpression:
+            case SyntaxKind::IndexExpression:
+                return Precedence::Unary;
+            case SyntaxKind::CastExpression:
+                return Precedence::Cast;
+            case SyntaxKind::PointerIndirectionExpression:
+                return Precedence::PointerIndirection;
+            case SyntaxKind::AddressOfExpression:
+                return Precedence::AddressOf;
+            case SyntaxKind::RangeExpression:
+                return Precedence::Range;
+            case SyntaxKind::ConditionalExpression:
+                return Precedence::Expression;
+            case SyntaxKind::AnonymousObjectCreationExpression:
+            case SyntaxKind::ArrayCreationExpression:
+            case SyntaxKind::BaseExpression:
+            case SyntaxKind::CharacterLiteralExpression:
+            case SyntaxKind::CollectionExpression:
+            case SyntaxKind::ConditionalAccessExpression:
+            case SyntaxKind::DeclarationExpression:
+            case SyntaxKind::DefaultExpression:
+            case SyntaxKind::DefaultLiteralExpression:
+            case SyntaxKind::ElementAccessExpression:
+            case SyntaxKind::FalseLiteralExpression:
+            case SyntaxKind::GenericName:
+            case SyntaxKind::IdentifierName:
+            case SyntaxKind::ImplicitArrayCreationExpression:
+            case SyntaxKind::ImplicitStackAllocArrayCreationExpression:
+            case SyntaxKind::ImplicitObjectCreationExpression:
+            case SyntaxKind::InterpolatedStringExpression:
+            case SyntaxKind::InvocationExpression:
+            case SyntaxKind::NullLiteralExpression:
+            case SyntaxKind::NumericLiteralExpression:
+            case SyntaxKind::ObjectCreationExpression:
+            case SyntaxKind::ParenthesizedExpression:
+            case SyntaxKind::PointerMemberAccessExpression:
+            case SyntaxKind::PostDecrementExpression:
+            case SyntaxKind::PostIncrementExpression:
+            case SyntaxKind::PredefinedType:
+            case SyntaxKind::RefExpression:
+            case SyntaxKind::SimpleMemberAccessExpression:
+            case SyntaxKind::StackAllocArrayCreationExpression:
+            case SyntaxKind::StringLiteralExpression:
+            case SyntaxKind::ThisExpression:
+            case SyntaxKind::TrueLiteralExpression:
+            case SyntaxKind::TupleExpression:
+                return Precedence::Primary;
+            default:
+                UNREACHABLE("GetPrecedence");
+                return Precedence::Expression;
+        }
+    }
+
+    SyntaxKind GetLiteralExpression(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::StringLiteralToken:
+                return SyntaxKind::StringLiteralExpression;
+            case TokenKind::CharacterLiteralToken:
+                return SyntaxKind::CharacterLiteralExpression;
+            case TokenKind::NumericLiteralToken:
+                return SyntaxKind::NumericLiteralExpression;
+            case TokenKind::NullKeyword:
+                return SyntaxKind::NullLiteralExpression;
+            case TokenKind::TrueKeyword:
+                return SyntaxKind::TrueLiteralExpression;
+            case TokenKind::FalseKeyword:
+                return SyntaxKind::FalseLiteralExpression;
+            default:
+                return SyntaxKind::None;
+        }
+    }
+
+    bool CanFollowCast(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::AsKeyword:
+            case TokenKind::IsKeyword:
+            case TokenKind::SemicolonToken:
+            case TokenKind::CloseParenToken:
+            case TokenKind::CloseBracketToken:
+            case TokenKind::OpenBraceToken:
+            case TokenKind::CloseBraceToken:
+            case TokenKind::CommaToken:
+            case TokenKind::EqualsToken:
+            case TokenKind::PlusEqualsToken:
+            case TokenKind::MinusEqualsToken:
+            case TokenKind::AsteriskEqualsToken:
+            case TokenKind::SlashEqualsToken:
+            case TokenKind::PercentEqualsToken:
+            case TokenKind::AmpersandEqualsToken:
+            case TokenKind::CaretEqualsToken:
+            case TokenKind::BarEqualsToken:
+            case TokenKind::LessThanLessThanEqualsToken:
+            case TokenKind::GreaterThanGreaterThanEqualsToken:
+            case TokenKind::GreaterThanGreaterThanGreaterThanEqualsToken:
+            case TokenKind::QuestionToken:
+            case TokenKind::ColonToken:
+            case TokenKind::BarBarToken:
+            case TokenKind::AmpersandAmpersandToken:
+            case TokenKind::BarToken:
+            case TokenKind::CaretToken:
+            case TokenKind::AmpersandToken:
+            case TokenKind::EqualsEqualsToken:
+            case TokenKind::ExclamationEqualsToken:
+            case TokenKind::LessThanToken:
+            case TokenKind::LessThanEqualsToken:
+            case TokenKind::GreaterThanToken:
+            case TokenKind::GreaterThanEqualsToken:
+            case TokenKind::QuestionQuestionEqualsToken:
+            case TokenKind::LessThanLessThanToken:
+            case TokenKind::GreaterThanGreaterThanToken:
+            case TokenKind::GreaterThanGreaterThanGreaterThanToken:
+            case TokenKind::PlusToken:
+            case TokenKind::MinusToken:
+            case TokenKind::AsteriskToken:
+            case TokenKind::SlashToken:
+            case TokenKind::PercentToken:
+            case TokenKind::PlusPlusToken:
+            case TokenKind::MinusMinusToken:
+            case TokenKind::OpenBracketToken:
+            case TokenKind::DotToken:
+            case TokenKind::MinusGreaterThanToken:
+            case TokenKind::QuestionQuestionToken:
+            case TokenKind::EndOfFileToken:
+            case TokenKind::SwitchKeyword:
+            case TokenKind::EqualsGreaterThanToken:
+            case TokenKind::DotDotToken:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    bool IsRightAssociative(SyntaxKind op) {
+        switch (op) {
+            case SyntaxKind::SimpleAssignmentExpression:
+            case SyntaxKind::AddAssignmentExpression:
+            case SyntaxKind::SubtractAssignmentExpression:
+            case SyntaxKind::MultiplyAssignmentExpression:
+            case SyntaxKind::DivideAssignmentExpression:
+            case SyntaxKind::ModuloAssignmentExpression:
+            case SyntaxKind::AndAssignmentExpression:
+            case SyntaxKind::ExclusiveOrAssignmentExpression:
+            case SyntaxKind::OrAssignmentExpression:
+            case SyntaxKind::LeftShiftAssignmentExpression:
+            case SyntaxKind::RightShiftAssignmentExpression:
+            case SyntaxKind::UnsignedRightShiftAssignmentExpression:
+            case SyntaxKind::CoalesceAssignmentExpression:
+            case SyntaxKind::CoalesceExpression:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsPatternSyntax(SyntaxKind kind) {
+        return (int32) kind > (int32) SyntaxKind::__PATTERN_START__ && (int32) kind < (int32) SyntaxKind::__PATTERN_END__;
+    }
+
+    bool IsTypeSyntax(SyntaxKind kind) {
+        return (int32) kind > (int32) SyntaxKind::__TYPE_START__ && (int32) kind < (int32) SyntaxKind::__TYPE_END__;
+    }
+
+    bool CanTokenFollowTypeInPattern(TokenKind kind, Precedence precedence) {
+        switch (kind) {
+            case TokenKind::OpenParenToken:
+            case TokenKind::OpenBraceToken:
+            case TokenKind::IdentifierToken:
+            case TokenKind::CloseBraceToken:   // for efficiency, test some tokens that can follow a type pattern
+            case TokenKind::CloseBracketToken:
+            case TokenKind::CloseParenToken:
+            case TokenKind::CommaToken:
+            case TokenKind::SemicolonToken:
+                return true;
+            case TokenKind::DotToken:
+                // int.MaxValue is an expression, not a type.
+                return false;
+            case TokenKind::MinusGreaterThanToken:
+            case TokenKind::ExclamationToken:
+                // parse as an expression for error recovery
+                return false;
+            default: {
+                // If we find what looks like a continuation of an expression, it is not a type.
+                return !IsBinaryExpressionOperatorToken(kind) || GetPrecedence(GetBinaryExpression(kind)) <= precedence;
+            }
+        }
+    }
 
 }

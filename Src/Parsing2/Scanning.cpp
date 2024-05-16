@@ -428,23 +428,23 @@ namespace Alchemy::Compilation {
             if (hasExponent || hasDecimal) {
                 if (c == 'f' || c == 'F') {
                     textWindow->Advance();
-                    info->contextualKind = SyntaxKind::FloatLiteral;
+                    info->contextualKind = TokenKind::FloatLiteral;
                 }
                 else if (c == 'D' || c == 'd') {
                     textWindow->Advance();
-                    info->contextualKind = SyntaxKind::DoubleLiteral;
+                    info->contextualKind = TokenKind::DoubleLiteral;
                 }
                 else {
-                    info->contextualKind = SyntaxKind::DoubleLiteral;
+                    info->contextualKind = TokenKind::DoubleLiteral;
                 }
             }
             else if (c == 'f' || c == 'F') {
                 textWindow->Advance();
-                info->contextualKind = SyntaxKind::FloatLiteral;
+                info->contextualKind = TokenKind::FloatLiteral;
             }
             else if (c == 'D' || c == 'd') {
                 textWindow->Advance();
-                info->contextualKind = SyntaxKind::DoubleLiteral;
+                info->contextualKind = TokenKind::DoubleLiteral;
             }
             else if (c == 'L' || c == 'l') {
                 textWindow->Advance();
@@ -468,13 +468,13 @@ namespace Alchemy::Compilation {
             diagnostics->AddError(Diagnostic(ErrorCode::ERR_InvalidNumber, start, textWindow->ptr));
         }
 
-        info->kind = SyntaxKind::NumericLiteralToken;
+        info->kind = TokenKind::NumericLiteralToken;
         info->text = start;
         info->textSize = (int32) ((textWindow->ptr - start));
         uint64 val;
 
         switch (info->contextualKind) {
-            case SyntaxKind::FloatLiteral: {
+            case TokenKind::FloatLiteral: {
                 ErrorCode errorCode;
                 float floatValue = 0;
                 if (!TryGetFloatValue(&buffer, &floatValue, &errorCode)) {
@@ -482,7 +482,7 @@ namespace Alchemy::Compilation {
                 }
                 break;
             }
-            case SyntaxKind::DoubleLiteral: {
+            case TokenKind::DoubleLiteral: {
                 ErrorCode errorCode;
                 double doubleValue = 0;
                 if (!TryGetDoubleValue(&buffer, &doubleValue, &errorCode)) {
@@ -521,30 +521,30 @@ namespace Alchemy::Compilation {
 
                 if (!hasUSuffix && !hasLSuffix) {
                     if (val <= std::numeric_limits<int32>::max()) {
-                        info->contextualKind = SyntaxKind::Int32Literal;
+                        info->contextualKind = TokenKind::Int32Literal;
 //                        info->literalValue.int32Value = (int32) val;
                     }
                     else if (val <= std::numeric_limits<uint32>::max()) {
-                        info->contextualKind = SyntaxKind::UInt32Literal;
+                        info->contextualKind = TokenKind::UInt32Literal;
 //                        info->literalValue.uint32Value = (uint32) val;
                     }
                     else if (val <= std::numeric_limits<int64>::max()) {
-                        info->contextualKind = SyntaxKind::Int64Literal;
+                        info->contextualKind = TokenKind::Int64Literal;
 //                        info->literalValue.int64Value = (int64) val;
                     }
                     else {
-                        info->contextualKind = SyntaxKind::UInt64Literal;
+                        info->contextualKind = TokenKind::UInt64Literal;
 //                        info->literalValue.uint64Value = val;
                     }
                 }
                 else if (hasUSuffix && !hasLSuffix) {
                     // * If the literal is suffixed by U or u, it has the first of these types in which its value can be represented: uint, ulong.
                     if (val <= std::numeric_limits<uint32>::max()) {
-                        info->contextualKind = SyntaxKind::UInt32Literal;
+                        info->contextualKind = TokenKind::UInt32Literal;
 //                        info->literalValue.uint32Value = (uint32) val;
                     }
                     else {
-                        info->contextualKind = SyntaxKind::UInt64Literal;
+                        info->contextualKind = TokenKind::UInt64Literal;
 //                        info->literalValue.uint64Value = val;
                     }
                 }
@@ -552,11 +552,11 @@ namespace Alchemy::Compilation {
                     // * If the literal is suffixed by L or l, it has the first of these types in which its value can be represented: long, ulong.
                 else if (!hasUSuffix & hasLSuffix) {
                     if (val <= std::numeric_limits<int64>::max()) {
-                        info->contextualKind = SyntaxKind::Int64Literal;
+                        info->contextualKind = TokenKind::Int64Literal;
 //                        info->literalValue.int64Value = (int64) val;
                     }
                     else {
-                        info->contextualKind = SyntaxKind::UInt64Literal;
+                        info->contextualKind = TokenKind::UInt64Literal;
 //                        info->literalValue.uint64Value = val;
                     }
                 }
@@ -564,7 +564,7 @@ namespace Alchemy::Compilation {
                     // * If the literal is suffixed by UL, Ul, uL, ul, LU, Lu, lU, or lu, it is of type ulong.
                 else {
                     assert(hasUSuffix && hasLSuffix);
-                    info->contextualKind = SyntaxKind::UInt64Literal;
+                    info->contextualKind = TokenKind::UInt64Literal;
 //                    info->literalValue.uint64Value = val;
                 }
                 break;
@@ -583,17 +583,17 @@ namespace Alchemy::Compilation {
             info->text = identifier.ptr;
             info->textSize = identifier.size;
             // check if it's a keyword (no need to try if fast path didn't work)
-            SyntaxKind keyword;
+            TokenKind keyword;
             if (TryMatchKeyword_Generated(identifier.ptr, identifier.size, &keyword)) {
 
                 if (SyntaxFacts::IsReservedKeyword(keyword)) {
                     info->kind = keyword;
-                    info->contextualKind = SyntaxKind::None;
+                    info->contextualKind = TokenKind::None;
                 }
                 else {
                     // it's contextual
                     assert(SyntaxFacts::IsContextualKeyword(keyword));
-                    info->kind = SyntaxKind::IdentifierToken;
+                    info->kind = TokenKind::IdentifierToken;
                     info->contextualKind = keyword;
 
                 }
@@ -601,8 +601,8 @@ namespace Alchemy::Compilation {
             }
             else {
                 // not a keyword
-                info->kind = SyntaxKind::IdentifierToken;
-                info->contextualKind = SyntaxKind::IdentifierToken;
+                info->kind = TokenKind::IdentifierToken;
+                info->contextualKind = TokenKind::IdentifierToken;
             }
 
             return true;
@@ -611,13 +611,13 @@ namespace Alchemy::Compilation {
         else if (ScanIdentifier_SlowPath(textWindow, &identifier)) {
             info->text = identifier.ptr;
             info->textSize = identifier.size;
-            info->kind = SyntaxKind::IdentifierToken;
-            info->contextualKind = SyntaxKind::IdentifierToken;
+            info->kind = TokenKind::IdentifierToken;
+            info->contextualKind = TokenKind::IdentifierToken;
             return true;
         }
         else {
-            info->kind = SyntaxKind::None;
-            info->contextualKind = SyntaxKind::None;
+            info->kind = TokenKind::None;
+            info->contextualKind = TokenKind::None;
             return false;
         }
     }

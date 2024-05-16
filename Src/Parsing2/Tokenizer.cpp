@@ -11,11 +11,11 @@
 
 namespace Alchemy::Compilation {
 
-    void AddTrivia(SyntaxKind triviaType, FixedCharSpan span, bool isTrailing, PodList<SyntaxToken>* buffer) {
+    void AddTrivia(TokenKind triviaType, FixedCharSpan span, bool isTrailing, PodList<SyntaxToken>* buffer) {
         SyntaxToken token;
         token.text = span.ptr;
         token.textSize = span.size;
-        token.kind = SyntaxKind::Trivia; // maybe we don't need this to be a kind
+        token.kind = TokenKind::Trivia; // maybe we don't need this to be a kind
         token.contextualKind = triviaType;
         token.SetFlags(isTrailing ? SyntaxTokenFlags::TrailingTrivia : SyntaxTokenFlags::LeadingTrivia);
         buffer->Add(token);
@@ -30,13 +30,13 @@ namespace Alchemy::Compilation {
             diagnostics->AddError(Diagnostic(ErrorCode::ERR_OpenEndedComment, span.ptr, textWindow->ptr));
         }
 
-        AddTrivia(SyntaxKind::MultiLineComment, span, isTrailing, buffer);
+        AddTrivia(TokenKind::MultiLineComment, span, isTrailing, buffer);
     }
 
     void LexSingleLineComment(TextWindow* textWindow, bool isTrailing, PodList<SyntaxToken>* buffer) {
         FixedCharSpan span;
         ScanSingleLineComment(textWindow, &span);
-        AddTrivia(SyntaxKind::SingleLineComment, span, isTrailing, buffer);
+        AddTrivia(TokenKind::SingleLineComment, span, isTrailing, buffer);
     }
 
     void LexDirectiveAndExcludedTrivia(bool afterFirstToken, bool afterNonWhitespaceOnLine, PodList<SyntaxToken>* buffer) {
@@ -108,7 +108,7 @@ namespace Alchemy::Compilation {
             if (c == ' ') {
                 FixedCharSpan span;
                 ScanWhitespace(textWindow, &span);
-                AddTrivia(SyntaxKind::Whitespace, span, isTrailing, buffer);
+                AddTrivia(TokenKind::Whitespace, span, isTrailing, buffer);
                 continue;
             }
             else if (c > 127) {
@@ -135,7 +135,7 @@ namespace Alchemy::Compilation {
                 case '\f': {     // Form-feed
                     FixedCharSpan span;
                     ScanWhitespace(textWindow, &span);
-                    AddTrivia(SyntaxKind::Whitespace, span, isTrailing, buffer);
+                    AddTrivia(TokenKind::Whitespace, span, isTrailing, buffer);
                     break;
                 }
                 case '/': {
@@ -156,7 +156,7 @@ namespace Alchemy::Compilation {
                 case '\n': {
                     FixedCharSpan line;
                     ScanEndOfLine(textWindow, &line);
-                    AddTrivia(SyntaxKind::NewLine, line, isTrailing, buffer);
+                    AddTrivia(TokenKind::NewLine, line, isTrailing, buffer);
                     if (isTrailing) {
                         return;
                     }
@@ -196,7 +196,7 @@ namespace Alchemy::Compilation {
 
             SyntaxToken token = tokens[i];
             LineColumn lc = lineCols[i];
-            printf("[%d:%d] %s (%s) -> \"%.*s\" \n", lc.line, lc.column, SyntaxKindToString(token.kind), SyntaxKindToString(token.contextualKind), token.textSize, token.text);
+            printf("[%d:%d] %s (%s) -> \"%.*s\" \n", lc.line, lc.column, TokenKindToString(token.kind), TokenKindToString(token.contextualKind), token.textSize, token.text);
 
         }
 
@@ -212,13 +212,13 @@ namespace Alchemy::Compilation {
             LineColumn * lc = &lineCols[i];
             lc->line = line;
             lc->column = column;
-            if(token.contextualKind == SyntaxKind::NewLine) {
+            if(token.contextualKind == TokenKind::NewLine) {
                 lc->endLine = line;
                 lc->endColumn = column + token.textSize;
                 column = 1;
                 line++; // I think this is right
             }
-            else if(token.contextualKind == SyntaxKind::MultiLineComment) {
+            else if(token.contextualKind == TokenKind::MultiLineComment) {
                 for(int32 s = 0; s < token.textSize; s++) {
                     if(token.text[s] == '\n') {
                         line++;
@@ -297,6 +297,10 @@ namespace Alchemy::Compilation {
             ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
             tokenInfo.textSize = (int32) (textWindow->ptr - tokenInfo.text);
 
+            if(tokenInfo.contextualKind == TokenKind::None) {
+                tokenInfo.contextualKind = tokenInfo.kind;
+            }
+
             tokens->Add(tokenInfo);
 
             LexSyntaxTrivia(textWindow, true, true, diagnostics, tokens);
@@ -323,17 +327,17 @@ namespace Alchemy::Compilation {
             }
             case '/': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance('=') ? SyntaxKind::SlashEqualsToken : SyntaxKind::SlashToken;
+                info->kind = textWindow->TryAdvance('=') ? TokenKind::SlashEqualsToken : TokenKind::SlashToken;
                 break;
             }
             case '.': {
                 if (!ScanNumericLiteral(textWindow, diagnostics, info)) {
                     textWindow->Advance();
-                    info->kind = SyntaxKind::DotToken;
+                    info->kind = TokenKind::DotToken;
                     if (textWindow->TryAdvance('.')) {
-                        info->kind = SyntaxKind::DotDotToken;
+                        info->kind = TokenKind::DotDotToken;
                         if (textWindow->PeekChar() == '.') {
-                            info->kind = SyntaxKind::DotDotDotToken;
+                            info->kind = TokenKind::DotDotDotToken;
                         }
                     }
                 }
@@ -341,141 +345,141 @@ namespace Alchemy::Compilation {
             }
             case ',': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::CommaToken;
+                info->kind = TokenKind::CommaToken;
                 break;
             }
             case ':': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance(':') ? SyntaxKind::ColonColonToken : SyntaxKind::ColonToken;
+                info->kind = textWindow->TryAdvance(':') ? TokenKind::ColonColonToken : TokenKind::ColonToken;
                 break;
             }
             case ';': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::SemicolonToken;
+                info->kind = TokenKind::SemicolonToken;
                 break;
             }
             case '~': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::TildeToken;
+                info->kind = TokenKind::TildeToken;
                 break;
             }
             case '!': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance('=') ? SyntaxKind::ExclamationEqualsToken : SyntaxKind::ExclamationToken;
+                info->kind = textWindow->TryAdvance('=') ? TokenKind::ExclamationEqualsToken : TokenKind::ExclamationToken;
                 break;
             }
             case '=': {
                 textWindow->Advance();
                 info->kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::EqualsEqualsToken :
-                    textWindow->TryAdvance('>') ? SyntaxKind::EqualsGreaterThanToken : SyntaxKind::EqualsToken;
+                    textWindow->TryAdvance('=') ? TokenKind::EqualsEqualsToken :
+                    textWindow->TryAdvance('>') ? TokenKind::EqualsGreaterThanToken : TokenKind::EqualsToken;
                 break;
             }
             case '*': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance('=') ? SyntaxKind::AsteriskEqualsToken : SyntaxKind::AsteriskToken;
+                info->kind = textWindow->TryAdvance('=') ? TokenKind::AsteriskEqualsToken : TokenKind::AsteriskToken;
                 break;
             }
             case '(': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::OpenParenToken;
+                info->kind = TokenKind::OpenParenToken;
                 break;
             }
             case ')': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::CloseParenToken;
+                info->kind = TokenKind::CloseParenToken;
                 break;
             }
             case '{': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::OpenBraceToken;
+                info->kind = TokenKind::OpenBraceToken;
                 break;
             }
 
             case '}': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::CloseBraceToken;
+                info->kind = TokenKind::CloseBraceToken;
                 break;
             }
 
             case '[': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::OpenBracketToken;
+                info->kind = TokenKind::OpenBracketToken;
                 break;
             }
 
             case ']': {
                 textWindow->Advance();
-                info->kind = SyntaxKind::CloseBracketToken;
+                info->kind = TokenKind::CloseBracketToken;
                 break;
             }
 
             case '?': {
                 textWindow->Advance();
                 info->kind = textWindow->TryAdvance('?')
-                             ? textWindow->TryAdvance('=') ? SyntaxKind::QuestionQuestionEqualsToken : SyntaxKind::QuestionQuestionToken
-                             : SyntaxKind::QuestionToken;
+                             ? textWindow->TryAdvance('=') ? TokenKind::QuestionQuestionEqualsToken : TokenKind::QuestionQuestionToken
+                             : TokenKind::QuestionToken;
                 break;
             }
 
             case '+': {
                 textWindow->Advance();
                 info->kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::PlusEqualsToken :
-                    textWindow->TryAdvance('+') ? SyntaxKind::PlusPlusToken : SyntaxKind::PlusToken;
+                    textWindow->TryAdvance('=') ? TokenKind::PlusEqualsToken :
+                    textWindow->TryAdvance('+') ? TokenKind::PlusPlusToken : TokenKind::PlusToken;
                 break;
             }
 
             case '-': {
                 textWindow->Advance();
                 info->kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::MinusEqualsToken :
-                    textWindow->TryAdvance('-') ? SyntaxKind::MinusMinusToken :
-                    textWindow->TryAdvance('>') ? SyntaxKind::MinusGreaterThanToken : SyntaxKind::MinusToken;
+                    textWindow->TryAdvance('=') ? TokenKind::MinusEqualsToken :
+                    textWindow->TryAdvance('-') ? TokenKind::MinusMinusToken :
+                    textWindow->TryAdvance('>') ? TokenKind::MinusGreaterThanToken : TokenKind::MinusToken;
                 break;
             }
 
             case '%': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance('=') ? SyntaxKind::PercentEqualsToken : SyntaxKind::PercentToken;
+                info->kind = textWindow->TryAdvance('=') ? TokenKind::PercentEqualsToken : TokenKind::PercentToken;
                 break;
             }
 
             case '&': {
                 textWindow->Advance();
                 info->kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::AmpersandEqualsToken :
-                    textWindow->TryAdvance('&') ? SyntaxKind::AmpersandAmpersandToken : SyntaxKind::AmpersandToken;
+                    textWindow->TryAdvance('=') ? TokenKind::AmpersandEqualsToken :
+                    textWindow->TryAdvance('&') ? TokenKind::AmpersandAmpersandToken : TokenKind::AmpersandToken;
                 break;
             }
 
             case '^': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance('=') ? SyntaxKind::CaretEqualsToken : SyntaxKind::CaretToken;
+                info->kind = textWindow->TryAdvance('=') ? TokenKind::CaretEqualsToken : TokenKind::CaretToken;
                 break;
             }
 
             case '|': {
                 textWindow->Advance();
                 info->kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::BarEqualsToken :
-                    textWindow->TryAdvance('|') ? SyntaxKind::BarBarToken : SyntaxKind::BarToken;
+                    textWindow->TryAdvance('=') ? TokenKind::BarEqualsToken :
+                    textWindow->TryAdvance('|') ? TokenKind::BarBarToken : TokenKind::BarToken;
                 break;
             }
 
             case '<': {
                 textWindow->Advance();
                 info->kind =
-                    textWindow->TryAdvance('=') ? SyntaxKind::LessThanEqualsToken :
+                    textWindow->TryAdvance('=') ? TokenKind::LessThanEqualsToken :
                     textWindow->TryAdvance('<')
-                    ? textWindow->TryAdvance('=') ? SyntaxKind::LessThanLessThanEqualsToken : SyntaxKind::LessThanLessThanToken
-                    : SyntaxKind::LessThanToken;
+                    ? textWindow->TryAdvance('=') ? TokenKind::LessThanLessThanEqualsToken : TokenKind::LessThanLessThanToken
+                    : TokenKind::LessThanToken;
                 break;
             }
 
             case '>': {
                 textWindow->Advance();
-                info->kind = textWindow->TryAdvance('=') ? SyntaxKind::GreaterThanEqualsToken : SyntaxKind::GreaterThanToken;
+                info->kind = textWindow->TryAdvance('=') ? TokenKind::GreaterThanEqualsToken : TokenKind::GreaterThanToken;
                 break;
             }
 

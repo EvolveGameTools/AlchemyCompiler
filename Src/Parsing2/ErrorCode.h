@@ -34,6 +34,18 @@ namespace Alchemy::Compilation {
         ERR_CStyleArray,
         ERR_ConstValueRequired,
         ERR_FixedDimsRequired,
+        ERR_ThisOrBaseOrConstructorNameExpected,
+        ERR_MissingArgument,
+        ERR_UnexpectedSemicolon,
+        ERR_SemiOrLBraceOrArrowExpected,
+        ERR_InvalidExprTerm,
+        ERR_ExpressionExpected,
+        ERR_InvalidArray,
+        ERR_InvalidStackAllocArray,
+        ERR_UnexpectedToken,
+        WRN_PrecedenceInversion,
+        ERR_MissingPattern,
+        ERR_UnexpectedDoubleColon,
     };
 
 }

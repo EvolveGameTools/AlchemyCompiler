@@ -87,8 +87,8 @@ namespace Alchemy::Compilation {
 
     struct SyntaxToken {
 
-        SyntaxKind kind {};
-        SyntaxKind contextualKind {};
+        TokenKind kind {};
+        TokenKind contextualKind {};
         uint16 textSize {};
         uint32 id_flags {};
         char * text {};
@@ -121,7 +121,7 @@ namespace Alchemy::Compilation {
         }
 
         inline bool IsValid() {
-            return kind != SyntaxKind::None;
+            return kind != TokenKind::None;
         }
 
         inline bool IsMissing() {
@@ -174,7 +174,7 @@ namespace Alchemy::Compilation {
 
     void ScanMultiLineComment(TextWindow* textWindow, FixedCharSpan* span, bool* isTerminated);
 
-    bool TryMatchKeyword_Generated(char* buffer, int32 length, SyntaxKind* keywordType);
+    bool TryMatchKeyword_Generated(char* buffer, int32 length, TokenKind* keywordType);
 
     bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info);
 

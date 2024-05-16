@@ -50,10 +50,10 @@ namespace Alchemy::Compilation {
         int32 size;
 
         explicit TokenListBuffer(TempAllocator* allocator)
-                : allocator(allocator)
-                  , size(0)
-                  , capacity(8)
-                  , array(allocator->AllocateUncleared<SyntaxToken>(8)) {}
+            : allocator(allocator)
+            , size(0)
+            , capacity(8)
+            , array(allocator->AllocateUncleared<SyntaxToken>(8)) {}
 
         void Add(SyntaxToken item) {
             if (size + 1 > capacity) {
@@ -66,17 +66,27 @@ namespace Alchemy::Compilation {
             size++;
         }
 
-        TokenList* Persist(LinearAllocator * pAllocator) {
-            SyntaxToken * p = pAllocator->AllocateUncleared<SyntaxToken>(size);
+        TokenList* Persist(LinearAllocator* pAllocator) {
+            SyntaxToken* p = pAllocator->AllocateUncleared<SyntaxToken>(size);
             memcpy(p, array, sizeof(SyntaxToken) * size);
             return pAllocator->New<TokenList>(p, size);
         }
 
     };
 
-    typedef bool (* abortFn)(Parser* parser, SyntaxKind kind);
+    typedef bool (* abortFn)(Parser* parser, TokenKind kind);
 
     typedef bool (* notExpectedFn)(Parser* parser);
+
+    typedef bool (* isPossibleElementFn)(Parser* parser);
+
+    typedef SyntaxBase* (* parseElementFn)(Parser* parser);
+
+    typedef bool (* immediatelyAbortFn)(Parser* parser, SyntaxBase* node);
+
+    bool IsMakingProgress(Parser* parser, int* lastTokenPosition, bool assertIfFalse = true);
+
+    typedef PostSkipAction (* skipBadTokensFn)(Parser* parser, TokenKind expectedKind, TokenKind closeKind);
 
     bool IsTrueIdentifier(Parser* parser);
 
@@ -88,22 +98,47 @@ namespace Alchemy::Compilation {
 
     TypeSyntax* ParseType(Parser* parser, ParseTypeMode mode = ParseTypeMode::Normal);
 
+    IdentifierNameSyntax* ParseIdentifierName(Parser* parser, ErrorCode code = ErrorCode::ERR_IdentifierExpected);
+
     IdentifierNameSyntax* CreateMissingIdentifierName(Parser* parser);
+
+    TypeSyntax* ParseTypeOrVoid(Parser* parser);
+
+    ExpressionSyntax* ParseExpressionOrDeclaration(Parser* parser, ParseTypeMode mode, bool permitTupleDesignation);
+
+    bool CanStartExpression(Parser* parser);
+
+    ExpressionSyntax* ParseThrowExpression(Parser* parser);
+
+    ExpressionSyntax* ParseSubExpression(Parser* parser, Precedence precedence);
 
     TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options);
 
+    ExpressionSyntax* ParseVariableInitializer(Parser* parser);
+
     SeparatedSyntaxList<VariableDeclaratorSyntax>* ParseFieldDeclarationVariableDeclarators(Parser* parser, TypeSyntax* type, VariableFlags flags, SyntaxKind parentKind);
+
     ParameterListSyntax* ParseParenthesizedParameterList(Parser* parser);
+
     NameSyntax* ParseQualifiedNameRight(Parser* parser, NameOptions options, NameSyntax* left, SyntaxToken separator);
 
     VariableDeclaratorSyntax* ParseVariableDeclarator(Parser* parser, TypeSyntax* parentType, VariableFlags flags, bool isFirst, bool allowLocalFunctions, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction, bool isExpressionContext = false);
+
     ExpressionSyntax* ParseExpression(Parser* parser);
-    ExpressionSyntax* ParseArrayInitializer(Parser * parser);
+
+    BracketedArgumentListSyntax* ParseBracketedArgumentList(Parser* parser);
+
+    InitializerExpressionSyntax* ParseArrayInitializer(Parser* parser);
+
+    ArgumentListSyntax* ParseParenthesizedArgumentList(Parser* parser);
+
     ArrayRankSpecifierSyntax* ParseArrayRankSpecifier(Parser* parser, bool* pSawNonOmittedSize);
+
     SimpleNameSyntax* ParseSimpleName(Parser* parser, NameOptions options = NameOptions::None);
+
     MemberDeclarationSyntax* ParseMemberDeclaration(Parser* parser, SyntaxKind parentKind);
 
-    SyntaxToken MakeMissingToken(SyntaxKind kind, int32 tokenId);
+    SyntaxToken MakeMissingToken(TokenKind kind, int32 tokenId);
 
     ScanTypeFlags ScanPossibleTypeArgumentList(Parser* parser, SyntaxToken* greaterThanToken, bool* pIsDefinitelyTypeArgumentList);
 
@@ -111,25 +146,32 @@ namespace Alchemy::Compilation {
 
     ScanTypeArgumentListKind ScanTypeArgumentList(Parser* parser, NameOptions options);
 
-    PostSkipAction SkipBadSeparatedListTokensWithExpectedKind(Parser* parser, notExpectedFn isNotExpectedFunction, abortFn abortFunction, SyntaxKind expected, SyntaxKind closeKind = SyntaxKind::None);
+    PostSkipAction SkipBadSeparatedListTokensWithExpectedKind(Parser* parser, notExpectedFn isNotExpectedFunction, abortFn abortFunction, TokenKind expected, TokenKind closeKind = TokenKind::None);
 
-    PostSkipAction SkipBadTokensWithExpectedKind(Parser* parser, notExpectedFn isNotExpectedFunction, abortFn abortFunction, SyntaxKind expected, SyntaxKind closeKind);
+    PostSkipAction SkipBadTokensWithExpectedKind(Parser* parser, notExpectedFn isNotExpectedFunction, abortFn abortFunction, TokenKind expected, TokenKind closeKind);
 
     SyntaxToken ParseIdentifierToken(Parser* parser, ErrorCode errorCode = ErrorCode::ERR_IdentifierExpected);
 
     bool IsPossibleLambdaExpression(Parser* parser, Precedence precedence);
 
-    bool IsPossibleStartOfTypeDeclaration(SyntaxKind kind);
+    bool IsPossibleStartOfTypeDeclaration(TokenKind kind);
 
     bool IsPossibleAccessorModifier(Parser* parser);
 
     bool IsTypeDeclarationStart(Parser* parser);
 
-    bool IsStartOfPropertyBody(SyntaxKind kind);
+    bool IsStartOfPropertyBody(TokenKind kind);
 
+    bool IsPossibleExpression(Parser* parser, bool allowBinaryExpressions = true, bool allowAssignmentExpressions = true);
+
+    PatternSyntax* ParsePattern(Parser* parser, Precedence precedence, bool afterIs = false, bool whenIsKeyword = false);
+
+    ExpressionSyntax* ParseExpressionContinued(Parser* parser, ExpressionSyntax* leftOperand, Precedence precedence);
+
+    ExpressionSyntax* ParsePossibleRefExpression(Parser* parser);
 
     template<typename T>
-    struct SeparatedNodeListBuilder {
+    struct SeparatedSyntaxListBuilder {
 
         TempAllocator* allocator;
         T** items;
@@ -139,13 +181,13 @@ namespace Alchemy::Compilation {
         int32 itemCount;
         int32 separatorCount;
 
-        explicit SeparatedNodeListBuilder(TempAllocator* allocator)
-                : allocator(allocator)
-                  , itemCount(0)
-                  , separatorCount(0)
-                  , capacity(8)
-                  , items(allocator->AllocateUncleared<T*>(8))
-                  , separators(allocator->AllocateUncleared<SyntaxToken>(8)) {
+        explicit SeparatedSyntaxListBuilder(TempAllocator* allocator)
+            : allocator(allocator)
+            , itemCount(0)
+            , separatorCount(0)
+            , capacity(8)
+            , items(allocator->AllocateUncleared<T*>(8))
+            , separators(allocator->AllocateUncleared<SyntaxToken>(8)) {
         }
 
         void EnsureAdditionalCapacity(int32 additional) {

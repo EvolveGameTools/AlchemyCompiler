@@ -22,8 +22,8 @@ namespace Alchemy::Compilation {
         Range,
         Unary,
         Cast,
-        PointerIndirection, // maybe remove
-        AddressOf,          // maybe remove
+        PointerIndirection,
+        AddressOf,
         Primary,
     };
 

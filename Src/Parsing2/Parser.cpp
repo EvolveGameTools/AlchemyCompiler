@@ -15,7 +15,7 @@ namespace Alchemy::Compilation {
     bool TryFindNextNonTrivia(int32* ptr, CheckedArray<SyntaxToken> tokens) {
         int32 p = *ptr;
         for (int32 i = p + 1; i < tokens.size; i++) {
-            if (tokens.array[i].kind == SyntaxKind::Trivia) {
+            if (tokens.array[i].kind == TokenKind::Trivia) {
                 continue;
             }
             *ptr = i;
@@ -26,7 +26,7 @@ namespace Alchemy::Compilation {
 
     SyntaxToken MakeEof() {
         SyntaxToken eof;
-        eof.kind = SyntaxKind::EndOfFileToken;
+        eof.kind = TokenKind::EndOfFileToken;
         eof.SetFlags(SyntaxTokenFlags::Omitted);
         return eof;
     }
@@ -38,15 +38,16 @@ namespace Alchemy::Compilation {
         , tempAllocator(tempAllocator)
         , diagnostics(diagnostics)
         , _termState(TerminatorState::EndOfFile)
+        , forceConditionalAccessExpression(false)
         , currentToken() {
 
         for (ptr = 0; ptr < tokens.size; ptr++) {
-            if (tokens.array[ptr].kind != SyntaxKind::Trivia) {
+            if (tokens.array[ptr].kind != TokenKind::Trivia) {
                 break;
             }
         }
 
-        if(ptr >= tokens.size) {
+        if (ptr >= tokens.size) {
             ptr = tokens.size;
             currentToken = MakeEof();
         }
@@ -72,7 +73,7 @@ namespace Alchemy::Compilation {
 
     }
 
-    SyntaxToken Parser::EatToken(SyntaxKind kind) {
+    SyntaxToken Parser::EatToken(TokenKind kind) {
         if (currentToken.kind == kind) {
             return EatToken();
         }
@@ -81,8 +82,18 @@ namespace Alchemy::Compilation {
 
     }
 
+    SyntaxToken Parser::EatToken(TokenKind kind, ErrorCode errorCode, bool reportError) {
+        if (currentToken.kind != kind) {
+            return CreateMissingToken(kind, errorCode, reportError);
+        }
+        else {
+            return EatToken();
+        }
+
+    }
+
     // similar to EatToken(kind) except doesn't create a missing, just adds an error and returns the actual token
-    SyntaxToken Parser::EatTokenWithPrejudice(SyntaxKind kind) {
+    SyntaxToken Parser::EatTokenWithPrejudice(TokenKind kind) {
         SyntaxToken token = currentToken;
 
         if (token.kind != kind) {
@@ -94,7 +105,7 @@ namespace Alchemy::Compilation {
         return token;
     }
 
-    SyntaxToken Parser::SkipTokenWithPrejudice(SyntaxKind kind) {
+    SyntaxToken Parser::SkipTokenWithPrejudice(TokenKind kind) {
         SyntaxToken token = currentToken;
 
         if (token.kind != kind) {
@@ -108,7 +119,7 @@ namespace Alchemy::Compilation {
 
     SyntaxToken Parser::EatToken() {
         SyntaxToken retn = currentToken;
-        if(TryFindNextNonTrivia(&ptr, tokens)) {
+        if (TryFindNextNonTrivia(&ptr, tokens)) {
             currentToken = tokens[ptr];
         }
         else {
@@ -118,7 +129,21 @@ namespace Alchemy::Compilation {
         return retn;
     }
 
-    SyntaxToken Parser::CreateMissingToken(SyntaxKind expected) {
+    // Consume a token if it is the right kind. Otherwise skip a token and replace it with one of the correct kind.
+    SyntaxToken Parser::EatTokenAsKind(TokenKind expected) {
+        assert(SyntaxFacts::IsToken(expected));
+
+        SyntaxToken ct = currentToken;
+        if (ct.kind == expected) {
+            return EatToken();
+        }
+
+        SyntaxToken retn = CreateMissingToken(expected, GetExpectedTokenErrorCode(expected, currentToken.kind), true);
+        SkipToken();
+        return retn;
+    }
+
+    SyntaxToken Parser::CreateMissingToken(TokenKind expected) {
         SyntaxToken missing;
         missing.kind = expected;
         missing.SetFlags(SyntaxTokenFlags::Missing);
@@ -126,7 +151,18 @@ namespace Alchemy::Compilation {
         return missing;
     }
 
-    SyntaxToken Parser::CreateMissingToken(SyntaxKind expected, SyntaxToken actual, bool reportError) {
+    SyntaxToken Parser::CreateMissingToken(TokenKind expected, ErrorCode errorCode, bool reportError) {
+        SyntaxToken missing;
+        missing.kind = expected;
+        missing.SetFlags(SyntaxTokenFlags::Missing);
+        missing.SetId(ptr);
+        if (reportError) {
+            AddError(missing, errorCode);
+        }
+        return missing;
+    }
+
+    SyntaxToken Parser::CreateMissingToken(TokenKind expected, SyntaxToken actual, bool reportError) {
         SyntaxToken missing = CreateMissingToken(expected);
 
         if (reportError) {
@@ -136,21 +172,21 @@ namespace Alchemy::Compilation {
         return missing;
     }
 
-    ErrorCode Parser::GetExpectedTokenErrorCode(SyntaxKind expected, SyntaxKind actual) {
+    ErrorCode Parser::GetExpectedTokenErrorCode(TokenKind expected, TokenKind actual) {
         switch (expected) {
-            case SyntaxKind::IdentifierToken:
+            case TokenKind::IdentifierToken:
                 return SyntaxFacts::IsReservedKeyword(actual)
-                       ? ErrorCode::ERR_IdentifierExpectedKW
-                       : ErrorCode::ERR_IdentifierExpected;
+                    ? ErrorCode::ERR_IdentifierExpectedKW
+                    : ErrorCode::ERR_IdentifierExpected;
 
-            case SyntaxKind::SemicolonToken:
+            case TokenKind::SemicolonToken:
                 return ErrorCode::ERR_SemicolonExpected;
 
-            case SyntaxKind::CloseParenToken:
+            case TokenKind::CloseParenToken:
                 return ErrorCode::ERR_CloseParenExpected;
-            case SyntaxKind::OpenBraceToken:
+            case TokenKind::OpenBraceToken:
                 return ErrorCode::ERR_LbraceExpected;
-            case SyntaxKind::CloseBraceToken:
+            case TokenKind::CloseBraceToken:
                 return ErrorCode::ERR_RbraceExpected;
 
             default:
@@ -162,8 +198,8 @@ namespace Alchemy::Compilation {
         return Diagnostic(code, token.text, token.text + token.textSize);
     }
 
-    void Parser::AddError(SyntaxBase * node, ErrorCode errorCode) {
-        if(node == nullptr) {
+    void Parser::AddError(SyntaxBase* node, ErrorCode errorCode) {
+        if (node == nullptr) {
             return;
         }
 
@@ -207,7 +243,6 @@ namespace Alchemy::Compilation {
     }
 
     void Parser::SkipToken() {
-        tokens[ptr].AddFlag(SyntaxTokenFlags::Skipped);
         EatToken();
     }
 
@@ -218,13 +253,47 @@ namespace Alchemy::Compilation {
     bool Parser::IsAfterNewLine(int32 idx) {
         for (int32 i = idx + 1; i < tokens.size; i++) {
             SyntaxToken t = tokens[i];
-            if (t.kind != SyntaxKind::Trivia) {
+            if (t.kind != TokenKind::Trivia) {
                 return false;
             }
-            if (t.contextualKind == SyntaxKind::NewKeyword) {
+            if (t.contextualKind == TokenKind::NewKeyword) {
                 return true;
             }
         }
+        return false;
+    }
+
+    bool Parser::NoTriviaBetween(SyntaxToken first, SyntaxToken second) {
+        // simple check for now, could be crazier if needed
+        return second.GetId() == first.GetId() + 1;
+    }
+
+    SyntaxToken Parser::EatContextualToken(TokenKind kind) {
+        TokenKind contextualKind = currentToken.contextualKind;
+        if (contextualKind != kind) {
+            SyntaxToken retn = CreateMissingToken(kind);
+            AddError(retn, GetExpectedTokenErrorCode(kind, contextualKind));
+            return retn;
+        }
+        else {
+            SyntaxToken keyword = EatToken();
+            keyword.kind = kind;
+            keyword.contextualKind = kind;
+            return keyword;
+        }
+    }
+
+    bool Parser::HasTrailingNewLine(SyntaxToken token) {
+        for (int32 i = token.GetId(); i < tokens.size; i++) {
+            SyntaxToken* s = &tokens[i];
+            if ((s->GetFlags() & SyntaxTokenFlags::TrailingTrivia) == 0) {
+                return false;
+            }
+            if (s->contextualKind == TokenKind::NewLine) {
+                return true;
+            }
+        }
+
         return false;
     }
 

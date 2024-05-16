@@ -3,6 +3,8 @@
 
 #include "../Src/Allocation/LinearAllocator.h"
 #include "../Src/Parsing2/Scanning.h"
+#include <iostream>
+#include <fstream>
 
 using namespace Alchemy;
 

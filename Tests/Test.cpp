@@ -6,11 +6,7 @@
 #include "../Src/Parsing2/Tokenizer.h"
 #include "../Src/Parsing2/Parser.h"
 #include "../Src/Parsing2/Parsing.h"
-#include "../Src/Parsing2/Builders.generated.h"
-#include "../Src/Parsing2/NodeEquality.h"
 #include "../Src/Parsing2/NodePrinter.h"
-#include <iostream>
-#include <fstream>
 #include "./TestUtil.h"
 
 using namespace Alchemy::Compilation;
@@ -43,57 +39,30 @@ TEST_CASE("Parse Field", "[parser]") {
 
         INITIALIZE_PARSER("public List<Something> myList;")
 
+        const char * file = TestFile("Field");
         MemberDeclarationSyntax* x = ParseMemberDeclaration(&parser, SyntaxKind::StructDeclaration);
 
-        WriteTreeToFile(TestFile("Field2"), tokens, x);
-
-        REQUIRE(CompareLines(TestFile("Field"), TreeToLine(tokens, x)));
+        //WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
 
 }
-
-TEST_CASE("Parse Types", "[parser]") {
-
+TEST_CASE("binary expressions", "[parser]") {
     INITIALIZE_PARSER_TEST
 
-    SECTION("basic type names") {
+    SECTION("Binary add") {
 
-        INITIALIZE_PARSER("float int char bool ushort short uint byte sbyte double");
+        INITIALIZE_PARSER("x + y")
 
-        Builder builder(&allocator);
-
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::FloatKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::IntKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::CharKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::BoolKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::UShortKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::ShortKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::UIntKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::ByteKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::SByteKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(NodesEqual(ParseType(&parser), builder.PredefinedTypeSyntax()->TypeToken(builder.SyntaxToken(SyntaxKind::DoubleKeyword))->Build(), NodeEqualityOptions::Default));
-        REQUIRE(parser.HasMoreTokens() == false);
-    }
-
-    SECTION("basic names") {
-
-        INITIALIZE_PARSER("something.somethingelse");
-
-        TypeSyntax* name = ParseQualifiedName(&parser, NameOptions::None);
-
-        Builder builder(&allocator);
-        QualifiedNameSyntaxBuilder* b = builder.QualifiedNameSyntax()
-            ->Left(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("something")))
-            ->DotToken(builder.SyntaxToken(SyntaxKind::DotToken))
-            ->Right(builder.IdentifierNameSyntax()->Identifier(builder.MakeIdentifier("somethingelse")));
-
-        REQUIRE(NodesEqual(name, b->Build(), NodeEqualityOptions::Default));
+        const char * file = TestFile("BinaryAdd");
+        ExpressionSyntax* x = ParseExpression(&parser);
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
 
 }
-
 TEST_CASE("Scan Type Arguments", "[tokenizer]") {
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32));
     Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator();
@@ -198,22 +167,22 @@ TEST_CASE("Scan numeric literals", "[scanner]") {
     SECTION("Reals") {
         TextWindow textWindow = MakeTextWindow(R"(123.0f)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(info.contextualKind == TokenKind::FloatLiteral);
         REQUIRE(GetFloatValue(info.text, info.textSize) == 123);
 
         textWindow = MakeTextWindow(R"(123.1f)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(info.contextualKind == TokenKind::FloatLiteral);
         REQUIRE(GetFloatValue(info.text, info.textSize) == 123.1f);
 
         textWindow = MakeTextWindow(R"(1_23.1f)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(info.contextualKind == TokenKind::FloatLiteral);
         REQUIRE(GetFloatValue(info.text, info.textSize) == 123.1f);
 
         textWindow = MakeTextWindow(R"(1e4ff)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::FloatLiteral);
+        REQUIRE(info.contextualKind == TokenKind::FloatLiteral);
         REQUIRE(GetFloatValue(info.text, info.textSize) == 1e4f);
 
         // todo -- parsing currently truncates, we want to do what c# does with real parsing
@@ -224,52 +193,52 @@ TEST_CASE("Scan numeric literals", "[scanner]") {
     SECTION("Integers") {
         TextWindow textWindow = MakeTextWindow(R"(123)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::Int32Literal);
+        REQUIRE(info.contextualKind == TokenKind::Int32Literal);
         REQUIRE(GetInt32Value(info.text, info.textSize) == 123);
 
         textWindow = MakeTextWindow(R"(2147483648)");// max int + 1
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::UInt32Literal);
+        REQUIRE(info.contextualKind == TokenKind::UInt32Literal);
         REQUIRE(GetUInt32Value(info.text, info.textSize) == 2147483648);
 
         textWindow = MakeTextWindow(R"(2147483647)");// max int
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::Int32Literal);
+        REQUIRE(info.contextualKind == TokenKind::Int32Literal);
         REQUIRE(GetInt32Value(info.text, info.textSize) == 2147483647);
 
         textWindow = MakeTextWindow(R"(214748364782)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::Int64Literal);
+        REQUIRE(info.contextualKind == TokenKind::Int64Literal);
         REQUIRE(GetInt64Value(info.text, info.textSize) == 214748364782);
 
         textWindow = MakeTextWindow(R"(214ul)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::UInt64Literal);
+        REQUIRE(info.contextualKind == TokenKind::UInt64Literal);
         REQUIRE(GetUInt64Value(info.text, info.textSize) == 214ull);
 
         textWindow = MakeTextWindow(R"(214l)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::Int64Literal);
+        REQUIRE(info.contextualKind == TokenKind::Int64Literal);
         REQUIRE(GetInt64Value(info.text, info.textSize) == 214ll);
 
         textWindow = MakeTextWindow(R"(0xfeedbeef)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::UInt32Literal);
+        REQUIRE(info.contextualKind == TokenKind::UInt32Literal);
         REQUIRE(GetHexValue(info.text, info.textSize) == 0xfeedbeef);
 
         textWindow = MakeTextWindow(R"(0xfeed_beef)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::UInt32Literal);
+        REQUIRE(info.contextualKind == TokenKind::UInt32Literal);
         REQUIRE(GetHexValue(info.text, info.textSize) == 0xfeedbeef);
 
         textWindow = MakeTextWindow(R"(0xbeeful)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::UInt64Literal);
+        REQUIRE(info.contextualKind == TokenKind::UInt64Literal);
         REQUIRE(GetHexValue(info.text, info.textSize) == 0xbeefull);
 
         textWindow = MakeTextWindow(R"(0b1101)");
         REQUIRE(ScanNumericLiteral(&textWindow, &diagnostics, &info));
-        REQUIRE(info.contextualKind == SyntaxKind::Int32Literal);
+        REQUIRE(info.contextualKind == TokenKind::Int32Literal);
         REQUIRE(GetBinaryValue(info.text, info.textSize) == 13);
 
         textWindow = MakeTextWindow(R"(214748364899999999999999999)");

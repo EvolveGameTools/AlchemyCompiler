@@ -161,7 +161,7 @@ namespace Alchemy::Compilation {
                 return;
             }
 
-            PrintInline(SyntaxKindToString(token.kind));
+            PrintInline(TokenKindToString(token.kind));
 
             if (token.IsMissing()) {
                 PrintInline(" <missing> ");
@@ -171,9 +171,9 @@ namespace Alchemy::Compilation {
                 PrintInline(" <skipped> ");
             }
 
-            if (token.contextualKind != SyntaxKind::None) {
+            if (token.contextualKind != token.kind) {
                 PrintInline(" (");
-                PrintInline(SyntaxKindToString(token.contextualKind));
+                PrintInline(TokenKindToString(token.contextualKind));
                 PrintInline(")");
             }
 

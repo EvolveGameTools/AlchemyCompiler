@@ -5,7 +5,7 @@
 
 namespace Alchemy::Compilation {
 
-    DEFINE_ENUM_FLAGS(NodeEqualityOptions, uint8,{
+    DEFINE_ENUM_FLAGS(NodeEqualityOptions, uint8, {
         None = 0,
         IgnoreTrivia = 1 << 0,
         Default = IgnoreTrivia,
@@ -42,7 +42,7 @@ namespace Alchemy::Compilation {
         }
 
 //        #if true // shows better debugger output if polymorphic
-//        virtual void dummy() {}
+        virtual void dummy() {}
 //        #endif
 
     };
@@ -100,18 +100,23 @@ namespace Alchemy::Compilation {
 
 
     struct TokenList {
-        SyntaxToken * array;
+        SyntaxToken* array;
         int32 size;
 
-        TokenList(SyntaxToken * array, int32 size)
-                : array(array)
-                  , size(size)
-        {}
+        TokenList(SyntaxToken* array, int32 size)
+            : array(array)
+            , size(size) {}
 
         SyntaxToken& operator[](int32 index) {
             assert(index >= 0 && index < size && "out of bounds");
             return array[index];
         }
+
+    };
+
+    struct VariableDesignationSyntax : SyntaxBase {
+
+        explicit VariableDesignationSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
 
     };
 
@@ -139,10 +144,43 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct BaseExpressionColonSyntax : SyntaxBase {
+        explicit BaseExpressionColonSyntax(SyntaxKind kind)
+            : SyntaxBase(kind) {}
+    };
+
+    struct PatternSyntax : SyntaxBase {
+        explicit PatternSyntax(SyntaxKind kind)
+            : SyntaxBase(kind) {}
+    };
+
     struct MemberDeclarationSyntax : SyntaxBase {
 
         explicit MemberDeclarationSyntax(SyntaxKind kind)
-                : SyntaxBase(kind) {}
+            : SyntaxBase(kind) {}
     };
 
+    struct ConstructorInitializerSyntax : SyntaxBase {
+
+        explicit ConstructorInitializerSyntax(SyntaxKind kind)
+            : SyntaxBase(kind) {}
+
+    };
+
+    struct StatementSyntax : SyntaxBase {
+        explicit StatementSyntax(SyntaxKind kind)
+            : SyntaxBase(kind) {}
+    };
+
+    #define VALID_SYNTAX_KINDS static constexpr SyntaxKind kValidSyntaxKinds[]
+    #define ASSERT_VALID_SYNTAX_KIND(k)  assert(IsValidSyntaxKind(k, (SyntaxKind*)kValidSyntaxKinds, sizeof(kValidSyntaxKinds) / sizeof(kValidSyntaxKinds[0])))
+
+    inline bool IsValidSyntaxKind(SyntaxKind kind, SyntaxKind* items, int32 size) {
+        for (int32 i = 0; i < size; i++) {
+            if (kind == items[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

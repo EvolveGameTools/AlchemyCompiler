@@ -1,17 +1,17 @@
-FieldDeclarationSyntax
-_    [modifiers] = PublicKeyword -> "public"
-_    [declaration] = VariableDeclarationSyntax
-_        [type] = GenericNameSyntax
-_            [identifier] = IdentifierToken (IdentifierToken) -> "List"
-_            [typeArgumentList] = TypeArgumentListSyntax
-_                [lessThanToken] = LessThanToken -> "<"
-_                [arguments] = SeparatedSyntaxList
-_                    IdentifierNameSyntax
-_                        [identifier] = IdentifierToken (IdentifierToken) -> "Something"
-_                [greaterThanToken] = GreaterThanToken -> ">"
-_        [variables] = SeparatedSyntaxList
-_            VariableDeclaratorSyntax
-_                [identifier] = IdentifierToken (IdentifierToken) -> "myList"
-_                [argumentList] = nullptr
-_                [initializer] = nullptr
-_    [semicolonToken] = SemicolonToken -> ";"
+FieldDeclarationSyntax [1:1 - 1:31] 
+    modifiers = PublicKeyword -> "public" [1:1 - 1:7] 
+    declaration = VariableDeclarationSyntax [1:8 - 1:30] 
+        type = GenericNameSyntax [1:8 - 1:23] 
+            identifier = IdentifierToken -> "List" [1:8 - 1:12] 
+            typeArgumentList = TypeArgumentListSyntax [1:12 - 1:23] 
+                lessThanToken = LessThanToken -> "<" [1:12 - 1:13] 
+                arguments = SeparatedSyntaxList [1:13 - 1:22] 
+                    IdentifierNameSyntax [1:13 - 1:22] 
+                        identifier = IdentifierToken -> "Something" [1:13 - 1:22] 
+                greaterThanToken = GreaterThanToken -> ">" [1:22 - 1:23] 
+        variables = SeparatedSyntaxList [1:24 - 1:30] 
+            VariableDeclaratorSyntax [1:24 - 1:30] 
+                identifier = IdentifierToken -> "myList" [1:24 - 1:30] 
+                argumentList = nullptr
+                initializer = nullptr
+    semicolonToken = SemicolonToken -> ";" [1:30 - 1:31] 

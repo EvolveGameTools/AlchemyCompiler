@@ -43,6 +43,10 @@ function findCppStructs(filename) {
         obj.structName = match[1];
         obj.baseType = match[2];
         obj.fields = [];
+        obj.validSyntaxKinds = [];
+
+        var hasSyntaxKindList = false;
+
         i++;
         for (; i < lines.length; i++) {
 
@@ -50,6 +54,31 @@ function findCppStructs(filename) {
 
             if (candidate.startsWith("//")) continue;
             if (candidate.length === 0) continue;
+
+            if(candidate.startsWith("VALID_SYNTAX_KINDS")) {
+                hasSyntaxKindList = true;
+                i++;
+                for(; i < lines.length; i++){
+                    if(lines[i].startsWith("SyntaxKind::")) {
+                        const l = lines[i];
+                        var str = l.split("::")[1];
+                        var commaIdx = str.indexOf(',');
+                        if(commaIdx !== -1) {
+                            str = str.substring(0, commaIdx);
+                        }
+                        str = str.trim();
+                        console.log(obj.structName + " -> " + str);
+                        obj.validSyntaxKinds.push(str);
+                    }
+                    if(lines[i].startsWith("};")){
+                        break
+                    }
+                }
+
+                i--;
+                continue;
+
+            }
 
             if ((candidate.startsWith(obj.structName) || candidate.startsWith("explicit")) && candidate.indexOf("(") >= 0) {
                 break;
@@ -72,6 +101,10 @@ function findCppStructs(filename) {
 
             }
 
+        }
+
+        if(!hasSyntaxKindList) {
+            obj.validSyntaxKinds.push(stripSuffix(obj.structName, "Syntax"));
         }
 
     }
@@ -223,39 +256,45 @@ function createPrintBlocks(structs) {
     for (var i = 0; i < structs.length; i++) {
         const struct = structs[i];
 
-        struct.printBlock = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
-        struct.printBlock += statementIndent;
-        struct.printBlock += struct.structName;
-        struct.printBlock += `* p = (${struct.structName}*)syntaxBase;\n`
-        struct.printBlock += statementIndent;
-        struct.printBlock += `PrintNodeHeader("${struct.structName}", syntaxBase);\n`
-        struct.printBlock += statementIndent;
-        struct.printBlock += "indent++;\n";
-        for (var f = 0; f < struct.fields.length; f++) {
-            const field = struct.fields[f];
-            struct.printBlock += statementIndent;
-            struct.printBlock += `PrintFieldName("${field.fieldName}");\n`;
-            struct.printBlock += statementIndent;
+        struct.printBlock = "";
 
-            if (field.fieldType === "SyntaxToken") {
-                struct.printBlock += `PrintToken(p->${field.fieldName});\n`;
-            } else if (field.fieldType.startsWith("TokenList")) {
-                struct.printBlock += `PrintTokenList(p->${field.fieldName});\n`
-            } else if (field.fieldType.startsWith("SyntaxList")) {
-                struct.printBlock += `PrintSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
-            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
-                struct.printBlock += `PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->${field.fieldName});\n`;
-            } else {
-                struct.printBlock += `PrintNode(p->${field.fieldName});\n`;
+        for(var j = 0; j < struct.validSyntaxKinds.length; j++) {
+
+            struct.printBlock += caseIndent + "case SyntaxKind::" + struct.validSyntaxKinds[j] + ": {\n";
+            struct.printBlock += statementIndent;
+            struct.printBlock += struct.structName;
+            struct.printBlock += `* p = (${struct.structName}*)syntaxBase;\n`
+            struct.printBlock += statementIndent;
+            struct.printBlock += `PrintNodeHeader("${struct.structName}", syntaxBase);\n`
+            struct.printBlock += statementIndent;
+            struct.printBlock += "indent++;\n";
+            for (var f = 0; f < struct.fields.length; f++) {
+                const field = struct.fields[f];
+                struct.printBlock += statementIndent;
+                struct.printBlock += `PrintFieldName("${field.fieldName}");\n`;
+                struct.printBlock += statementIndent;
+
+                if (field.fieldType === "SyntaxToken") {
+                    struct.printBlock += `PrintToken(p->${field.fieldName});\n`;
+                } else if (field.fieldType.startsWith("TokenList")) {
+                    struct.printBlock += `PrintTokenList(p->${field.fieldName});\n`
+                } else if (field.fieldType.startsWith("SyntaxList")) {
+                    struct.printBlock += `PrintSyntaxList((SyntaxListUntyped*)p->${field.fieldName});\n`;
+                } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                    struct.printBlock += `PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->${field.fieldName});\n`;
+                } else {
+                    struct.printBlock += `PrintNode(p->${field.fieldName});\n`;
+                }
+
             }
+            struct.printBlock += statementIndent;
+            struct.printBlock += "indent--;\n";
+            struct.printBlock += statementIndent;
+            struct.printBlock += "break;\n";
+            struct.printBlock += caseIndent;
+            struct.printBlock += '}\n';
 
         }
-        struct.printBlock += statementIndent;
-        struct.printBlock += "indent--;\n";
-        struct.printBlock += statementIndent;
-        struct.printBlock += "break;\n";
-        struct.printBlock += caseIndent;
-        struct.printBlock += '}\n';
     }
 }
 
@@ -268,41 +307,45 @@ function createGetLastTokens(structs) {
         }
 
         var block = "";
-        block = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
-        block += statementIndent;
-        block += struct.structName;
-        block += `* p = (${struct.structName}*)syntaxBase;\n`
 
-        for(var f = struct.fields.length - 1; f >= 0; f--) {
-            const field = struct.fields[f];
-            const x = `p->${field.fieldName}`;
+        for(var j = 0; j < struct.validSyntaxKinds.length; j++) {
+            block += caseIndent + "case SyntaxKind::" + struct.validSyntaxKinds[j] + ": {\n";
             block += statementIndent;
-            if (field.fieldType === "SyntaxToken") {
-                block += `if(${x}.IsValid()) return ${x};\n`;
-            } else if (field.fieldType.startsWith("TokenList")) {
-                block += `if(${x}->size != 0) return ${x}->array[${x}->size - 1];\n`;
-            } else if (field.fieldType.startsWith("SyntaxList")) {
-                block += `if(${x}->size != 0) return GetLastToken(${x}->array[${x}->size - 1]);\n`;
-            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
-                // we want the last of separator or item, we don't know which is last
-                block += `if(${x}->itemCount != 0) {\n`
-                block += statementIndent + "    ";
-                block += `SyntaxToken a = GetLastToken(${x}->items[${x}->itemCount - 1]);\n`
-                block += statementIndent + "    ";
-                block += `SyntaxToken b = ${x}->separatorCount == 0 ? SyntaxToken() : ${x}->separators[${x}->separatorCount - 1];\n`
-                block += statementIndent + "    ";
-                block += `return a.GetId() > b.GetId() ? a : b;\n`;
+            block += struct.structName;
+            block += `* p = (${struct.structName}*)syntaxBase;\n`
+
+            for (var f = struct.fields.length - 1; f >= 0; f--) {
+                const field = struct.fields[f];
+                const x = `p->${field.fieldName}`;
                 block += statementIndent;
-                block += "}\n";
-            } else {
-                block += `if(${x} != nullptr) return GetLastToken((SyntaxBase*)${x});\n`;
+                if (field.fieldType === "SyntaxToken") {
+                    block += `if(${x}.IsValid()) return ${x};\n`;
+                } else if (field.fieldType.startsWith("TokenList")) {
+                    block += `if(${x}->size != 0) return ${x}->array[${x}->size - 1];\n`;
+                } else if (field.fieldType.startsWith("SyntaxList")) {
+                    block += `if(${x}->size != 0) return GetLastToken(${x}->array[${x}->size - 1]);\n`;
+                } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                    // we want the last of separator or item, we don't know which is last
+                    block += `if(${x}->itemCount != 0) {\n`
+                    block += statementIndent + "    ";
+                    block += `SyntaxToken a = GetLastToken(${x}->items[${x}->itemCount - 1]);\n`
+                    block += statementIndent + "    ";
+                    block += `SyntaxToken b = ${x}->separatorCount == 0 ? SyntaxToken() : ${x}->separators[${x}->separatorCount - 1];\n`
+                    block += statementIndent + "    ";
+                    block += `return a.GetId() > b.GetId() ? a : b;\n`;
+                    block += statementIndent;
+                    block += "}\n";
+                } else {
+                    block += `if(${x} != nullptr) return GetLastToken((SyntaxBase*)${x});\n`;
+                }
             }
+
+            block += statementIndent;
+            block += "return SyntaxToken();\n";
+            block += caseIndent;
+            block += '}\n';
         }
 
-        block += statementIndent;
-        block += "return SyntaxToken();\n";
-        block += caseIndent;
-        block += '}\n';
         struct.lastTokenBlock = block;
     }
 }
@@ -317,34 +360,37 @@ function createGetFirstTokens(structs) {
         }
 
         var block = "";
-        block = caseIndent + "case SyntaxKind::" + stripSuffix(struct.structName, "Syntax") + ": {\n";
-        block += statementIndent;
-        block += struct.structName;
-        block += `* p = (${struct.structName}*)syntaxBase;\n`
+        for(var j = 0; j < struct.validSyntaxKinds.length; j++) {
 
-        for(var f = 0; f < struct.fields.length; f++) {
-            const field = struct.fields[f];
-            const x = `p->${field.fieldName}`;
+            block += caseIndent + "case SyntaxKind::" + struct.validSyntaxKinds[j] + ": {\n";
             block += statementIndent;
-            if (field.fieldType === "SyntaxToken") {
-                block += `if(${x}.IsValid()) return ${x};\n`;
-            } else if (field.fieldType.startsWith("TokenList")) {
-                block += `if(${x}->size != 0) return ${x}->array[0];\n`;
-            } else if (field.fieldType.startsWith("SyntaxList")) {
-                block += `if(${x}->size != 0) return GetFirstToken(${x}->array[0]);\n`;
-            } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
-                block += `if(${x}->itemCount != 0) return GetFirstToken(${x}->items[0]);\n`;
-            } else {
-                block += `if(${x} != nullptr) return GetFirstToken((SyntaxBase*)${x});\n`;
+            block += struct.structName;
+            block += `* p = (${struct.structName}*)syntaxBase;\n`
+
+            for (var f = 0; f < struct.fields.length; f++) {
+                const field = struct.fields[f];
+                const x = `p->${field.fieldName}`;
+                block += statementIndent;
+                if (field.fieldType === "SyntaxToken") {
+                    block += `if(${x}.IsValid()) return ${x};\n`;
+                } else if (field.fieldType.startsWith("TokenList")) {
+                    block += `if(${x}->size != 0) return ${x}->array[0];\n`;
+                } else if (field.fieldType.startsWith("SyntaxList")) {
+                    block += `if(${x}->size != 0) return GetFirstToken(${x}->array[0]);\n`;
+                } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                    block += `if(${x}->itemCount != 0) return GetFirstToken(${x}->items[0]);\n`;
+                } else {
+                    block += `if(${x} != nullptr) return GetFirstToken((SyntaxBase*)${x});\n`;
+                }
             }
+
+            block += statementIndent;
+            block += "return SyntaxToken();\n";
+            block += caseIndent;
+            block += '}\n';
+            struct.firstTokenBlock = block;
         }
 
-        block += statementIndent;
-        block += "return SyntaxToken();\n";
-        block += caseIndent;
-        block += '}\n';
-        struct.firstTokenBlock = block;
-        // console.log(struct.printBlock);
     }
 }
 
