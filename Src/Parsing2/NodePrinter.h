@@ -7,6 +7,7 @@
 #include "../Collections/PodList.h"
 #include "Tokenizer.h"
 #include "../Allocation/ThreadLocalTemp.h"
+#include "FindSkippedTokens.h"
 
 namespace Alchemy::Compilation {
 
@@ -56,13 +57,23 @@ namespace Alchemy::Compilation {
         }
 
         void PrintSyntaxList(SyntaxListUntyped* list) {
-            if (list == nullptr) {
+            if (list == nullptr || list->size == 0) {
+                PrintInline("SyntaxList <empty>");
                 return;
             }
+
+            indent++;
+            for (int32 i = 0; i < list->size; i++) {
+                PrintIndent();
+                PrintNode(list->array[i]);
+            }
+            indent--;
+
         }
 
         void PrintSeparatedSyntaxList(SeparatedSyntaxListUntyped* list) {
             if (list == nullptr) {
+                PrintInline("SeparatedSyntaxList <empty>");
                 return;
             }
 
@@ -85,7 +96,7 @@ namespace Alchemy::Compilation {
                 buffer.Add('\n');
             }
             else {
-                PrintLine("SeparatedSyntaxList");
+                PrintLine("SeparatedSyntaxList <empty>");
             }
             indent++;
             for (int32 i = 0; i < list->itemCount; i++) {
@@ -133,9 +144,36 @@ namespace Alchemy::Compilation {
         }
 
         void PrintTokenList(TokenList* tokenList) {
+            if(tokenList == nullptr || tokenList->size == 0) {
+                PrintLine("<empty>");
+                return;
+            }
+
+            buffer.EnsureAdditionalCapacity(64);
+
+            int32 min = tokenList->array[0].GetId();
+            int32 max = tokenList->array[0].GetId();
+
+            for(int32 i = 1; i < tokenList->size; i++) {
+                int32 id = tokenList->array[i].GetId();
+                if(id < min) min = id;
+                if(id > max) max = id;
+            }
+
+            buffer.size += snprintf(buffer.array + buffer.size, 64, "[%d:%d - %d:%d] ",
+                lc[min].line,
+                lc[min].column,
+                lc[max].endLine,
+                lc[max].endColumn
+            );
+
+            PrintLine();
+            indent++;
             for (int32 i = 0; i < tokenList->size; i++) {
+                PrintIndent();
                 PrintToken(tokenList->array[i]);
             }
+            indent--;
         }
 
         void PrintTrivia(Trivia trivia) {
@@ -150,7 +188,6 @@ namespace Alchemy::Compilation {
 
         void PrintFieldName(const char* fieldName) {
             PrintIndent();
-            //PrintInline("[");
             PrintInline(fieldName);
             PrintInline(" = ");
         }
@@ -210,12 +247,14 @@ namespace Alchemy::Compilation {
             PrintLineRange(syntaxBase->startTokenId, syntaxBase->endTokenId);
         }
 
-
         void PrintTree(SyntaxBase* syntaxBase, NodeEqualityOptions options = NodeEqualityOptions::Default) {
+
+            FindSkippedTokens finder(tokens, syntaxBase);
+
             PrintNode(syntaxBase);
 
             for (int32 i = 0; i < tokens.size; i++) {
-                if ((tokens[i].GetFlags() & SyntaxTokenFlags::Skipped) != 0) {
+                if ((tokens[i].GetFlags() & SyntaxTokenFlags::Skipped) != 0 && tokens[i].kind != TokenKind::Trivia) {
                     PrintToken(tokens[i]);
                 }
 

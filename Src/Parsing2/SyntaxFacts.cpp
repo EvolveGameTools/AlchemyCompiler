@@ -838,4 +838,84 @@ namespace Alchemy::Compilation::SyntaxFacts {
         }
     }
 
+    bool IsAdditionalLocalFunctionModifier(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::StaticKeyword:
+                // Not a valid modifier, but we should parse to give a good
+                // error message
+            case TokenKind::PublicKeyword:
+            case TokenKind::InternalKeyword:
+            case TokenKind::ProtectedKeyword:
+            case TokenKind::PrivateKeyword:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    bool IsDeclarationModifier(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::ConstKeyword:
+            case TokenKind::StaticKeyword:
+            case TokenKind::ReadOnlyKeyword:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsTypeModifierOrTypeKeyword(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::EnumKeyword:
+            case TokenKind::DelegateKeyword:
+            case TokenKind::ClassKeyword:
+            case TokenKind::InterfaceKeyword:
+            case TokenKind::StructKeyword:
+            case TokenKind::AbstractKeyword:
+            case TokenKind::InternalKeyword:
+            case TokenKind::NewKeyword:
+            case TokenKind::PrivateKeyword:
+            case TokenKind::ProtectedKeyword:
+            case TokenKind::PublicKeyword:
+            case TokenKind::SealedKeyword:
+            case TokenKind::StaticKeyword:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsAccessibilityModifier(TokenKind kind) {
+        switch (kind) {
+            case TokenKind::PublicKeyword:
+            case TokenKind::InternalKeyword:
+            case TokenKind::ProtectedKeyword:
+            case TokenKind::PrivateKeyword:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    bool IsExpressionSyntax(SyntaxKind kind) {
+        NOT_IMPLEMENTED("IsExpressionSyntax");
+        switch (kind) {
+            default:
+                return false;
+        }
+    }
+
+    bool IsName(SyntaxKind kind) {
+        switch (kind) {
+            case SyntaxKind::IdentifierName:
+            case SyntaxKind::GenericName:
+            case SyntaxKind::QualifiedName:
+                return true;
+            default:
+                return false;
+        }
+    }
+
 }

@@ -46,6 +46,18 @@ namespace Alchemy::Compilation {
         WRN_PrecedenceInversion,
         ERR_MissingPattern,
         ERR_UnexpectedDoubleColon,
+        ERR_BadArraySyntax,
+        ERR_BadCaseInSwitchArm,
+        ERR_ExpectedForeachKeyword,
+        ERR_BadForeachDecl,
+        ERR_InExpected,
+        ERR_ElseCannotStartStatement,
+        ERR_BadMemberFlag,
+        ERR_NoModifiersOnUsing,
+        ERR_ExpectedEndTry,
+        ERR_SwitchGoverningExpressionRequiresParens,
+        ERR_ConstantExpected,
+        ERR_DiscardPatternInSwitchStatement,
     };
 
 }

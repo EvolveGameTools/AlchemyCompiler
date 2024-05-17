@@ -16,7 +16,7 @@ namespace Alchemy::Compilation {
 
         SyntaxToken currentToken;
         int32 ptr;
-        TerminatorState _termState;
+        TerminatorState termState;
         LinearAllocator* allocator;
         TempAllocator * tempAllocator;
         Diagnostics* diagnostics;

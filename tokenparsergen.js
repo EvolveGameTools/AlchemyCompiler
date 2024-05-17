@@ -751,5 +751,6 @@ function report(str) {
 
 fs.writeFile("Src/Parsing2/GetFirstToken.generated.cpp", astgen.makeFirstTokenSource(), report("GenFirstToken"));
 fs.writeFile("Src/Parsing2/NodePrinter.generated.cpp", astgen.makeNodePrinter(), report("NodePrinter"));
+fs.writeFile("Src/Parsing2/FindSkippedTokens.generated.cpp", astgen.makeTouches(), report("FindSkippedTokens"));
 // fs.writeFile("Src/Parsing2/Builders.generated.h", astgen.makeBuilders(), report("Builders"));
 // fs.writeFile("Src/Parsing2/NodeEquality.generated.cpp", astgen.makeEqualityComparisons(), report("Node Equality"));

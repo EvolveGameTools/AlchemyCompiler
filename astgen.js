@@ -298,6 +298,47 @@ function createPrintBlocks(structs) {
     }
 }
 
+function findSkippedTokens(structs) {
+    for (let i = 0; i < structs.length; i++) {
+        const struct = structs[i];
+
+        if (struct.fields.length === 0) {
+            continue
+        }
+
+        var block = "";
+
+        for(var j = 0; j < struct.validSyntaxKinds.length; j++) {
+            block += caseIndent + "case SyntaxKind::" + struct.validSyntaxKinds[j] + ": {\n";
+            block += statementIndent;
+            block += struct.structName;
+            block += `* p = (${struct.structName}*)syntaxBase;\n`
+
+            for (var f = 0; f < struct.fields.length; f++) {
+                const field = struct.fields[f];
+                const x = `p->${field.fieldName}`;
+                block += statementIndent;
+                if (field.fieldType === "SyntaxToken") {
+                    block += `TouchToken(${x});\n`;
+                } else if (field.fieldType.startsWith("TokenList")) {
+                    block += `TouchTokenList(${x});\n`;
+                } else if (field.fieldType.startsWith("SyntaxList")) {
+                    block += `TouchSyntaxList((SyntaxListUntyped*)${x});\n`;
+                } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
+                    block += `TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)${x});\n`;
+                } else {
+                    block += `TouchNode(${x});\n`;
+                }
+            }
+            block += statementIndent + "break;\n";
+            block += caseIndent;
+            block += '}\n';
+        }
+
+        struct.touchBlock = block;
+    }
+}
+
 function createGetLastTokens(structs) {
     for (let i = 0; i < structs.length; i++) {
         const struct = structs[i];
@@ -321,12 +362,12 @@ function createGetLastTokens(structs) {
                 if (field.fieldType === "SyntaxToken") {
                     block += `if(${x}.IsValid()) return ${x};\n`;
                 } else if (field.fieldType.startsWith("TokenList")) {
-                    block += `if(${x}->size != 0) return ${x}->array[${x}->size - 1];\n`;
+                    block += `if(${x} != nullptr && ${x}->size != 0) return ${x}->array[${x}->size - 1];\n`;
                 } else if (field.fieldType.startsWith("SyntaxList")) {
-                    block += `if(${x}->size != 0) return GetLastToken(${x}->array[${x}->size - 1]);\n`;
+                    block += `if(${x} != nullptr && ${x}->size != 0) return GetLastToken(${x}->array[${x}->size - 1]);\n`;
                 } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
                     // we want the last of separator or item, we don't know which is last
-                    block += `if(${x}->itemCount != 0) {\n`
+                    block += `if(${x} != nullptr && ${x}->itemCount != 0) {\n`
                     block += statementIndent + "    ";
                     block += `SyntaxToken a = GetLastToken(${x}->items[${x}->itemCount - 1]);\n`
                     block += statementIndent + "    ";
@@ -374,11 +415,11 @@ function createGetFirstTokens(structs) {
                 if (field.fieldType === "SyntaxToken") {
                     block += `if(${x}.IsValid()) return ${x};\n`;
                 } else if (field.fieldType.startsWith("TokenList")) {
-                    block += `if(${x}->size != 0) return ${x}->array[0];\n`;
+                    block += `if(${x} != nullptr && ${x}->size != 0) return ${x}->array[0];\n`;
                 } else if (field.fieldType.startsWith("SyntaxList")) {
-                    block += `if(${x}->size != 0) return GetFirstToken(${x}->array[0]);\n`;
+                    block += `if(${x} != nullptr && ${x}->size != 0) return GetFirstToken(${x}->array[0]);\n`;
                 } else if (field.fieldType.startsWith("SeparatedSyntaxList")) {
-                    block += `if(${x}->itemCount != 0) return GetFirstToken(${x}->items[0]);\n`;
+                    block += `if(${x} != nullptr && ${x}->itemCount != 0) return GetFirstToken(${x}->items[0]);\n`;
                 } else {
                     block += `if(${x} != nullptr) return GetFirstToken((SyntaxBase*)${x});\n`;
                 }
@@ -470,6 +511,29 @@ __REPLACE_BUILDER_API__
 }
 `;
 
+const touchTemplate = `#include "./FindSkippedTokens.h"
+
+namespace Alchemy::Compilation {
+    
+    void FindSkippedTokens::TouchNode(SyntaxBase * syntaxBase) {
+
+        if(syntaxBase == nullptr) {
+            return;
+        }
+        
+        switch(syntaxBase->GetKind()) {
+__REPLACE__
+            default: {
+                UNREACHABLE("TouchNode");
+                return;
+            }
+            
+        }        
+    }
+    
+}
+`;
+
 const compareTemplate = `#include "./NodeEquality.h"
 
 namespace Alchemy::Compilation {
@@ -525,10 +589,14 @@ function makeBuilders() {
 function makeEqualityComparisons() {
     createCompareBlocks(structs);
     return compareTemplate.replace("__REPLACE__", structs.map(s => s.compBlock).join('\n'));
-
+}
+function makeTouches() {
+    findSkippedTokens(structs);
+    return touchTemplate.replace("__REPLACE__", structs.map(s => s.touchBlock).join('\n'));
 }
 
 module.exports = {
+    makeTouches,
     makeBuilders,
     makeEqualityComparisons,
     makeFirstTokenSource,

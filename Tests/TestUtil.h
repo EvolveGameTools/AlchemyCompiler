@@ -112,6 +112,9 @@ CheckedArray<FixedCharSpan> TreeToLine(PodList<Alchemy::Compilation::SyntaxToken
 bool CompareLines(CheckedArray<FixedCharSpan> expectedLines, CheckedArray<FixedCharSpan> actualLines) {
 
     if (expectedLines.size != actualLines.size) {
+        int32 x = expectedLines.size;
+        int32 y = actualLines.size;
+        printf("Error comparing line counts: expected %d but was %d", x, y);
         return false;
     }
 

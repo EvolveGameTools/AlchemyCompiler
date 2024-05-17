@@ -6,6 +6,304 @@
 
 namespace Alchemy::Compilation {
 
+    struct ParameterListSyntax;
+    struct BlockSyntax;
+    struct WhenClauseSyntax;
+
+    struct EmptyStatementSyntax : StatementSyntax {
+
+        SyntaxToken semicolon;
+
+        explicit EmptyStatementSyntax(SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::EmptyStatement)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct BreakStatementSyntax : StatementSyntax {
+
+        SyntaxToken breakKeyword;
+        SyntaxToken semicolon;
+
+        BreakStatementSyntax(SyntaxToken breakKeyword, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::BreakStatement)
+            , breakKeyword(breakKeyword)
+            , semicolon(semicolon) {}
+
+    };
+    struct ContinueStatementSyntax : StatementSyntax {
+
+        SyntaxToken continueKeyword;
+        SyntaxToken semicolon;
+
+        ContinueStatementSyntax(SyntaxToken continueKeyword, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::ContinueStatement)
+            , continueKeyword(continueKeyword)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct VariableDeclarationSyntax;
+
+    struct ForStatementSyntax : StatementSyntax {
+        // declaration and initializers are mutually exclusive
+
+        SyntaxToken forKeyword;
+        SyntaxToken openParenToken;
+        VariableDeclarationSyntax* declaration;
+        SeparatedSyntaxList<ExpressionSyntax>* initializers;
+        SyntaxToken firstSemiColon;
+        ExpressionSyntax* condition;
+        SyntaxToken secondSemiColon;
+        SeparatedSyntaxList<ExpressionSyntax>* incrementors;
+        SyntaxToken closeParenToken;
+        StatementSyntax* statement;
+
+
+        ForStatementSyntax(SyntaxToken forKeyword, SyntaxToken openParenToken, VariableDeclarationSyntax* declaration, SeparatedSyntaxList<ExpressionSyntax>* initializers, SyntaxToken firstSemiColon, ExpressionSyntax* condition, SyntaxToken secondSemiColon, SeparatedSyntaxList<ExpressionSyntax>* incrementors, SyntaxToken closeParenToken, StatementSyntax* statement)
+            : StatementSyntax(SyntaxKind::ForStatement)
+            , forKeyword(forKeyword)
+            , openParenToken(openParenToken)
+            , declaration(declaration)
+            , initializers(initializers)
+            , firstSemiColon(firstSemiColon)
+            , condition(condition)
+            , secondSemiColon(secondSemiColon)
+            , incrementors(incrementors)
+            , closeParenToken(closeParenToken)
+            , statement(statement) {}
+
+    };
+
+    struct ThrowStatementSyntax : StatementSyntax {
+
+        SyntaxToken throwKeyword;
+        ExpressionSyntax* expression;
+        SyntaxToken semicolon;
+
+        ThrowStatementSyntax(SyntaxToken throwKeyword, ExpressionSyntax* expression, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::ThrowStatement)
+            , throwKeyword(throwKeyword)
+            , expression(expression)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct CatchDeclarationSyntax : SyntaxBase {
+
+        SyntaxToken openParen;
+        TypeSyntax* type;
+        SyntaxToken identifier;
+        SyntaxToken closeParen;
+
+        CatchDeclarationSyntax(SyntaxToken openParen, TypeSyntax* type, SyntaxToken identifier, SyntaxToken closeParen)
+            : SyntaxBase(SyntaxKind::CatchDeclaration)
+            , openParen(openParen)
+            , type(type)
+            , identifier(identifier)
+            , closeParen(closeParen) {}
+
+    };
+
+    struct CatchFilterClauseSyntax : SyntaxBase {
+
+        SyntaxToken whenKeyword;
+        SyntaxToken openParenToken;
+        ExpressionSyntax* filterExpression;
+        SyntaxToken closeParenToken;
+
+        CatchFilterClauseSyntax(SyntaxToken whenKeyword, SyntaxToken openParenToken, ExpressionSyntax* filterExpression, SyntaxToken closeParenToken)
+            : SyntaxBase(SyntaxKind::CatchFilterClause)
+            , whenKeyword(whenKeyword)
+            , openParenToken(openParenToken)
+            , filterExpression(filterExpression)
+            , closeParenToken(closeParenToken) {}
+
+    };
+
+    struct CatchClauseSyntax : SyntaxBase {
+
+        SyntaxToken catchKeyword;
+        CatchDeclarationSyntax* declaration;
+        CatchFilterClauseSyntax* filter;
+        BlockSyntax* block;
+
+        CatchClauseSyntax(SyntaxToken catchKeyword, CatchDeclarationSyntax* declaration, CatchFilterClauseSyntax* filter, BlockSyntax* block)
+            : SyntaxBase(SyntaxKind::CatchClause)
+            , catchKeyword(catchKeyword)
+            , declaration(declaration)
+            , filter(filter)
+            , block(block) {}
+
+    };
+
+    struct FinallyClauseSyntax : SyntaxBase {
+
+        SyntaxToken finallyKeyword;
+        BlockSyntax* block;
+
+        FinallyClauseSyntax(SyntaxToken finallyKeyword, BlockSyntax* block)
+            : SyntaxBase(SyntaxKind::FinallyClause)
+            , finallyKeyword(finallyKeyword)
+            , block(block) {}
+
+    };
+
+    struct TryStatementSyntax : StatementSyntax {
+
+        SyntaxToken tryKeyword;
+        BlockSyntax* tryBlock;
+        SyntaxList<CatchClauseSyntax>* catchClauses;
+        FinallyClauseSyntax* finallyClaus;
+
+        TryStatementSyntax(SyntaxToken tryKeyword, BlockSyntax* tryBlock, SyntaxList<CatchClauseSyntax>* catchClauses, FinallyClauseSyntax* finallyClaus)
+            : StatementSyntax(SyntaxKind::TryStatement)
+            , tryKeyword(tryKeyword)
+            , tryBlock(tryBlock)
+            , catchClauses(catchClauses)
+            , finallyClaus(finallyClaus) {}
+
+    };
+
+    struct DefaultSwitchLabelSyntax : SwitchLabelSyntax {
+
+        SyntaxToken keyword;
+        SyntaxToken colon;
+
+        DefaultSwitchLabelSyntax(SyntaxToken keyword, SyntaxToken colon)
+            : SwitchLabelSyntax(SyntaxKind::DefaultSwitchLabel)
+            , keyword(keyword)
+            , colon(colon) {}
+
+
+    };
+
+    struct CaseSwitchLabelSyntax : SwitchLabelSyntax {
+
+        SyntaxToken keyword;
+        ExpressionSyntax* value;
+        SyntaxToken colon;
+
+        CaseSwitchLabelSyntax(SyntaxToken keyword, ExpressionSyntax* value, SyntaxToken colon)
+            : SwitchLabelSyntax(SyntaxKind::CaseSwitchLabel)
+            , keyword(keyword)
+            , value(value)
+            , colon(colon) {}
+    };
+
+    struct CasePatternSwitchLabelSyntax : SwitchLabelSyntax {
+
+        SyntaxToken keyword;
+        PatternSyntax* pattern;
+        WhenClauseSyntax* whenClause;
+        SyntaxToken colonToken;
+
+        CasePatternSwitchLabelSyntax(SyntaxToken keyword, PatternSyntax* pattern, WhenClauseSyntax* whenClause, SyntaxToken colonToken)
+            : SwitchLabelSyntax(SyntaxKind::CasePatternSwitchLabel)
+            , keyword(keyword)
+            , pattern(pattern)
+            , whenClause(whenClause)
+            , colonToken(colonToken) {}
+
+    };
+
+    struct SwitchSectionSyntax : SyntaxBase {
+
+        SyntaxList<SwitchLabelSyntax>* labels;
+        SyntaxList<StatementSyntax>* statements;
+
+        SwitchSectionSyntax(SyntaxList<SwitchLabelSyntax>* labels, SyntaxList<StatementSyntax>* statements)
+            : SyntaxBase(SyntaxKind::SwitchSection)
+            , labels(labels)
+            , statements(statements) {
+            // min size = 1
+            assert(labels->size >= 1);
+            assert(statements->size >= 1);
+        }
+
+    };
+
+    struct SwitchStatementSyntax : StatementSyntax {
+
+        SyntaxToken switchKeyword;
+        SyntaxToken openParenToken;
+        ExpressionSyntax* expression;
+        SyntaxToken closeParenToken;
+        SyntaxToken openBraceToken;
+        SyntaxList<SwitchSectionSyntax>* sections;
+        SyntaxToken closeBraceToken;
+
+        SwitchStatementSyntax(SyntaxToken switchKeyword, SyntaxToken openParenToken, ExpressionSyntax* expression, SyntaxToken closeParenToken, SyntaxToken openBraceToken, SyntaxList<SwitchSectionSyntax>* sections, SyntaxToken closeBraceToken)
+            : StatementSyntax(SyntaxKind::SwitchStatement)
+            , switchKeyword(switchKeyword)
+            , openParenToken(openParenToken)
+            , expression(expression)
+            , closeParenToken(closeParenToken)
+            , openBraceToken(openBraceToken)
+            , sections(sections)
+            , closeBraceToken(closeBraceToken) {}
+
+    };
+
+    struct UsingStatementSyntax : StatementSyntax {
+
+        SyntaxToken usingKeyword;
+        SyntaxToken openParenToken;
+        VariableDeclarationSyntax* declaration;
+        ExpressionSyntax* expression;
+        SyntaxToken closeParenToken;
+        StatementSyntax* statement;
+
+        UsingStatementSyntax(SyntaxToken usingKeyword, SyntaxToken openParenToken, VariableDeclarationSyntax* declaration, ExpressionSyntax* expression, SyntaxToken closeParenToken, StatementSyntax* statement)
+            : StatementSyntax(SyntaxKind::UsingStatement)
+            , usingKeyword(usingKeyword)
+            , openParenToken(openParenToken)
+            , declaration(declaration)
+            , expression(expression)
+            , closeParenToken(closeParenToken)
+            , statement(statement) {}
+    };
+
+    struct WhileStatementSyntax : StatementSyntax {
+
+        SyntaxToken whileKeyword;
+        SyntaxToken openParen;
+        ExpressionSyntax* condition;
+        SyntaxToken closeParen;
+        StatementSyntax* statement;
+
+        WhileStatementSyntax(SyntaxToken whileKeyword, SyntaxToken openParen, ExpressionSyntax* condition, SyntaxToken closeParen, StatementSyntax* statement)
+            : StatementSyntax(SyntaxKind::WhileStatement)
+            , whileKeyword(whileKeyword)
+            , openParen(openParen)
+            , condition(condition)
+            , closeParen(closeParen)
+            , statement(statement) {}
+
+    };
+
+    struct DoStatementSyntax : StatementSyntax {
+
+        SyntaxToken doKeyword;
+        StatementSyntax* statement;
+        SyntaxToken whileKeyword;
+        SyntaxToken openParen;
+        ExpressionSyntax* condition;
+        SyntaxToken closeParen;
+        SyntaxToken semicolon;
+
+        DoStatementSyntax(SyntaxToken doKeyword, StatementSyntax* statement, SyntaxToken whileKeyword, SyntaxToken openParen, ExpressionSyntax* condition, SyntaxToken closeParen, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::DoStatement)
+            , doKeyword(doKeyword)
+            , statement(statement)
+            , whileKeyword(whileKeyword)
+            , openParen(openParen)
+            , condition(condition)
+            , closeParen(closeParen)
+            , semicolon(semicolon) {}
+
+    };
+
     struct ArrayRankSpecifierSyntax : ExpressionSyntax {
         SyntaxToken open;
         SeparatedSyntaxList<ExpressionSyntax>* ranks;
@@ -191,6 +489,20 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct LabeledStatementSyntax : StatementSyntax {
+
+        SyntaxToken identifier;
+        SyntaxToken colon;
+        StatementSyntax* statement;
+
+        LabeledStatementSyntax(SyntaxToken identifier, SyntaxToken colon, StatementSyntax* statement)
+            : StatementSyntax(SyntaxKind::LabeledStatement)
+            , identifier(identifier)
+            , colon(colon)
+            , statement(statement) {}
+
+    };
+
     struct OmittedArraySizeExpressionSyntax : ExpressionSyntax {
 
         SyntaxToken token;
@@ -202,12 +514,12 @@ namespace Alchemy::Compilation {
     };
 
 
-    struct NullableType : TypeSyntax {
+    struct NullableTypeSyntax : TypeSyntax {
 
         TypeSyntax* elementType;
         SyntaxToken questionMark;
 
-        NullableType(TypeSyntax* elementType, SyntaxToken questionMark)
+        NullableTypeSyntax(TypeSyntax* elementType, SyntaxToken questionMark)
             : TypeSyntax(SyntaxKind::NullableType)
             , elementType(elementType)
             , questionMark(questionMark) {}
@@ -653,7 +965,43 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct ExpressionElementSyntax : CollectionElementSyntax {
+
+        ExpressionSyntax* expression;
+
+        explicit ExpressionElementSyntax(ExpressionSyntax* expression)
+            : CollectionElementSyntax(SyntaxKind::ExpressionElement)
+            , expression(expression) {}
+
+    };
+
+    struct SpreadElementSyntax : CollectionElementSyntax {
+
+        SyntaxToken dotDotToken;
+        ExpressionSyntax* expression;
+
+        SpreadElementSyntax(SyntaxToken dotDotToken, ExpressionSyntax* expression)
+            : CollectionElementSyntax(SyntaxKind::SpreadElement)
+            , dotDotToken(dotDotToken)
+            , expression(expression) {}
+
+    };
+
+    struct CollectionExpressionSyntax : ExpressionSyntax {
+        SyntaxToken open;
+        SeparatedSyntaxList<CollectionElementSyntax>* elements;
+        SyntaxToken close;
+
+        explicit CollectionExpressionSyntax(SyntaxToken open, SeparatedSyntaxList<CollectionElementSyntax>* elements, SyntaxToken close)
+            : ExpressionSyntax(SyntaxKind::CollectionExpression)
+            , open(open)
+            , elements(elements)
+            , close(close) {}
+
+    };
+
     struct DeclarationExpressionSyntax : ExpressionSyntax {
+
         TypeSyntax* type;
         VariableDesignationSyntax* designation;
 
@@ -792,6 +1140,44 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct SimpleLambdaExpressionSyntax : LambdaExpressionSyntax {
+
+        TokenList* modifiers;
+        ParameterSyntax* parameter;
+        SyntaxToken arrowToken;
+        BlockSyntax* blockBody; // either this or expression is non null
+        ExpressionSyntax* expressionBody;
+
+        SimpleLambdaExpressionSyntax(TokenList* modifiers, ParameterSyntax* parameter, SyntaxToken arrowToken, BlockSyntax* blockBody, ExpressionSyntax* expressionBody)
+            : LambdaExpressionSyntax(SyntaxKind::SimpleLambdaExpression)
+            , modifiers(modifiers)
+            , parameter(parameter)
+            , arrowToken(arrowToken)
+            , blockBody(blockBody)
+            , expressionBody(expressionBody) {}
+
+    };
+
+    struct ParenthesizedLambdaExpressionSyntax : LambdaExpressionSyntax {
+
+        TokenList* modifiers;
+        TypeSyntax* returnType;
+        ParameterListSyntax* parameters;
+        SyntaxToken arrowToken;
+        BlockSyntax* blockBody; // either this or expression is non null
+        ExpressionSyntax* expressionBody;
+
+        ParenthesizedLambdaExpressionSyntax(TokenList* modifiers, TypeSyntax* returnType, ParameterListSyntax* parameters, SyntaxToken arrowToken, BlockSyntax* blockBody, ExpressionSyntax* expressionBody)
+            : LambdaExpressionSyntax(SyntaxKind::ParenthesizedLambdaExpression)
+            , modifiers(modifiers)
+            , returnType(returnType)
+            , parameters(parameters)
+            , arrowToken(arrowToken)
+            , blockBody(blockBody)
+            , expressionBody(expressionBody) {}
+
+    };
+
     struct BaseConstructorInitializerSyntax : ConstructorInitializerSyntax {
         SyntaxToken colonToken;
         SyntaxToken baseKeyword;
@@ -840,8 +1226,11 @@ namespace Alchemy::Compilation {
         SeparatedSyntaxList<ParameterSyntax>* parameters;
         SyntaxToken closeParen;
 
-        explicit ParameterListSyntax()
-            : SyntaxBase(SyntaxKind::ParameterList) {}
+        explicit ParameterListSyntax(SyntaxToken openParen, SeparatedSyntaxList<ParameterSyntax>* parameters, SyntaxToken closeParen)
+            : SyntaxBase(SyntaxKind::ParameterList)
+            , openParen(openParen)
+            , parameters(parameters)
+            , closeParen(closeParen) {}
 
     };
 
@@ -849,7 +1238,7 @@ namespace Alchemy::Compilation {
         SyntaxToken dummy;
     };
 
-    struct LocalFunctionStatementSyntax : SyntaxBase {
+    struct LocalFunctionStatementSyntax : StatementSyntax {
 
         TokenList* modifiers;
         TypeSyntax* returnType;
@@ -860,7 +1249,7 @@ namespace Alchemy::Compilation {
         SyntaxBase* body; // todo -- change to a real type
 
         explicit LocalFunctionStatementSyntax(TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameters, ParameterListSyntax* parameters, ConstraintClausesSyntax* constraints, SyntaxBase* body)
-            : SyntaxBase(SyntaxKind::LocalFunctionStatement)
+            : StatementSyntax(SyntaxKind::LocalFunctionStatement)
             , modifiers(modifiers)
             , returnType(returnType)
             , identifier(identifier)
@@ -871,7 +1260,6 @@ namespace Alchemy::Compilation {
 
     };
 
-
     struct VariableDeclarationSyntax : SyntaxBase {
 
         TypeSyntax* type;
@@ -881,6 +1269,22 @@ namespace Alchemy::Compilation {
             : SyntaxBase(SyntaxKind::VariableDeclaration)
             , type(type)
             , variables(variables) {}
+
+    };
+
+    struct LocalDeclarationStatementSyntax : StatementSyntax {
+
+        SyntaxToken usingKeyword; // optional
+        TokenList* modifiers; // optional
+        VariableDeclarationSyntax* declaration;
+        SyntaxToken semicolon;
+
+        LocalDeclarationStatementSyntax(SyntaxToken usingKeyword, TokenList* modifiers, VariableDeclarationSyntax* declaration, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::LocalDeclarationStatement)
+            , usingKeyword(usingKeyword)
+            , modifiers(modifiers)
+            , declaration(declaration)
+            , semicolon(semicolon) {}
 
     };
 
@@ -1140,6 +1544,79 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct ImplicitElementAccessSyntax : ExpressionSyntax {
+
+        BracketedArgumentListSyntax* argumentList;
+
+        explicit ImplicitElementAccessSyntax(BracketedArgumentListSyntax* argumentList)
+            : ExpressionSyntax(SyntaxKind::ImplicitElementAccess)
+            , argumentList(argumentList) {}
+
+    };
+
+    struct WhenClauseSyntax : SyntaxBase {
+
+        SyntaxToken whenKeyword;
+        ExpressionSyntax* condition;
+
+        WhenClauseSyntax(SyntaxToken whenKeyword, ExpressionSyntax* condition)
+            : SyntaxBase(SyntaxKind::WhenClause)
+            , whenKeyword(whenKeyword)
+            , condition(condition) {}
+
+    };
+
+    struct SwitchExpressionArmSyntax : SyntaxBase {
+
+        PatternSyntax* pattern;
+        WhenClauseSyntax* whenClause;
+        SyntaxToken equalsGreaterThanToken;
+        ExpressionSyntax* expression;
+
+        SwitchExpressionArmSyntax(PatternSyntax* pattern, WhenClauseSyntax* whenClause, SyntaxToken equalsGreaterThanToken, ExpressionSyntax* expression)
+            : SyntaxBase(SyntaxKind::SwitchExpressionArm)
+            , pattern(pattern)
+            , whenClause(whenClause)
+            , equalsGreaterThanToken(equalsGreaterThanToken)
+            , expression(expression) {}
+
+    };
+
+    struct SwitchExpressionSyntax : ExpressionSyntax {
+
+        ExpressionSyntax* governingExpression;
+        SyntaxToken switchKeyword;
+        SyntaxToken openBraceToken;
+        SeparatedSyntaxList<SwitchExpressionArmSyntax>* arms;
+        SyntaxToken closeBraceToken;
+
+        SwitchExpressionSyntax(ExpressionSyntax* governingExpression, SyntaxToken switchKeyword, SyntaxToken openBraceToken, SeparatedSyntaxList<SwitchExpressionArmSyntax>* arms, SyntaxToken closeBraceToken)
+            : ExpressionSyntax(SyntaxKind::SwitchExpression)
+            , governingExpression(governingExpression)
+            , switchKeyword(switchKeyword)
+            , openBraceToken(openBraceToken)
+            , arms(arms)
+            , closeBraceToken(closeBraceToken) {}
+
+
+    };
+
+    struct ListPatternSyntax : PatternSyntax {
+
+        SyntaxToken openBracketToken;
+        SeparatedSyntaxList<PatternSyntax>* patterns;
+        SyntaxToken closeBracketToken;
+        VariableDesignationSyntax* designation; // optional
+
+        ListPatternSyntax(SyntaxToken openBracketToken, SeparatedSyntaxList<PatternSyntax>* patterns, SyntaxToken closeBracketToken, VariableDesignationSyntax* designation)
+            : PatternSyntax(SyntaxKind::ListPattern)
+            , openBracketToken(openBracketToken)
+            , patterns(patterns)
+            , closeBracketToken(closeBracketToken)
+            , designation(designation) {}
+
+    };
+
     struct AssignmentExpressionSyntax : ExpressionSyntax {
 
         ExpressionSyntax* left;
@@ -1171,6 +1648,133 @@ namespace Alchemy::Compilation {
             ASSERT_VALID_SYNTAX_KIND(opKind);
 
         }
+
+    };
+
+    struct ForEachStatementSyntax : CommonForEachStatementSyntax {
+
+        SyntaxToken foreachKeyword;
+        SyntaxToken openParen;
+        TypeSyntax* type;
+        SyntaxToken identifier;
+        SyntaxToken inKeyword;
+        ExpressionSyntax* expression;
+        SyntaxToken closeParen;
+        StatementSyntax* statement;
+
+        ForEachStatementSyntax(SyntaxToken foreachKeyword, SyntaxToken openParen, TypeSyntax* type, SyntaxToken identifier, SyntaxToken inKeyword, ExpressionSyntax* expression, SyntaxToken closeParen, StatementSyntax* statement)
+            : CommonForEachStatementSyntax(SyntaxKind::ForEachStatement)
+            , foreachKeyword(foreachKeyword)
+            , openParen(openParen)
+            , type(type)
+            , identifier(identifier)
+            , inKeyword(inKeyword)
+            , expression(expression)
+            , closeParen(closeParen)
+            , statement(statement) {}
+
+    };
+
+    struct ForEachVariableStatementSyntax : CommonForEachStatementSyntax {
+
+        SyntaxToken foreachKeyword;
+        SyntaxToken openParen;
+        ExpressionSyntax* variable;
+        SyntaxToken inKeyword;
+        ExpressionSyntax* expression;
+        SyntaxToken closeParen;
+        StatementSyntax* statement;
+
+        ForEachVariableStatementSyntax(SyntaxToken foreachKeyword, SyntaxToken openParen, ExpressionSyntax* variable, SyntaxToken inKeyword, ExpressionSyntax* expression, SyntaxToken closeParen, StatementSyntax* statement)
+            : CommonForEachStatementSyntax(SyntaxKind::ForEachVariableStatement)
+            , foreachKeyword(foreachKeyword)
+            , openParen(openParen)
+            , variable(variable)
+            , inKeyword(inKeyword)
+            , expression(expression)
+            , closeParen(closeParen)
+            , statement(statement) {}
+
+    };
+
+    struct GotoStatementSyntax : StatementSyntax {
+
+        SyntaxToken gotoToken;
+        SyntaxToken caseOrDefault;
+        ExpressionSyntax* arg;
+        SyntaxToken semicolon;
+
+        VALID_SYNTAX_KINDS = {
+            SyntaxKind::GotoCaseStatement,
+            SyntaxKind::GotoDefaultStatement,
+            SyntaxKind::GotoStatement
+        };
+
+        GotoStatementSyntax(SyntaxKind kind, SyntaxToken gotoToken, SyntaxToken caseOrDefault, ExpressionSyntax* arg, SyntaxToken semicolon)
+            : StatementSyntax(kind)
+            , gotoToken(gotoToken)
+            , caseOrDefault(caseOrDefault)
+            , arg(arg)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct ElseClauseSyntax : SyntaxBase {
+
+        SyntaxToken elseKeyword;
+        StatementSyntax* statement;
+
+        ElseClauseSyntax(SyntaxToken elseKeyword, StatementSyntax* statement)
+            : SyntaxBase(SyntaxKind::ElseClause)
+            , elseKeyword(elseKeyword)
+            , statement(statement) {}
+
+    };
+
+    struct IfStatementSyntax : StatementSyntax {
+
+        SyntaxToken ifKeyword;
+        SyntaxToken openParen;
+        ExpressionSyntax* condition;
+        SyntaxToken closeParen;
+        StatementSyntax* statement;
+        ElseClauseSyntax* elseClause;
+
+        IfStatementSyntax(SyntaxToken ifKeyword, SyntaxToken openParen, ExpressionSyntax* condition, SyntaxToken closeParen, StatementSyntax* statement, ElseClauseSyntax* elseClause)
+            : StatementSyntax(SyntaxKind::IfStatement)
+            , ifKeyword(ifKeyword)
+            , openParen(openParen)
+            , condition(condition)
+            , closeParen(closeParen)
+            , statement(statement)
+            , elseClause(elseClause) {}
+
+    };
+
+    struct ExpressionStatementSyntax : StatementSyntax {
+
+        ExpressionSyntax* expression;
+        SyntaxToken semicolon;
+
+        ExpressionStatementSyntax(ExpressionSyntax* expression, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::ExpressionStatement)
+            , expression(expression)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct ReturnStatementSyntax : StatementSyntax {
+
+        SyntaxToken returnKeyword;
+        ExpressionSyntax* expressionSyntax;
+        SyntaxToken semicolon;
+
+        ReturnStatementSyntax(SyntaxToken returnKeyword, ExpressionSyntax* expressionSyntax, SyntaxToken semicolon)
+            : StatementSyntax(SyntaxKind::ReturnStatement)
+            , returnKeyword(returnKeyword)
+            , expressionSyntax(expressionSyntax)
+            , semicolon(semicolon) {}
+
 
     };
 

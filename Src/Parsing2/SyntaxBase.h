@@ -132,6 +132,12 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct LambdaExpressionSyntax : ExpressionSyntax {
+
+        explicit LambdaExpressionSyntax(SyntaxKind kind) : ExpressionSyntax(kind) {}
+
+    };
+
     struct NameSyntax : TypeSyntax {
 
         explicit NameSyntax(SyntaxKind kind) : TypeSyntax(kind) {}
@@ -171,6 +177,24 @@ namespace Alchemy::Compilation {
         explicit StatementSyntax(SyntaxKind kind)
             : SyntaxBase(kind) {}
     };
+
+    struct CollectionElementSyntax : SyntaxBase {
+
+        explicit CollectionElementSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
+
+    };
+
+    struct CommonForEachStatementSyntax : StatementSyntax {
+
+        explicit CommonForEachStatementSyntax(SyntaxKind kind) : StatementSyntax(kind) {}
+
+    };
+    struct SwitchLabelSyntax : SyntaxBase {
+
+        explicit SwitchLabelSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
+
+    };
+
 
     #define VALID_SYNTAX_KINDS static constexpr SyntaxKind kValidSyntaxKinds[]
     #define ASSERT_VALID_SYNTAX_KIND(k)  assert(IsValidSyntaxKind(k, (SyntaxKind*)kValidSyntaxKinds, sizeof(kValidSyntaxKinds) / sizeof(kValidSyntaxKinds[0])))

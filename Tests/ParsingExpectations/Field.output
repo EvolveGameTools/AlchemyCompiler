@@ -1,5 +1,6 @@
 FieldDeclarationSyntax [1:1 - 1:31] 
-    modifiers = PublicKeyword -> "public" [1:1 - 1:7] 
+    modifiers = [1:1 - 1:7] 
+        PublicKeyword -> "public" [1:1 - 1:7] 
     declaration = VariableDeclarationSyntax [1:8 - 1:30] 
         type = GenericNameSyntax [1:8 - 1:23] 
             identifier = IdentifierToken -> "List" [1:8 - 1:12] 

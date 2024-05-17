@@ -240,6 +240,8 @@ namespace Alchemy::Compilation {
         LogicalOrExpression,
         OmittedArraySizeExpression,
         RefExpression,
+        SwitchExpression,
+
         // -- End Expressions
 
         IdentifierName,
@@ -263,7 +265,6 @@ namespace Alchemy::Compilation {
         Subpattern,
         PositionalPatternClause,
         DiscardPattern,
-        SwitchExpression,
         SwitchExpressionArm,
         VarPattern,
         ParenthesizedPattern,
@@ -380,6 +381,38 @@ namespace Alchemy::Compilation {
         ComplexElementInitializerExpression,
         WithInitializerExpression,
 
+        SpreadElement,
+        ExpressionElement,
+        ImplicitElementAccess,
+        EmptyStatement,
+        BreakStatement,
+        ContinueStatement,
+        DoStatement,
+
+        ExpressionStatement,
+        ForStatement,
+        ForEachStatement,
+        ForEachVariableStatement,
+        GotoCaseStatement,
+        GotoDefaultStatement,
+        GotoStatement,
+        ElseClause,
+        IfStatement,
+        ReturnStatement,
+        LocalDeclarationStatement,
+        WhileStatement,
+        ThrowStatement,
+        CatchClause,
+        CatchDeclaration,
+        CatchFilterClause,
+        FinallyClause,
+        TryStatement,
+        SwitchStatement,
+        SwitchSection,
+        CaseSwitchLabel,
+        DefaultSwitchLabel,
+        UsingStatement,
+        LabeledStatement,
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

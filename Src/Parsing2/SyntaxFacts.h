@@ -58,4 +58,17 @@ namespace Alchemy::Compilation::SyntaxFacts {
     bool IsTypeSyntax(SyntaxKind kind);
 
     bool CanTokenFollowTypeInPattern(TokenKind kind, Precedence precedence);
+
+    bool IsDeclarationModifier(TokenKind kind);
+
+    bool IsAdditionalLocalFunctionModifier(TokenKind kind);
+
+    bool IsTypeModifierOrTypeKeyword(TokenKind kind);
+
+    bool IsAccessibilityModifier(TokenKind kind);
+
+    bool IsExpressionSyntax(SyntaxKind kind);
+
+    bool IsName(SyntaxKind kind);
+
 }

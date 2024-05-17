@@ -37,7 +37,7 @@ namespace Alchemy::Compilation {
         , allocator(allocator)
         , tempAllocator(tempAllocator)
         , diagnostics(diagnostics)
-        , _termState(TerminatorState::EndOfFile)
+        , termState(TerminatorState::EndOfFile)
         , forceConditionalAccessExpression(false)
         , currentToken() {
 

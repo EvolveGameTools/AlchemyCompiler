@@ -10,10 +10,172 @@ namespace Alchemy::Compilation {
         }
         
         switch(syntaxBase->GetKind()) {
+            case SyntaxKind::EmptyStatement: {
+                EmptyStatementSyntax* p = (EmptyStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::BreakStatement: {
+                BreakStatementSyntax* p = (BreakStatementSyntax*)syntaxBase;
+                if(p->breakKeyword.IsValid()) return p->breakKeyword;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ContinueStatement: {
+                ContinueStatementSyntax* p = (ContinueStatementSyntax*)syntaxBase;
+                if(p->continueKeyword.IsValid()) return p->continueKeyword;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ForStatement: {
+                ForStatementSyntax* p = (ForStatementSyntax*)syntaxBase;
+                if(p->forKeyword.IsValid()) return p->forKeyword;
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->declaration != nullptr) return GetFirstToken((SyntaxBase*)p->declaration);
+                if(p->initializers != nullptr && p->initializers->itemCount != 0) return GetFirstToken(p->initializers->items[0]);
+                if(p->firstSemiColon.IsValid()) return p->firstSemiColon;
+                if(p->condition != nullptr) return GetFirstToken((SyntaxBase*)p->condition);
+                if(p->secondSemiColon.IsValid()) return p->secondSemiColon;
+                if(p->incrementors != nullptr && p->incrementors->itemCount != 0) return GetFirstToken(p->incrementors->items[0]);
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ThrowStatement: {
+                ThrowStatementSyntax* p = (ThrowStatementSyntax*)syntaxBase;
+                if(p->throwKeyword.IsValid()) return p->throwKeyword;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CatchDeclaration: {
+                CatchDeclarationSyntax* p = (CatchDeclarationSyntax*)syntaxBase;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->closeParen.IsValid()) return p->closeParen;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CatchFilterClause: {
+                CatchFilterClauseSyntax* p = (CatchFilterClauseSyntax*)syntaxBase;
+                if(p->whenKeyword.IsValid()) return p->whenKeyword;
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->filterExpression != nullptr) return GetFirstToken((SyntaxBase*)p->filterExpression);
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CatchClause: {
+                CatchClauseSyntax* p = (CatchClauseSyntax*)syntaxBase;
+                if(p->catchKeyword.IsValid()) return p->catchKeyword;
+                if(p->declaration != nullptr) return GetFirstToken((SyntaxBase*)p->declaration);
+                if(p->filter != nullptr) return GetFirstToken((SyntaxBase*)p->filter);
+                if(p->block != nullptr) return GetFirstToken((SyntaxBase*)p->block);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::FinallyClause: {
+                FinallyClauseSyntax* p = (FinallyClauseSyntax*)syntaxBase;
+                if(p->finallyKeyword.IsValid()) return p->finallyKeyword;
+                if(p->block != nullptr) return GetFirstToken((SyntaxBase*)p->block);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::TryStatement: {
+                TryStatementSyntax* p = (TryStatementSyntax*)syntaxBase;
+                if(p->tryKeyword.IsValid()) return p->tryKeyword;
+                if(p->tryBlock != nullptr) return GetFirstToken((SyntaxBase*)p->tryBlock);
+                if(p->catchClauses != nullptr && p->catchClauses->size != 0) return GetFirstToken(p->catchClauses->array[0]);
+                if(p->finallyClaus != nullptr) return GetFirstToken((SyntaxBase*)p->finallyClaus);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::DefaultSwitchLabel: {
+                DefaultSwitchLabelSyntax* p = (DefaultSwitchLabelSyntax*)syntaxBase;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->colon.IsValid()) return p->colon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CaseSwitchLabel: {
+                CaseSwitchLabelSyntax* p = (CaseSwitchLabelSyntax*)syntaxBase;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->value != nullptr) return GetFirstToken((SyntaxBase*)p->value);
+                if(p->colon.IsValid()) return p->colon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CasePatternSwitchLabel: {
+                CasePatternSwitchLabelSyntax* p = (CasePatternSwitchLabelSyntax*)syntaxBase;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->pattern != nullptr) return GetFirstToken((SyntaxBase*)p->pattern);
+                if(p->whenClause != nullptr) return GetFirstToken((SyntaxBase*)p->whenClause);
+                if(p->colonToken.IsValid()) return p->colonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchSection: {
+                SwitchSectionSyntax* p = (SwitchSectionSyntax*)syntaxBase;
+                if(p->labels != nullptr && p->labels->size != 0) return GetFirstToken(p->labels->array[0]);
+                if(p->statements != nullptr && p->statements->size != 0) return GetFirstToken(p->statements->array[0]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchStatement: {
+                SwitchStatementSyntax* p = (SwitchStatementSyntax*)syntaxBase;
+                if(p->switchKeyword.IsValid()) return p->switchKeyword;
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->sections != nullptr && p->sections->size != 0) return GetFirstToken(p->sections->array[0]);
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::UsingStatement: {
+                UsingStatementSyntax* p = (UsingStatementSyntax*)syntaxBase;
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->declaration != nullptr) return GetFirstToken((SyntaxBase*)p->declaration);
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::WhileStatement: {
+                WhileStatementSyntax* p = (WhileStatementSyntax*)syntaxBase;
+                if(p->whileKeyword.IsValid()) return p->whileKeyword;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->condition != nullptr) return GetFirstToken((SyntaxBase*)p->condition);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::DoStatement: {
+                DoStatementSyntax* p = (DoStatementSyntax*)syntaxBase;
+                if(p->doKeyword.IsValid()) return p->doKeyword;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                if(p->whileKeyword.IsValid()) return p->whileKeyword;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->condition != nullptr) return GetFirstToken((SyntaxBase*)p->condition);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::ArrayRankSpecifier: {
                 ArrayRankSpecifierSyntax* p = (ArrayRankSpecifierSyntax*)syntaxBase;
                 if(p->open.IsValid()) return p->open;
-                if(p->ranks->itemCount != 0) return GetFirstToken(p->ranks->items[0]);
+                if(p->ranks != nullptr && p->ranks->itemCount != 0) return GetFirstToken(p->ranks->items[0]);
                 if(p->close.IsValid()) return p->close;
                 return SyntaxToken();
             }
@@ -21,7 +183,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TypeArgumentList: {
                 TypeArgumentListSyntax* p = (TypeArgumentListSyntax*)syntaxBase;
                 if(p->lessThanToken.IsValid()) return p->lessThanToken;
-                if(p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
                 if(p->greaterThanToken.IsValid()) return p->greaterThanToken;
                 return SyntaxToken();
             }
@@ -91,7 +253,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TupleType: {
                 TupleTypeSyntax* p = (TupleTypeSyntax*)syntaxBase;
                 if(p->openParenToken.IsValid()) return p->openParenToken;
-                if(p->elements->itemCount != 0) return GetFirstToken(p->elements->items[0]);
+                if(p->elements != nullptr && p->elements->itemCount != 0) return GetFirstToken(p->elements->items[0]);
                 if(p->closeParenToken.IsValid()) return p->closeParenToken;
                 return SyntaxToken();
             }
@@ -99,7 +261,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ArrayType: {
                 ArrayTypeSyntax* p = (ArrayTypeSyntax*)syntaxBase;
                 if(p->elementType != nullptr) return GetFirstToken((SyntaxBase*)p->elementType);
-                if(p->ranks->size != 0) return GetFirstToken(p->ranks->array[0]);
+                if(p->ranks != nullptr && p->ranks->size != 0) return GetFirstToken(p->ranks->array[0]);
                 return SyntaxToken();
             }
 
@@ -111,6 +273,14 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::LabeledStatement: {
+                LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->colon.IsValid()) return p->colon;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
             case SyntaxKind::OmittedArraySizeExpression: {
                 OmittedArraySizeExpressionSyntax* p = (OmittedArraySizeExpressionSyntax*)syntaxBase;
                 if(p->token.IsValid()) return p->token;
@@ -118,7 +288,7 @@ namespace Alchemy::Compilation {
             }
 
             case SyntaxKind::NullableType: {
-                NullableType* p = (NullableType*)syntaxBase;
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
                 if(p->elementType != nullptr) return GetFirstToken((SyntaxBase*)p->elementType);
                 if(p->questionMark.IsValid()) return p->questionMark;
                 return SyntaxToken();
@@ -143,7 +313,7 @@ namespace Alchemy::Compilation {
                 ImplicitArrayCreationExpressionSyntax* p = (ImplicitArrayCreationExpressionSyntax*)syntaxBase;
                 if(p->newKeyword.IsValid()) return p->newKeyword;
                 if(p->openBracket.IsValid()) return p->openBracket;
-                if(p->commas->size != 0) return p->commas->array[0];
+                if(p->commas != nullptr && p->commas->size != 0) return p->commas->array[0];
                 if(p->closeBracket.IsValid()) return p->closeBracket;
                 if(p->initializer != nullptr) return GetFirstToken((SyntaxBase*)p->initializer);
                 return SyntaxToken();
@@ -152,35 +322,35 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ObjectInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
+                if(p->list != nullptr && p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
             case SyntaxKind::CollectionInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
+                if(p->list != nullptr && p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
             case SyntaxKind::ArrayInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
+                if(p->list != nullptr && p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
             case SyntaxKind::ComplexElementInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
+                if(p->list != nullptr && p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
             case SyntaxKind::WithInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
+                if(p->list != nullptr && p->list->itemCount != 0) return GetFirstToken(p->list->items[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
@@ -205,7 +375,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ArgumentList: {
                 ArgumentListSyntax* p = (ArgumentListSyntax*)syntaxBase;
                 if(p->openToken.IsValid()) return p->openToken;
-                if(p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
                 if(p->closeToken.IsValid()) return p->closeToken;
                 return SyntaxToken();
             }
@@ -246,7 +416,7 @@ namespace Alchemy::Compilation {
                 AnonymousObjectCreationExpressionSyntax* p = (AnonymousObjectCreationExpressionSyntax*)syntaxBase;
                 if(p->newToken.IsValid()) return p->newToken;
                 if(p->openBrace.IsValid()) return p->openBrace;
-                if(p->initializers->itemCount != 0) return GetFirstToken(p->initializers->items[0]);
+                if(p->initializers != nullptr && p->initializers->itemCount != 0) return GetFirstToken(p->initializers->items[0]);
                 if(p->closeBrace.IsValid()) return p->closeBrace;
                 return SyntaxToken();
             }
@@ -254,7 +424,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TupleExpression: {
                 TupleExpressionSyntax* p = (TupleExpressionSyntax*)syntaxBase;
                 if(p->openToken.IsValid()) return p->openToken;
-                if(p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
                 if(p->closeToken.IsValid()) return p->closeToken;
                 return SyntaxToken();
             }
@@ -270,7 +440,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::BracketedArgumentList: {
                 BracketedArgumentListSyntax* p = (BracketedArgumentListSyntax*)syntaxBase;
                 if(p->openBracket.IsValid()) return p->openBracket;
-                if(p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) return GetFirstToken(p->arguments->items[0]);
                 if(p->closeBracket.IsValid()) return p->closeBracket;
                 return SyntaxToken();
             }
@@ -306,7 +476,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TypeParameterList: {
                 TypeParameterListSyntax* p = (TypeParameterListSyntax*)syntaxBase;
                 if(p->lessThanToken.IsValid()) return p->lessThanToken;
-                if(p->parameters->itemCount != 0) return GetFirstToken(p->parameters->items[0]);
+                if(p->parameters != nullptr && p->parameters->itemCount != 0) return GetFirstToken(p->parameters->items[0]);
                 if(p->greaterThanToken.IsValid()) return p->greaterThanToken;
                 return SyntaxToken();
             }
@@ -321,7 +491,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::Block: {
                 BlockSyntax* p = (BlockSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->statements->size != 0) return GetFirstToken(p->statements->array[0]);
+                if(p->statements != nullptr && p->statements->size != 0) return GetFirstToken(p->statements->array[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
@@ -425,8 +595,29 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ParenthesizedVariableDesignation: {
                 ParenthesizedVariableDesignationSyntax* p = (ParenthesizedVariableDesignationSyntax*)syntaxBase;
                 if(p->openParen.IsValid()) return p->openParen;
-                if(p->designators->itemCount != 0) return GetFirstToken(p->designators->items[0]);
+                if(p->designators != nullptr && p->designators->itemCount != 0) return GetFirstToken(p->designators->items[0]);
                 if(p->closeParen.IsValid()) return p->closeParen;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ExpressionElement: {
+                ExpressionElementSyntax* p = (ExpressionElementSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SpreadElement: {
+                SpreadElementSyntax* p = (SpreadElementSyntax*)syntaxBase;
+                if(p->dotDotToken.IsValid()) return p->dotDotToken;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CollectionExpression: {
+                CollectionExpressionSyntax* p = (CollectionExpressionSyntax*)syntaxBase;
+                if(p->open.IsValid()) return p->open;
+                if(p->elements != nullptr && p->elements->itemCount != 0) return GetFirstToken(p->elements->items[0]);
+                if(p->close.IsValid()) return p->close;
                 return SyntaxToken();
             }
 
@@ -546,10 +737,31 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::Parameter: {
                 ParameterSyntax* p = (ParameterSyntax*)syntaxBase;
-                if(p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
                 if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
                 if(p->identifier.IsValid()) return p->identifier;
                 if(p->defaultValue != nullptr) return GetFirstToken((SyntaxBase*)p->defaultValue);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SimpleLambdaExpression: {
+                SimpleLambdaExpressionSyntax* p = (SimpleLambdaExpressionSyntax*)syntaxBase;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->parameter != nullptr) return GetFirstToken((SyntaxBase*)p->parameter);
+                if(p->arrowToken.IsValid()) return p->arrowToken;
+                if(p->blockBody != nullptr) return GetFirstToken((SyntaxBase*)p->blockBody);
+                if(p->expressionBody != nullptr) return GetFirstToken((SyntaxBase*)p->expressionBody);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ParenthesizedLambdaExpression: {
+                ParenthesizedLambdaExpressionSyntax* p = (ParenthesizedLambdaExpressionSyntax*)syntaxBase;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->returnType != nullptr) return GetFirstToken((SyntaxBase*)p->returnType);
+                if(p->parameters != nullptr) return GetFirstToken((SyntaxBase*)p->parameters);
+                if(p->arrowToken.IsValid()) return p->arrowToken;
+                if(p->blockBody != nullptr) return GetFirstToken((SyntaxBase*)p->blockBody);
+                if(p->expressionBody != nullptr) return GetFirstToken((SyntaxBase*)p->expressionBody);
                 return SyntaxToken();
             }
 
@@ -580,7 +792,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ParameterList: {
                 ParameterListSyntax* p = (ParameterListSyntax*)syntaxBase;
                 if(p->openParen.IsValid()) return p->openParen;
-                if(p->parameters->itemCount != 0) return GetFirstToken(p->parameters->items[0]);
+                if(p->parameters != nullptr && p->parameters->itemCount != 0) return GetFirstToken(p->parameters->items[0]);
                 if(p->closeParen.IsValid()) return p->closeParen;
                 return SyntaxToken();
             }
@@ -593,7 +805,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::LocalFunctionStatement: {
                 LocalFunctionStatementSyntax* p = (LocalFunctionStatementSyntax*)syntaxBase;
-                if(p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
                 if(p->returnType != nullptr) return GetFirstToken((SyntaxBase*)p->returnType);
                 if(p->identifier.IsValid()) return p->identifier;
                 if(p->typeParameters != nullptr) return GetFirstToken((SyntaxBase*)p->typeParameters);
@@ -606,13 +818,22 @@ namespace Alchemy::Compilation {
             case SyntaxKind::VariableDeclaration: {
                 VariableDeclarationSyntax* p = (VariableDeclarationSyntax*)syntaxBase;
                 if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
-                if(p->variables->itemCount != 0) return GetFirstToken(p->variables->items[0]);
+                if(p->variables != nullptr && p->variables->itemCount != 0) return GetFirstToken(p->variables->items[0]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::LocalDeclarationStatement: {
+                LocalDeclarationStatementSyntax* p = (LocalDeclarationStatementSyntax*)syntaxBase;
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->declaration != nullptr) return GetFirstToken((SyntaxBase*)p->declaration);
+                if(p->semicolon.IsValid()) return p->semicolon;
                 return SyntaxToken();
             }
 
             case SyntaxKind::FieldDeclaration: {
                 FieldDeclarationSyntax* p = (FieldDeclarationSyntax*)syntaxBase;
-                if(p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
                 if(p->declaration != nullptr) return GetFirstToken((SyntaxBase*)p->declaration);
                 if(p->semicolonToken.IsValid()) return p->semicolonToken;
                 return SyntaxToken();
@@ -635,7 +856,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::PropertyPatternClause: {
                 PropertyPatternClauseSyntax* p = (PropertyPatternClauseSyntax*)syntaxBase;
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
-                if(p->subpatterns->itemCount != 0) return GetFirstToken(p->subpatterns->items[0]);
+                if(p->subpatterns != nullptr && p->subpatterns->itemCount != 0) return GetFirstToken(p->subpatterns->items[0]);
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
                 return SyntaxToken();
             }
@@ -650,7 +871,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::PositionalPatternClause: {
                 PositionalPatternClauseSyntax* p = (PositionalPatternClauseSyntax*)syntaxBase;
                 if(p->openParenToken.IsValid()) return p->openParenToken;
-                if(p->subpatterns->itemCount != 0) return GetFirstToken(p->subpatterns->items[0]);
+                if(p->subpatterns != nullptr && p->subpatterns->itemCount != 0) return GetFirstToken(p->subpatterns->items[0]);
                 if(p->closeParenToken.IsValid()) return p->closeParenToken;
                 return SyntaxToken();
             }
@@ -896,6 +1117,47 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::ImplicitElementAccess: {
+                ImplicitElementAccessSyntax* p = (ImplicitElementAccessSyntax*)syntaxBase;
+                if(p->argumentList != nullptr) return GetFirstToken((SyntaxBase*)p->argumentList);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::WhenClause: {
+                WhenClauseSyntax* p = (WhenClauseSyntax*)syntaxBase;
+                if(p->whenKeyword.IsValid()) return p->whenKeyword;
+                if(p->condition != nullptr) return GetFirstToken((SyntaxBase*)p->condition);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchExpressionArm: {
+                SwitchExpressionArmSyntax* p = (SwitchExpressionArmSyntax*)syntaxBase;
+                if(p->pattern != nullptr) return GetFirstToken((SyntaxBase*)p->pattern);
+                if(p->whenClause != nullptr) return GetFirstToken((SyntaxBase*)p->whenClause);
+                if(p->equalsGreaterThanToken.IsValid()) return p->equalsGreaterThanToken;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchExpression: {
+                SwitchExpressionSyntax* p = (SwitchExpressionSyntax*)syntaxBase;
+                if(p->governingExpression != nullptr) return GetFirstToken((SyntaxBase*)p->governingExpression);
+                if(p->switchKeyword.IsValid()) return p->switchKeyword;
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->arms != nullptr && p->arms->itemCount != 0) return GetFirstToken(p->arms->items[0]);
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ListPattern: {
+                ListPatternSyntax* p = (ListPatternSyntax*)syntaxBase;
+                if(p->openBracketToken.IsValid()) return p->openBracketToken;
+                if(p->patterns != nullptr && p->patterns->itemCount != 0) return GetFirstToken(p->patterns->items[0]);
+                if(p->closeBracketToken.IsValid()) return p->closeBracketToken;
+                if(p->designation != nullptr) return GetFirstToken((SyntaxBase*)p->designation);
+                return SyntaxToken();
+            }
+
             case SyntaxKind::SimpleAssignmentExpression: {
                 AssignmentExpressionSyntax* p = (AssignmentExpressionSyntax*)syntaxBase;
                 if(p->left != nullptr) return GetFirstToken((SyntaxBase*)p->left);
@@ -988,6 +1250,89 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::ForEachStatement: {
+                ForEachStatementSyntax* p = (ForEachStatementSyntax*)syntaxBase;
+                if(p->foreachKeyword.IsValid()) return p->foreachKeyword;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->inKeyword.IsValid()) return p->inKeyword;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ForEachVariableStatement: {
+                ForEachVariableStatementSyntax* p = (ForEachVariableStatementSyntax*)syntaxBase;
+                if(p->foreachKeyword.IsValid()) return p->foreachKeyword;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->variable != nullptr) return GetFirstToken((SyntaxBase*)p->variable);
+                if(p->inKeyword.IsValid()) return p->inKeyword;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::GotoCaseStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                if(p->gotoToken.IsValid()) return p->gotoToken;
+                if(p->caseOrDefault.IsValid()) return p->caseOrDefault;
+                if(p->arg != nullptr) return GetFirstToken((SyntaxBase*)p->arg);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+            case SyntaxKind::GotoDefaultStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                if(p->gotoToken.IsValid()) return p->gotoToken;
+                if(p->caseOrDefault.IsValid()) return p->caseOrDefault;
+                if(p->arg != nullptr) return GetFirstToken((SyntaxBase*)p->arg);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+            case SyntaxKind::GotoStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                if(p->gotoToken.IsValid()) return p->gotoToken;
+                if(p->caseOrDefault.IsValid()) return p->caseOrDefault;
+                if(p->arg != nullptr) return GetFirstToken((SyntaxBase*)p->arg);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ElseClause: {
+                ElseClauseSyntax* p = (ElseClauseSyntax*)syntaxBase;
+                if(p->elseKeyword.IsValid()) return p->elseKeyword;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::IfStatement: {
+                IfStatementSyntax* p = (IfStatementSyntax*)syntaxBase;
+                if(p->ifKeyword.IsValid()) return p->ifKeyword;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->condition != nullptr) return GetFirstToken((SyntaxBase*)p->condition);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
+                if(p->elseClause != nullptr) return GetFirstToken((SyntaxBase*)p->elseClause);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ExpressionStatement: {
+                ExpressionStatementSyntax* p = (ExpressionStatementSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ReturnStatement: {
+                ReturnStatementSyntax* p = (ReturnStatementSyntax*)syntaxBase;
+                if(p->returnKeyword.IsValid()) return p->returnKeyword;
+                if(p->expressionSyntax != nullptr) return GetFirstToken((SyntaxBase*)p->expressionSyntax);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
             default: {
                 return SyntaxToken();
             }
@@ -1003,10 +1348,180 @@ namespace Alchemy::Compilation {
         }
         
         switch(syntaxBase->GetKind()) {
+            case SyntaxKind::EmptyStatement: {
+                EmptyStatementSyntax* p = (EmptyStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::BreakStatement: {
+                BreakStatementSyntax* p = (BreakStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->breakKeyword.IsValid()) return p->breakKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ContinueStatement: {
+                ContinueStatementSyntax* p = (ContinueStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->continueKeyword.IsValid()) return p->continueKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ForStatement: {
+                ForStatementSyntax* p = (ForStatementSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->incrementors != nullptr && p->incrementors->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->incrementors->items[p->incrementors->itemCount - 1]);
+                    SyntaxToken b = p->incrementors->separatorCount == 0 ? SyntaxToken() : p->incrementors->separators[p->incrementors->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->secondSemiColon.IsValid()) return p->secondSemiColon;
+                if(p->condition != nullptr) return GetLastToken((SyntaxBase*)p->condition);
+                if(p->firstSemiColon.IsValid()) return p->firstSemiColon;
+                if(p->initializers != nullptr && p->initializers->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->initializers->items[p->initializers->itemCount - 1]);
+                    SyntaxToken b = p->initializers->separatorCount == 0 ? SyntaxToken() : p->initializers->separators[p->initializers->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->declaration != nullptr) return GetLastToken((SyntaxBase*)p->declaration);
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->forKeyword.IsValid()) return p->forKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ThrowStatement: {
+                ThrowStatementSyntax* p = (ThrowStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->throwKeyword.IsValid()) return p->throwKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CatchDeclaration: {
+                CatchDeclarationSyntax* p = (CatchDeclarationSyntax*)syntaxBase;
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
+                if(p->openParen.IsValid()) return p->openParen;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CatchFilterClause: {
+                CatchFilterClauseSyntax* p = (CatchFilterClauseSyntax*)syntaxBase;
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->filterExpression != nullptr) return GetLastToken((SyntaxBase*)p->filterExpression);
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->whenKeyword.IsValid()) return p->whenKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CatchClause: {
+                CatchClauseSyntax* p = (CatchClauseSyntax*)syntaxBase;
+                if(p->block != nullptr) return GetLastToken((SyntaxBase*)p->block);
+                if(p->filter != nullptr) return GetLastToken((SyntaxBase*)p->filter);
+                if(p->declaration != nullptr) return GetLastToken((SyntaxBase*)p->declaration);
+                if(p->catchKeyword.IsValid()) return p->catchKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::FinallyClause: {
+                FinallyClauseSyntax* p = (FinallyClauseSyntax*)syntaxBase;
+                if(p->block != nullptr) return GetLastToken((SyntaxBase*)p->block);
+                if(p->finallyKeyword.IsValid()) return p->finallyKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::TryStatement: {
+                TryStatementSyntax* p = (TryStatementSyntax*)syntaxBase;
+                if(p->finallyClaus != nullptr) return GetLastToken((SyntaxBase*)p->finallyClaus);
+                if(p->catchClauses != nullptr && p->catchClauses->size != 0) return GetLastToken(p->catchClauses->array[p->catchClauses->size - 1]);
+                if(p->tryBlock != nullptr) return GetLastToken((SyntaxBase*)p->tryBlock);
+                if(p->tryKeyword.IsValid()) return p->tryKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::DefaultSwitchLabel: {
+                DefaultSwitchLabelSyntax* p = (DefaultSwitchLabelSyntax*)syntaxBase;
+                if(p->colon.IsValid()) return p->colon;
+                if(p->keyword.IsValid()) return p->keyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CaseSwitchLabel: {
+                CaseSwitchLabelSyntax* p = (CaseSwitchLabelSyntax*)syntaxBase;
+                if(p->colon.IsValid()) return p->colon;
+                if(p->value != nullptr) return GetLastToken((SyntaxBase*)p->value);
+                if(p->keyword.IsValid()) return p->keyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CasePatternSwitchLabel: {
+                CasePatternSwitchLabelSyntax* p = (CasePatternSwitchLabelSyntax*)syntaxBase;
+                if(p->colonToken.IsValid()) return p->colonToken;
+                if(p->whenClause != nullptr) return GetLastToken((SyntaxBase*)p->whenClause);
+                if(p->pattern != nullptr) return GetLastToken((SyntaxBase*)p->pattern);
+                if(p->keyword.IsValid()) return p->keyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchSection: {
+                SwitchSectionSyntax* p = (SwitchSectionSyntax*)syntaxBase;
+                if(p->statements != nullptr && p->statements->size != 0) return GetLastToken(p->statements->array[p->statements->size - 1]);
+                if(p->labels != nullptr && p->labels->size != 0) return GetLastToken(p->labels->array[p->labels->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchStatement: {
+                SwitchStatementSyntax* p = (SwitchStatementSyntax*)syntaxBase;
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->sections != nullptr && p->sections->size != 0) return GetLastToken(p->sections->array[p->sections->size - 1]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->switchKeyword.IsValid()) return p->switchKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::UsingStatement: {
+                UsingStatementSyntax* p = (UsingStatementSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->closeParenToken.IsValid()) return p->closeParenToken;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->declaration != nullptr) return GetLastToken((SyntaxBase*)p->declaration);
+                if(p->openParenToken.IsValid()) return p->openParenToken;
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::WhileStatement: {
+                WhileStatementSyntax* p = (WhileStatementSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->condition != nullptr) return GetLastToken((SyntaxBase*)p->condition);
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->whileKeyword.IsValid()) return p->whileKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::DoStatement: {
+                DoStatementSyntax* p = (DoStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->condition != nullptr) return GetLastToken((SyntaxBase*)p->condition);
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->whileKeyword.IsValid()) return p->whileKeyword;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->doKeyword.IsValid()) return p->doKeyword;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::ArrayRankSpecifier: {
                 ArrayRankSpecifierSyntax* p = (ArrayRankSpecifierSyntax*)syntaxBase;
                 if(p->close.IsValid()) return p->close;
-                if(p->ranks->itemCount != 0) {
+                if(p->ranks != nullptr && p->ranks->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->ranks->items[p->ranks->itemCount - 1]);
                     SyntaxToken b = p->ranks->separatorCount == 0 ? SyntaxToken() : p->ranks->separators[p->ranks->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1018,7 +1533,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TypeArgumentList: {
                 TypeArgumentListSyntax* p = (TypeArgumentListSyntax*)syntaxBase;
                 if(p->greaterThanToken.IsValid()) return p->greaterThanToken;
-                if(p->arguments->itemCount != 0) {
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->arguments->items[p->arguments->itemCount - 1]);
                     SyntaxToken b = p->arguments->separatorCount == 0 ? SyntaxToken() : p->arguments->separators[p->arguments->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1092,7 +1607,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TupleType: {
                 TupleTypeSyntax* p = (TupleTypeSyntax*)syntaxBase;
                 if(p->closeParenToken.IsValid()) return p->closeParenToken;
-                if(p->elements->itemCount != 0) {
+                if(p->elements != nullptr && p->elements->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->elements->items[p->elements->itemCount - 1]);
                     SyntaxToken b = p->elements->separatorCount == 0 ? SyntaxToken() : p->elements->separators[p->elements->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1103,7 +1618,7 @@ namespace Alchemy::Compilation {
 
             case SyntaxKind::ArrayType: {
                 ArrayTypeSyntax* p = (ArrayTypeSyntax*)syntaxBase;
-                if(p->ranks->size != 0) return GetLastToken(p->ranks->array[p->ranks->size - 1]);
+                if(p->ranks != nullptr && p->ranks->size != 0) return GetLastToken(p->ranks->array[p->ranks->size - 1]);
                 if(p->elementType != nullptr) return GetLastToken((SyntaxBase*)p->elementType);
                 return SyntaxToken();
             }
@@ -1116,6 +1631,14 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::LabeledStatement: {
+                LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->colon.IsValid()) return p->colon;
+                if(p->identifier.IsValid()) return p->identifier;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::OmittedArraySizeExpression: {
                 OmittedArraySizeExpressionSyntax* p = (OmittedArraySizeExpressionSyntax*)syntaxBase;
                 if(p->token.IsValid()) return p->token;
@@ -1123,7 +1646,7 @@ namespace Alchemy::Compilation {
             }
 
             case SyntaxKind::NullableType: {
-                NullableType* p = (NullableType*)syntaxBase;
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
                 if(p->questionMark.IsValid()) return p->questionMark;
                 if(p->elementType != nullptr) return GetLastToken((SyntaxBase*)p->elementType);
                 return SyntaxToken();
@@ -1148,7 +1671,7 @@ namespace Alchemy::Compilation {
                 ImplicitArrayCreationExpressionSyntax* p = (ImplicitArrayCreationExpressionSyntax*)syntaxBase;
                 if(p->initializer != nullptr) return GetLastToken((SyntaxBase*)p->initializer);
                 if(p->closeBracket.IsValid()) return p->closeBracket;
-                if(p->commas->size != 0) return p->commas->array[p->commas->size - 1];
+                if(p->commas != nullptr && p->commas->size != 0) return p->commas->array[p->commas->size - 1];
                 if(p->openBracket.IsValid()) return p->openBracket;
                 if(p->newKeyword.IsValid()) return p->newKeyword;
                 return SyntaxToken();
@@ -1157,7 +1680,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ObjectInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->list->itemCount != 0) {
+                if(p->list != nullptr && p->list->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->list->items[p->list->itemCount - 1]);
                     SyntaxToken b = p->list->separatorCount == 0 ? SyntaxToken() : p->list->separators[p->list->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1168,7 +1691,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::CollectionInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->list->itemCount != 0) {
+                if(p->list != nullptr && p->list->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->list->items[p->list->itemCount - 1]);
                     SyntaxToken b = p->list->separatorCount == 0 ? SyntaxToken() : p->list->separators[p->list->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1179,7 +1702,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ArrayInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->list->itemCount != 0) {
+                if(p->list != nullptr && p->list->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->list->items[p->list->itemCount - 1]);
                     SyntaxToken b = p->list->separatorCount == 0 ? SyntaxToken() : p->list->separators[p->list->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1190,7 +1713,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ComplexElementInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->list->itemCount != 0) {
+                if(p->list != nullptr && p->list->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->list->items[p->list->itemCount - 1]);
                     SyntaxToken b = p->list->separatorCount == 0 ? SyntaxToken() : p->list->separators[p->list->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1201,7 +1724,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::WithInitializerExpression: {
                 InitializerExpressionSyntax* p = (InitializerExpressionSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->list->itemCount != 0) {
+                if(p->list != nullptr && p->list->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->list->items[p->list->itemCount - 1]);
                     SyntaxToken b = p->list->separatorCount == 0 ? SyntaxToken() : p->list->separators[p->list->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1230,7 +1753,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ArgumentList: {
                 ArgumentListSyntax* p = (ArgumentListSyntax*)syntaxBase;
                 if(p->closeToken.IsValid()) return p->closeToken;
-                if(p->arguments->itemCount != 0) {
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->arguments->items[p->arguments->itemCount - 1]);
                     SyntaxToken b = p->arguments->separatorCount == 0 ? SyntaxToken() : p->arguments->separators[p->arguments->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1274,7 +1797,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::AnonymousObjectCreationExpression: {
                 AnonymousObjectCreationExpressionSyntax* p = (AnonymousObjectCreationExpressionSyntax*)syntaxBase;
                 if(p->closeBrace.IsValid()) return p->closeBrace;
-                if(p->initializers->itemCount != 0) {
+                if(p->initializers != nullptr && p->initializers->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->initializers->items[p->initializers->itemCount - 1]);
                     SyntaxToken b = p->initializers->separatorCount == 0 ? SyntaxToken() : p->initializers->separators[p->initializers->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1287,7 +1810,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TupleExpression: {
                 TupleExpressionSyntax* p = (TupleExpressionSyntax*)syntaxBase;
                 if(p->closeToken.IsValid()) return p->closeToken;
-                if(p->arguments->itemCount != 0) {
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->arguments->items[p->arguments->itemCount - 1]);
                     SyntaxToken b = p->arguments->separatorCount == 0 ? SyntaxToken() : p->arguments->separators[p->arguments->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1307,7 +1830,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::BracketedArgumentList: {
                 BracketedArgumentListSyntax* p = (BracketedArgumentListSyntax*)syntaxBase;
                 if(p->closeBracket.IsValid()) return p->closeBracket;
-                if(p->arguments->itemCount != 0) {
+                if(p->arguments != nullptr && p->arguments->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->arguments->items[p->arguments->itemCount - 1]);
                     SyntaxToken b = p->arguments->separatorCount == 0 ? SyntaxToken() : p->arguments->separators[p->arguments->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1347,7 +1870,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::TypeParameterList: {
                 TypeParameterListSyntax* p = (TypeParameterListSyntax*)syntaxBase;
                 if(p->greaterThanToken.IsValid()) return p->greaterThanToken;
-                if(p->parameters->itemCount != 0) {
+                if(p->parameters != nullptr && p->parameters->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->parameters->items[p->parameters->itemCount - 1]);
                     SyntaxToken b = p->parameters->separatorCount == 0 ? SyntaxToken() : p->parameters->separators[p->parameters->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1366,7 +1889,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::Block: {
                 BlockSyntax* p = (BlockSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->statements->size != 0) return GetLastToken(p->statements->array[p->statements->size - 1]);
+                if(p->statements != nullptr && p->statements->size != 0) return GetLastToken(p->statements->array[p->statements->size - 1]);
                 if(p->openBraceToken.IsValid()) return p->openBraceToken;
                 return SyntaxToken();
             }
@@ -1470,12 +1993,37 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ParenthesizedVariableDesignation: {
                 ParenthesizedVariableDesignationSyntax* p = (ParenthesizedVariableDesignationSyntax*)syntaxBase;
                 if(p->closeParen.IsValid()) return p->closeParen;
-                if(p->designators->itemCount != 0) {
+                if(p->designators != nullptr && p->designators->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->designators->items[p->designators->itemCount - 1]);
                     SyntaxToken b = p->designators->separatorCount == 0 ? SyntaxToken() : p->designators->separators[p->designators->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
                 }
                 if(p->openParen.IsValid()) return p->openParen;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ExpressionElement: {
+                ExpressionElementSyntax* p = (ExpressionElementSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SpreadElement: {
+                SpreadElementSyntax* p = (SpreadElementSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->dotDotToken.IsValid()) return p->dotDotToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CollectionExpression: {
+                CollectionExpressionSyntax* p = (CollectionExpressionSyntax*)syntaxBase;
+                if(p->close.IsValid()) return p->close;
+                if(p->elements != nullptr && p->elements->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->elements->items[p->elements->itemCount - 1]);
+                    SyntaxToken b = p->elements->separatorCount == 0 ? SyntaxToken() : p->elements->separators[p->elements->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->open.IsValid()) return p->open;
                 return SyntaxToken();
             }
 
@@ -1598,7 +2146,28 @@ namespace Alchemy::Compilation {
                 if(p->defaultValue != nullptr) return GetLastToken((SyntaxBase*)p->defaultValue);
                 if(p->identifier.IsValid()) return p->identifier;
                 if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
-                if(p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SimpleLambdaExpression: {
+                SimpleLambdaExpressionSyntax* p = (SimpleLambdaExpressionSyntax*)syntaxBase;
+                if(p->expressionBody != nullptr) return GetLastToken((SyntaxBase*)p->expressionBody);
+                if(p->blockBody != nullptr) return GetLastToken((SyntaxBase*)p->blockBody);
+                if(p->arrowToken.IsValid()) return p->arrowToken;
+                if(p->parameter != nullptr) return GetLastToken((SyntaxBase*)p->parameter);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ParenthesizedLambdaExpression: {
+                ParenthesizedLambdaExpressionSyntax* p = (ParenthesizedLambdaExpressionSyntax*)syntaxBase;
+                if(p->expressionBody != nullptr) return GetLastToken((SyntaxBase*)p->expressionBody);
+                if(p->blockBody != nullptr) return GetLastToken((SyntaxBase*)p->blockBody);
+                if(p->arrowToken.IsValid()) return p->arrowToken;
+                if(p->parameters != nullptr) return GetLastToken((SyntaxBase*)p->parameters);
+                if(p->returnType != nullptr) return GetLastToken((SyntaxBase*)p->returnType);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
                 return SyntaxToken();
             }
 
@@ -1629,7 +2198,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ParameterList: {
                 ParameterListSyntax* p = (ParameterListSyntax*)syntaxBase;
                 if(p->closeParen.IsValid()) return p->closeParen;
-                if(p->parameters->itemCount != 0) {
+                if(p->parameters != nullptr && p->parameters->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->parameters->items[p->parameters->itemCount - 1]);
                     SyntaxToken b = p->parameters->separatorCount == 0 ? SyntaxToken() : p->parameters->separators[p->parameters->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1652,13 +2221,13 @@ namespace Alchemy::Compilation {
                 if(p->typeParameters != nullptr) return GetLastToken((SyntaxBase*)p->typeParameters);
                 if(p->identifier.IsValid()) return p->identifier;
                 if(p->returnType != nullptr) return GetLastToken((SyntaxBase*)p->returnType);
-                if(p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
                 return SyntaxToken();
             }
 
             case SyntaxKind::VariableDeclaration: {
                 VariableDeclarationSyntax* p = (VariableDeclarationSyntax*)syntaxBase;
-                if(p->variables->itemCount != 0) {
+                if(p->variables != nullptr && p->variables->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->variables->items[p->variables->itemCount - 1]);
                     SyntaxToken b = p->variables->separatorCount == 0 ? SyntaxToken() : p->variables->separators[p->variables->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1667,11 +2236,20 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::LocalDeclarationStatement: {
+                LocalDeclarationStatementSyntax* p = (LocalDeclarationStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->declaration != nullptr) return GetLastToken((SyntaxBase*)p->declaration);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::FieldDeclaration: {
                 FieldDeclarationSyntax* p = (FieldDeclarationSyntax*)syntaxBase;
                 if(p->semicolonToken.IsValid()) return p->semicolonToken;
                 if(p->declaration != nullptr) return GetLastToken((SyntaxBase*)p->declaration);
-                if(p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
                 return SyntaxToken();
             }
 
@@ -1692,7 +2270,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::PropertyPatternClause: {
                 PropertyPatternClauseSyntax* p = (PropertyPatternClauseSyntax*)syntaxBase;
                 if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
-                if(p->subpatterns->itemCount != 0) {
+                if(p->subpatterns != nullptr && p->subpatterns->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->subpatterns->items[p->subpatterns->itemCount - 1]);
                     SyntaxToken b = p->subpatterns->separatorCount == 0 ? SyntaxToken() : p->subpatterns->separators[p->subpatterns->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1711,7 +2289,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::PositionalPatternClause: {
                 PositionalPatternClauseSyntax* p = (PositionalPatternClauseSyntax*)syntaxBase;
                 if(p->closeParenToken.IsValid()) return p->closeParenToken;
-                if(p->subpatterns->itemCount != 0) {
+                if(p->subpatterns != nullptr && p->subpatterns->itemCount != 0) {
                     SyntaxToken a = GetLastToken(p->subpatterns->items[p->subpatterns->itemCount - 1]);
                     SyntaxToken b = p->subpatterns->separatorCount == 0 ? SyntaxToken() : p->subpatterns->separators[p->subpatterns->separatorCount - 1];
                     return a.GetId() > b.GetId() ? a : b;
@@ -1961,6 +2539,55 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::ImplicitElementAccess: {
+                ImplicitElementAccessSyntax* p = (ImplicitElementAccessSyntax*)syntaxBase;
+                if(p->argumentList != nullptr) return GetLastToken((SyntaxBase*)p->argumentList);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::WhenClause: {
+                WhenClauseSyntax* p = (WhenClauseSyntax*)syntaxBase;
+                if(p->condition != nullptr) return GetLastToken((SyntaxBase*)p->condition);
+                if(p->whenKeyword.IsValid()) return p->whenKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchExpressionArm: {
+                SwitchExpressionArmSyntax* p = (SwitchExpressionArmSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->equalsGreaterThanToken.IsValid()) return p->equalsGreaterThanToken;
+                if(p->whenClause != nullptr) return GetLastToken((SyntaxBase*)p->whenClause);
+                if(p->pattern != nullptr) return GetLastToken((SyntaxBase*)p->pattern);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SwitchExpression: {
+                SwitchExpressionSyntax* p = (SwitchExpressionSyntax*)syntaxBase;
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->arms != nullptr && p->arms->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->arms->items[p->arms->itemCount - 1]);
+                    SyntaxToken b = p->arms->separatorCount == 0 ? SyntaxToken() : p->arms->separators[p->arms->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->switchKeyword.IsValid()) return p->switchKeyword;
+                if(p->governingExpression != nullptr) return GetLastToken((SyntaxBase*)p->governingExpression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ListPattern: {
+                ListPatternSyntax* p = (ListPatternSyntax*)syntaxBase;
+                if(p->designation != nullptr) return GetLastToken((SyntaxBase*)p->designation);
+                if(p->closeBracketToken.IsValid()) return p->closeBracketToken;
+                if(p->patterns != nullptr && p->patterns->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->patterns->items[p->patterns->itemCount - 1]);
+                    SyntaxToken b = p->patterns->separatorCount == 0 ? SyntaxToken() : p->patterns->separators[p->patterns->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->openBracketToken.IsValid()) return p->openBracketToken;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::SimpleAssignmentExpression: {
                 AssignmentExpressionSyntax* p = (AssignmentExpressionSyntax*)syntaxBase;
                 if(p->right != nullptr) return GetLastToken((SyntaxBase*)p->right);
@@ -2050,6 +2677,89 @@ namespace Alchemy::Compilation {
                 if(p->right != nullptr) return GetLastToken((SyntaxBase*)p->right);
                 if(p->operatorToken.IsValid()) return p->operatorToken;
                 if(p->left != nullptr) return GetLastToken((SyntaxBase*)p->left);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ForEachStatement: {
+                ForEachStatementSyntax* p = (ForEachStatementSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->inKeyword.IsValid()) return p->inKeyword;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->foreachKeyword.IsValid()) return p->foreachKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ForEachVariableStatement: {
+                ForEachVariableStatementSyntax* p = (ForEachVariableStatementSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                if(p->inKeyword.IsValid()) return p->inKeyword;
+                if(p->variable != nullptr) return GetLastToken((SyntaxBase*)p->variable);
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->foreachKeyword.IsValid()) return p->foreachKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::GotoCaseStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->arg != nullptr) return GetLastToken((SyntaxBase*)p->arg);
+                if(p->caseOrDefault.IsValid()) return p->caseOrDefault;
+                if(p->gotoToken.IsValid()) return p->gotoToken;
+                return SyntaxToken();
+            }
+            case SyntaxKind::GotoDefaultStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->arg != nullptr) return GetLastToken((SyntaxBase*)p->arg);
+                if(p->caseOrDefault.IsValid()) return p->caseOrDefault;
+                if(p->gotoToken.IsValid()) return p->gotoToken;
+                return SyntaxToken();
+            }
+            case SyntaxKind::GotoStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->arg != nullptr) return GetLastToken((SyntaxBase*)p->arg);
+                if(p->caseOrDefault.IsValid()) return p->caseOrDefault;
+                if(p->gotoToken.IsValid()) return p->gotoToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ElseClause: {
+                ElseClauseSyntax* p = (ElseClauseSyntax*)syntaxBase;
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->elseKeyword.IsValid()) return p->elseKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::IfStatement: {
+                IfStatementSyntax* p = (IfStatementSyntax*)syntaxBase;
+                if(p->elseClause != nullptr) return GetLastToken((SyntaxBase*)p->elseClause);
+                if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->condition != nullptr) return GetLastToken((SyntaxBase*)p->condition);
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->ifKeyword.IsValid()) return p->ifKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ExpressionStatement: {
+                ExpressionStatementSyntax* p = (ExpressionStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ReturnStatement: {
+                ReturnStatementSyntax* p = (ReturnStatementSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->expressionSyntax != nullptr) return GetLastToken((SyntaxBase*)p->expressionSyntax);
+                if(p->returnKeyword.IsValid()) return p->returnKeyword;
                 return SyntaxToken();
             }
 

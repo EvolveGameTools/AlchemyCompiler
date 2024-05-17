@@ -16,6 +16,7 @@ TextWindow MakeTextWindow(const char* src) {
 }
 
 #define INITIALIZE_PARSER_TEST \
+    const char * file;         \
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \
     Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator(); \
     Alchemy::TempAllocator::ScopedMarker marker(tempAllocator); \
@@ -29,17 +30,19 @@ TextWindow MakeTextWindow(const char* src) {
     Tokenize(&textWindow, &diagnostics, &tokens); \
     Parser parser(&allocator, tempAllocator, &diagnostics, tokens.ToCheckedArray());
 
-
 #define TestFile(x) "../Tests/ParsingExpectations/" x ".output"
+
+#define FILE_TEST_SECTION(x) \
+file = TestFile(x);     \
+SECTION(x)
 
 TEST_CASE("Parse Field", "[parser]") {
     INITIALIZE_PARSER_TEST
 
-    SECTION("Field") {
+    FILE_TEST_SECTION("Field") {
 
         INITIALIZE_PARSER("public List<Something> myList;")
 
-        const char * file = TestFile("Field");
         MemberDeclarationSyntax* x = ParseMemberDeclaration(&parser, SyntaxKind::StructDeclaration);
 
         //WriteTreeToFile(file, tokens, x);
@@ -48,14 +51,60 @@ TEST_CASE("Parse Field", "[parser]") {
     }
 
 }
+TEST_CASE("Parse Switch Expression", "[parser]") {
+    INITIALIZE_PARSER_TEST
+
+    FILE_TEST_SECTION("SwitchExpression") {
+
+        INITIALIZE_PARSER(R"(
+expr switch {
+    10 => 12,
+    11 => 13,
+    _ => 0
+}
+)")
+
+        SyntaxBase* x = ParseExpression(&parser);
+
+        REQUIRE(false); // todo -- this test is super busted, see output file 
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
+}
+TEST_CASE("Parse Parameter List", "[parser]") {
+    INITIALIZE_PARSER_TEST
+
+    FILE_TEST_SECTION("EmptyList") {
+
+        INITIALIZE_PARSER("()")
+
+        SyntaxBase* x = ParseParenthesizedParameterList(&parser);
+
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+    FILE_TEST_SECTION("SingleList_Simple") {
+
+        INITIALIZE_PARSER("(float x)")
+
+        SyntaxBase* x = ParseParenthesizedParameterList(&parser);
+
+         //WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+}
+
 TEST_CASE("binary expressions", "[parser]") {
     INITIALIZE_PARSER_TEST
 
-    SECTION("Binary add") {
+    FILE_TEST_SECTION("BinaryAdd") {
 
         INITIALIZE_PARSER("x + y")
 
-        const char * file = TestFile("BinaryAdd");
         ExpressionSyntax* x = ParseExpression(&parser);
         // WriteTreeToFile(file, tokens, x);
         REQUIRE(CompareLines(file, TreeToLine(tokens, x)));

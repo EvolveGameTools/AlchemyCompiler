@@ -42,6 +42,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::LogicalOrExpression: return "LogicalOrExpression";
             case SyntaxKind::OmittedArraySizeExpression: return "OmittedArraySizeExpression";
             case SyntaxKind::RefExpression: return "RefExpression";
+            case SyntaxKind::SwitchExpression: return "SwitchExpression";
             case SyntaxKind::IdentifierName: return "IdentifierName";
             case SyntaxKind::QualifiedName: return "QualifiedName";
             case SyntaxKind::GenericName: return "GenericName";
@@ -62,7 +63,6 @@ namespace Alchemy::Compilation {
             case SyntaxKind::Subpattern: return "Subpattern";
             case SyntaxKind::PositionalPatternClause: return "PositionalPatternClause";
             case SyntaxKind::DiscardPattern: return "DiscardPattern";
-            case SyntaxKind::SwitchExpression: return "SwitchExpression";
             case SyntaxKind::SwitchExpressionArm: return "SwitchExpressionArm";
             case SyntaxKind::VarPattern: return "VarPattern";
             case SyntaxKind::ParenthesizedPattern: return "ParenthesizedPattern";
@@ -174,6 +174,37 @@ namespace Alchemy::Compilation {
             case SyntaxKind::CollectionInitializerExpression: return "CollectionInitializerExpression";
             case SyntaxKind::ComplexElementInitializerExpression: return "ComplexElementInitializerExpression";
             case SyntaxKind::WithInitializerExpression: return "WithInitializerExpression";
+            case SyntaxKind::SpreadElement: return "SpreadElement";
+            case SyntaxKind::ExpressionElement: return "ExpressionElement";
+            case SyntaxKind::ImplicitElementAccess: return "ImplicitElementAccess";
+            case SyntaxKind::EmptyStatement: return "EmptyStatement";
+            case SyntaxKind::BreakStatement: return "BreakStatement";
+            case SyntaxKind::ContinueStatement: return "ContinueStatement";
+            case SyntaxKind::DoStatement: return "DoStatement";
+            case SyntaxKind::ExpressionStatement: return "ExpressionStatement";
+            case SyntaxKind::ForStatement: return "ForStatement";
+            case SyntaxKind::ForEachStatement: return "ForEachStatement";
+            case SyntaxKind::ForEachVariableStatement: return "ForEachVariableStatement";
+            case SyntaxKind::GotoCaseStatement: return "GotoCaseStatement";
+            case SyntaxKind::GotoDefaultStatement: return "GotoDefaultStatement";
+            case SyntaxKind::GotoStatement: return "GotoStatement";
+            case SyntaxKind::ElseClause: return "ElseClause";
+            case SyntaxKind::IfStatement: return "IfStatement";
+            case SyntaxKind::ReturnStatement: return "ReturnStatement";
+            case SyntaxKind::LocalDeclarationStatement: return "LocalDeclarationStatement";
+            case SyntaxKind::WhileStatement: return "WhileStatement";
+            case SyntaxKind::ThrowStatement: return "ThrowStatement";
+            case SyntaxKind::CatchClause: return "CatchClause";
+            case SyntaxKind::CatchDeclaration: return "CatchDeclaration";
+            case SyntaxKind::CatchFilterClause: return "CatchFilterClause";
+            case SyntaxKind::FinallyClause: return "FinallyClause";
+            case SyntaxKind::TryStatement: return "TryStatement";
+            case SyntaxKind::SwitchStatement: return "SwitchStatement";
+            case SyntaxKind::SwitchSection: return "SwitchSection";
+            case SyntaxKind::CaseSwitchLabel: return "CaseSwitchLabel";
+            case SyntaxKind::DefaultSwitchLabel: return "DefaultSwitchLabel";
+            case SyntaxKind::UsingStatement: return "UsingStatement";
+            case SyntaxKind::LabeledStatement: return "LabeledStatement";
             default: return "";
         }
     }

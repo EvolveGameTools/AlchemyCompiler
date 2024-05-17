@@ -10,6 +10,294 @@ namespace Alchemy::Compilation {
         }
 
         switch (syntaxBase->GetKind()) {
+            case SyntaxKind::EmptyStatement: {
+                EmptyStatementSyntax* p = (EmptyStatementSyntax*)syntaxBase;
+                PrintNodeHeader("EmptyStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::BreakStatement: {
+                BreakStatementSyntax* p = (BreakStatementSyntax*)syntaxBase;
+                PrintNodeHeader("BreakStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("breakKeyword");
+                PrintToken(p->breakKeyword);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ContinueStatement: {
+                ContinueStatementSyntax* p = (ContinueStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ContinueStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("continueKeyword");
+                PrintToken(p->continueKeyword);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ForStatement: {
+                ForStatementSyntax* p = (ForStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ForStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("forKeyword");
+                PrintToken(p->forKeyword);
+                PrintFieldName("openParenToken");
+                PrintToken(p->openParenToken);
+                PrintFieldName("declaration");
+                PrintNode(p->declaration);
+                PrintFieldName("initializers");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->initializers);
+                PrintFieldName("firstSemiColon");
+                PrintToken(p->firstSemiColon);
+                PrintFieldName("condition");
+                PrintNode(p->condition);
+                PrintFieldName("secondSemiColon");
+                PrintToken(p->secondSemiColon);
+                PrintFieldName("incrementors");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->incrementors);
+                PrintFieldName("closeParenToken");
+                PrintToken(p->closeParenToken);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ThrowStatement: {
+                ThrowStatementSyntax* p = (ThrowStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ThrowStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("throwKeyword");
+                PrintToken(p->throwKeyword);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CatchDeclaration: {
+                CatchDeclarationSyntax* p = (CatchDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("CatchDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("type");
+                PrintNode(p->type);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CatchFilterClause: {
+                CatchFilterClauseSyntax* p = (CatchFilterClauseSyntax*)syntaxBase;
+                PrintNodeHeader("CatchFilterClauseSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("whenKeyword");
+                PrintToken(p->whenKeyword);
+                PrintFieldName("openParenToken");
+                PrintToken(p->openParenToken);
+                PrintFieldName("filterExpression");
+                PrintNode(p->filterExpression);
+                PrintFieldName("closeParenToken");
+                PrintToken(p->closeParenToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CatchClause: {
+                CatchClauseSyntax* p = (CatchClauseSyntax*)syntaxBase;
+                PrintNodeHeader("CatchClauseSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("catchKeyword");
+                PrintToken(p->catchKeyword);
+                PrintFieldName("declaration");
+                PrintNode(p->declaration);
+                PrintFieldName("filter");
+                PrintNode(p->filter);
+                PrintFieldName("block");
+                PrintNode(p->block);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::FinallyClause: {
+                FinallyClauseSyntax* p = (FinallyClauseSyntax*)syntaxBase;
+                PrintNodeHeader("FinallyClauseSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("finallyKeyword");
+                PrintToken(p->finallyKeyword);
+                PrintFieldName("block");
+                PrintNode(p->block);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::TryStatement: {
+                TryStatementSyntax* p = (TryStatementSyntax*)syntaxBase;
+                PrintNodeHeader("TryStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("tryKeyword");
+                PrintToken(p->tryKeyword);
+                PrintFieldName("tryBlock");
+                PrintNode(p->tryBlock);
+                PrintFieldName("catchClauses");
+                PrintSyntaxList((SyntaxListUntyped*)p->catchClauses);
+                PrintFieldName("finallyClaus");
+                PrintNode(p->finallyClaus);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::DefaultSwitchLabel: {
+                DefaultSwitchLabelSyntax* p = (DefaultSwitchLabelSyntax*)syntaxBase;
+                PrintNodeHeader("DefaultSwitchLabelSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("colon");
+                PrintToken(p->colon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CaseSwitchLabel: {
+                CaseSwitchLabelSyntax* p = (CaseSwitchLabelSyntax*)syntaxBase;
+                PrintNodeHeader("CaseSwitchLabelSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("value");
+                PrintNode(p->value);
+                PrintFieldName("colon");
+                PrintToken(p->colon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CasePatternSwitchLabel: {
+                CasePatternSwitchLabelSyntax* p = (CasePatternSwitchLabelSyntax*)syntaxBase;
+                PrintNodeHeader("CasePatternSwitchLabelSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("pattern");
+                PrintNode(p->pattern);
+                PrintFieldName("whenClause");
+                PrintNode(p->whenClause);
+                PrintFieldName("colonToken");
+                PrintToken(p->colonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::SwitchSection: {
+                SwitchSectionSyntax* p = (SwitchSectionSyntax*)syntaxBase;
+                PrintNodeHeader("SwitchSectionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("labels");
+                PrintSyntaxList((SyntaxListUntyped*)p->labels);
+                PrintFieldName("statements");
+                PrintSyntaxList((SyntaxListUntyped*)p->statements);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::SwitchStatement: {
+                SwitchStatementSyntax* p = (SwitchStatementSyntax*)syntaxBase;
+                PrintNodeHeader("SwitchStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("switchKeyword");
+                PrintToken(p->switchKeyword);
+                PrintFieldName("openParenToken");
+                PrintToken(p->openParenToken);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("closeParenToken");
+                PrintToken(p->closeParenToken);
+                PrintFieldName("openBraceToken");
+                PrintToken(p->openBraceToken);
+                PrintFieldName("sections");
+                PrintSyntaxList((SyntaxListUntyped*)p->sections);
+                PrintFieldName("closeBraceToken");
+                PrintToken(p->closeBraceToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::UsingStatement: {
+                UsingStatementSyntax* p = (UsingStatementSyntax*)syntaxBase;
+                PrintNodeHeader("UsingStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("usingKeyword");
+                PrintToken(p->usingKeyword);
+                PrintFieldName("openParenToken");
+                PrintToken(p->openParenToken);
+                PrintFieldName("declaration");
+                PrintNode(p->declaration);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("closeParenToken");
+                PrintToken(p->closeParenToken);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::WhileStatement: {
+                WhileStatementSyntax* p = (WhileStatementSyntax*)syntaxBase;
+                PrintNodeHeader("WhileStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("whileKeyword");
+                PrintToken(p->whileKeyword);
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("condition");
+                PrintNode(p->condition);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::DoStatement: {
+                DoStatementSyntax* p = (DoStatementSyntax*)syntaxBase;
+                PrintNodeHeader("DoStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("doKeyword");
+                PrintToken(p->doKeyword);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                PrintFieldName("whileKeyword");
+                PrintToken(p->whileKeyword);
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("condition");
+                PrintNode(p->condition);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::ArrayRankSpecifier: {
                 ArrayRankSpecifierSyntax* p = (ArrayRankSpecifierSyntax*)syntaxBase;
                 PrintNodeHeader("ArrayRankSpecifierSyntax", syntaxBase);
@@ -184,6 +472,20 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::LabeledStatement: {
+                LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
+                PrintNodeHeader("LabeledStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("colon");
+                PrintToken(p->colon);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::OmittedArraySizeExpression: {
                 OmittedArraySizeExpressionSyntax* p = (OmittedArraySizeExpressionSyntax*)syntaxBase;
                 PrintNodeHeader("OmittedArraySizeExpressionSyntax", syntaxBase);
@@ -195,8 +497,8 @@ namespace Alchemy::Compilation {
             }
 
             case SyntaxKind::NullableType: {
-                NullableType* p = (NullableType*)syntaxBase;
-                PrintNodeHeader("NullableType", syntaxBase);
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
+                PrintNodeHeader("NullableTypeSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("elementType");
                 PrintNode(p->elementType);
@@ -744,6 +1046,42 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::ExpressionElement: {
+                ExpressionElementSyntax* p = (ExpressionElementSyntax*)syntaxBase;
+                PrintNodeHeader("ExpressionElementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::SpreadElement: {
+                SpreadElementSyntax* p = (SpreadElementSyntax*)syntaxBase;
+                PrintNodeHeader("SpreadElementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("dotDotToken");
+                PrintToken(p->dotDotToken);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CollectionExpression: {
+                CollectionExpressionSyntax* p = (CollectionExpressionSyntax*)syntaxBase;
+                PrintNodeHeader("CollectionExpressionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("open");
+                PrintToken(p->open);
+                PrintFieldName("elements");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->elements);
+                PrintFieldName("close");
+                PrintToken(p->close);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::DeclarationExpression: {
                 DeclarationExpressionSyntax* p = (DeclarationExpressionSyntax*)syntaxBase;
                 PrintNodeHeader("DeclarationExpressionSyntax", syntaxBase);
@@ -963,6 +1301,44 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::SimpleLambdaExpression: {
+                SimpleLambdaExpressionSyntax* p = (SimpleLambdaExpressionSyntax*)syntaxBase;
+                PrintNodeHeader("SimpleLambdaExpressionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("parameter");
+                PrintNode(p->parameter);
+                PrintFieldName("arrowToken");
+                PrintToken(p->arrowToken);
+                PrintFieldName("blockBody");
+                PrintNode(p->blockBody);
+                PrintFieldName("expressionBody");
+                PrintNode(p->expressionBody);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ParenthesizedLambdaExpression: {
+                ParenthesizedLambdaExpressionSyntax* p = (ParenthesizedLambdaExpressionSyntax*)syntaxBase;
+                PrintNodeHeader("ParenthesizedLambdaExpressionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("returnType");
+                PrintNode(p->returnType);
+                PrintFieldName("parameters");
+                PrintNode(p->parameters);
+                PrintFieldName("arrowToken");
+                PrintToken(p->arrowToken);
+                PrintFieldName("blockBody");
+                PrintNode(p->blockBody);
+                PrintFieldName("expressionBody");
+                PrintNode(p->expressionBody);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::BaseConstructorInitializer: {
                 BaseConstructorInitializerSyntax* p = (BaseConstructorInitializerSyntax*)syntaxBase;
                 PrintNodeHeader("BaseConstructorInitializerSyntax", syntaxBase);
@@ -1059,6 +1435,22 @@ namespace Alchemy::Compilation {
                 PrintNode(p->type);
                 PrintFieldName("variables");
                 PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->variables);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::LocalDeclarationStatement: {
+                LocalDeclarationStatementSyntax* p = (LocalDeclarationStatementSyntax*)syntaxBase;
+                PrintNodeHeader("LocalDeclarationStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("usingKeyword");
+                PrintToken(p->usingKeyword);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("declaration");
+                PrintNode(p->declaration);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
                 indent--;
                 break;
             }
@@ -1577,6 +1969,78 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::ImplicitElementAccess: {
+                ImplicitElementAccessSyntax* p = (ImplicitElementAccessSyntax*)syntaxBase;
+                PrintNodeHeader("ImplicitElementAccessSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("argumentList");
+                PrintNode(p->argumentList);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::WhenClause: {
+                WhenClauseSyntax* p = (WhenClauseSyntax*)syntaxBase;
+                PrintNodeHeader("WhenClauseSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("whenKeyword");
+                PrintToken(p->whenKeyword);
+                PrintFieldName("condition");
+                PrintNode(p->condition);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::SwitchExpressionArm: {
+                SwitchExpressionArmSyntax* p = (SwitchExpressionArmSyntax*)syntaxBase;
+                PrintNodeHeader("SwitchExpressionArmSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("pattern");
+                PrintNode(p->pattern);
+                PrintFieldName("whenClause");
+                PrintNode(p->whenClause);
+                PrintFieldName("equalsGreaterThanToken");
+                PrintToken(p->equalsGreaterThanToken);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::SwitchExpression: {
+                SwitchExpressionSyntax* p = (SwitchExpressionSyntax*)syntaxBase;
+                PrintNodeHeader("SwitchExpressionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("governingExpression");
+                PrintNode(p->governingExpression);
+                PrintFieldName("switchKeyword");
+                PrintToken(p->switchKeyword);
+                PrintFieldName("openBraceToken");
+                PrintToken(p->openBraceToken);
+                PrintFieldName("arms");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->arms);
+                PrintFieldName("closeBraceToken");
+                PrintToken(p->closeBraceToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ListPattern: {
+                ListPatternSyntax* p = (ListPatternSyntax*)syntaxBase;
+                PrintNodeHeader("ListPatternSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("openBracketToken");
+                PrintToken(p->openBracketToken);
+                PrintFieldName("patterns");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->patterns);
+                PrintFieldName("closeBracketToken");
+                PrintToken(p->closeBracketToken);
+                PrintFieldName("designation");
+                PrintNode(p->designation);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::SimpleAssignmentExpression: {
                 AssignmentExpressionSyntax* p = (AssignmentExpressionSyntax*)syntaxBase;
                 PrintNodeHeader("AssignmentExpressionSyntax", syntaxBase);
@@ -1743,6 +2207,156 @@ namespace Alchemy::Compilation {
                 PrintToken(p->operatorToken);
                 PrintFieldName("right");
                 PrintNode(p->right);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ForEachStatement: {
+                ForEachStatementSyntax* p = (ForEachStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ForEachStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("foreachKeyword");
+                PrintToken(p->foreachKeyword);
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("type");
+                PrintNode(p->type);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("inKeyword");
+                PrintToken(p->inKeyword);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ForEachVariableStatement: {
+                ForEachVariableStatementSyntax* p = (ForEachVariableStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ForEachVariableStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("foreachKeyword");
+                PrintToken(p->foreachKeyword);
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("variable");
+                PrintNode(p->variable);
+                PrintFieldName("inKeyword");
+                PrintToken(p->inKeyword);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::GotoCaseStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                PrintNodeHeader("GotoStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("gotoToken");
+                PrintToken(p->gotoToken);
+                PrintFieldName("caseOrDefault");
+                PrintToken(p->caseOrDefault);
+                PrintFieldName("arg");
+                PrintNode(p->arg);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+            case SyntaxKind::GotoDefaultStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                PrintNodeHeader("GotoStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("gotoToken");
+                PrintToken(p->gotoToken);
+                PrintFieldName("caseOrDefault");
+                PrintToken(p->caseOrDefault);
+                PrintFieldName("arg");
+                PrintNode(p->arg);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+            case SyntaxKind::GotoStatement: {
+                GotoStatementSyntax* p = (GotoStatementSyntax*)syntaxBase;
+                PrintNodeHeader("GotoStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("gotoToken");
+                PrintToken(p->gotoToken);
+                PrintFieldName("caseOrDefault");
+                PrintToken(p->caseOrDefault);
+                PrintFieldName("arg");
+                PrintNode(p->arg);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ElseClause: {
+                ElseClauseSyntax* p = (ElseClauseSyntax*)syntaxBase;
+                PrintNodeHeader("ElseClauseSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("elseKeyword");
+                PrintToken(p->elseKeyword);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::IfStatement: {
+                IfStatementSyntax* p = (IfStatementSyntax*)syntaxBase;
+                PrintNodeHeader("IfStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("ifKeyword");
+                PrintToken(p->ifKeyword);
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("condition");
+                PrintNode(p->condition);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                PrintFieldName("statement");
+                PrintNode(p->statement);
+                PrintFieldName("elseClause");
+                PrintNode(p->elseClause);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ExpressionStatement: {
+                ExpressionStatementSyntax* p = (ExpressionStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ExpressionStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ReturnStatement: {
+                ReturnStatementSyntax* p = (ReturnStatementSyntax*)syntaxBase;
+                PrintNodeHeader("ReturnStatementSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("returnKeyword");
+                PrintToken(p->returnKeyword);
+                PrintFieldName("expressionSyntax");
+                PrintNode(p->expressionSyntax);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
                 indent--;
                 break;
             }
