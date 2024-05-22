@@ -1,71 +1,32 @@
-SwitchExpressionSyntax [2:1 - 2:14] 
+SwitchExpressionSyntax [2:1 - 6:2] 
     governingExpression = IdentifierNameSyntax [2:1 - 2:5] 
         identifier = IdentifierToken -> "expr" [2:1 - 2:5] 
     switchKeyword = SwitchKeyword -> "switch" [2:6 - 2:12] 
-    openBraceToken = OpenBraceToken <missing>  (None) -> "" [6:1 - 6:2] 
-    arms = SeparatedSyntaxList [2:13 - 5:11] 
-        SwitchExpressionArmSyntax [2:13 - 3:13] 
-            pattern = RecursivePatternSyntax [2:13 - 3:10] 
-                type = nullptr
-                positionalPatternClause = nullptr
-                propertyPatternClause = PropertyPatternClauseSyntax [2:13 - 3:10] 
-                    openBraceToken = OpenBraceToken -> "{" [2:13 - 2:14] 
-                    subpatterns = SeparatedSyntaxList [3:5 - 3:7] 
-                        SubpatternSyntax [3:5 - 3:7] 
-                            expressionColon = nullptr
-                            pattern = ConstantPatternSyntax [3:5 - 3:7] 
-                                expression = LiteralExpressionSyntax [3:5 - 3:7] 
-                                    literal = NumericLiteralToken (Int32Literal) -> "10" [3:5 - 3:7] 
-                    closeBraceToken = CloseBraceToken <missing>  (None) -> "" [3:8 - 3:10] 
-                designation = nullptr
+    openBraceToken = OpenBraceToken -> "{" [2:13 - 2:14] 
+    arms = SeparatedSyntaxList [3:5 - 5:11] 
+        SwitchExpressionArmSyntax [3:5 - 3:13] 
+            pattern = ConstantPatternSyntax [3:5 - 3:7] 
+                expression = LiteralExpressionSyntax [3:5 - 3:7] 
+                    literal = NumericLiteralToken (Int32Literal) -> "10" [3:5 - 3:7] 
             whenClause = nullptr
-            equalsGreaterThanToken = EqualsGreaterThanToken <missing>  (None) -> "" [3:13 - 3:14] 
-            expression = SimpleLambdaExpressionSyntax [3:8 - 3:13] 
-                modifiers = <empty>
-                parameter = ParameterSyntax [3:8 - 3:10] 
-                    modifiers = <empty>
-                    type = nullptr
-                    identifier = IdentifierToken <missing>  (None) -> "" [3:8 - 3:10] 
-                    defaultValue = nullptr
-                arrowToken = EqualsGreaterThanToken -> "=>" [3:8 - 3:10] 
-                blockBody = nullptr
-                expressionBody = LiteralExpressionSyntax [3:11 - 3:13] 
-                    literal = NumericLiteralToken (Int32Literal) -> "12" [3:11 - 3:13] 
+            equalsGreaterThanToken = EqualsGreaterThanToken -> "=>" [3:8 - 3:10] 
+            expression = LiteralExpressionSyntax [3:11 - 3:13] 
+                literal = NumericLiteralToken (Int32Literal) -> "12" [3:11 - 3:13] 
         CommaToken -> "," [3:13 - 3:14] 
         SwitchExpressionArmSyntax [4:5 - 4:13] 
             pattern = ConstantPatternSyntax [4:5 - 4:7] 
                 expression = LiteralExpressionSyntax [4:5 - 4:7] 
                     literal = NumericLiteralToken (Int32Literal) -> "11" [4:5 - 4:7] 
             whenClause = nullptr
-            equalsGreaterThanToken = EqualsGreaterThanToken <missing>  (None) -> "" [4:13 - 4:14] 
-            expression = SimpleLambdaExpressionSyntax [4:8 - 4:13] 
-                modifiers = <empty>
-                parameter = ParameterSyntax [4:8 - 4:10] 
-                    modifiers = <empty>
-                    type = nullptr
-                    identifier = IdentifierToken <missing>  (None) -> "" [4:8 - 4:10] 
-                    defaultValue = nullptr
-                arrowToken = EqualsGreaterThanToken -> "=>" [4:8 - 4:10] 
-                blockBody = nullptr
-                expressionBody = LiteralExpressionSyntax [4:11 - 4:13] 
-                    literal = NumericLiteralToken (Int32Literal) -> "13" [4:11 - 4:13] 
+            equalsGreaterThanToken = EqualsGreaterThanToken -> "=>" [4:8 - 4:10] 
+            expression = LiteralExpressionSyntax [4:11 - 4:13] 
+                literal = NumericLiteralToken (Int32Literal) -> "13" [4:11 - 4:13] 
         CommaToken -> "," [4:13 - 4:14] 
         SwitchExpressionArmSyntax [5:5 - 5:11] 
-            pattern = ConstantPatternSyntax [5:5 - 5:6] 
-                expression = IdentifierNameSyntax [5:5 - 5:6] 
-                    identifier = IdentifierToken -> "_" [5:5 - 5:6] 
+            pattern = DiscardPatternSyntax [5:5 - 5:6] 
+                underscore = UnderscoreToken -> "_" [5:5 - 5:6] 
             whenClause = nullptr
-            equalsGreaterThanToken = EqualsGreaterThanToken <missing>  (None) -> "" [6:1 - 6:2] 
-            expression = SimpleLambdaExpressionSyntax [5:7 - 5:11] 
-                modifiers = <empty>
-                parameter = ParameterSyntax [5:7 - 5:9] 
-                    modifiers = <empty>
-                    type = nullptr
-                    identifier = IdentifierToken <missing>  (None) -> "" [5:7 - 5:9] 
-                    defaultValue = nullptr
-                arrowToken = EqualsGreaterThanToken -> "=>" [5:7 - 5:9] 
-                blockBody = nullptr
-                expressionBody = LiteralExpressionSyntax [5:10 - 5:11] 
-                    literal = NumericLiteralToken (Int32Literal) -> "0" [5:10 - 5:11] 
-    closeBraceToken = CloseBraceToken <missing>  (None) -> "" [2:13 - 2:14] 
-CloseBraceToken <skipped>  -> "}" [6:1 - 6:2] 
+            equalsGreaterThanToken = EqualsGreaterThanToken -> "=>" [5:7 - 5:9] 
+            expression = LiteralExpressionSyntax [5:10 - 5:11] 
+                literal = NumericLiteralToken (Int32Literal) -> "0" [5:10 - 5:11] 
+    closeBraceToken = CloseBraceToken -> "}" [6:1 - 6:2] 

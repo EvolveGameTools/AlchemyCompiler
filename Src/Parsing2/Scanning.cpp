@@ -130,7 +130,7 @@ namespace Alchemy::Compilation {
     }
 
 
-    bool TryParseHexUInt64(char * src, int32 length, uint64* value) {
+    bool TryParseHexUInt64(char* src, int32 length, uint64* value) {
         *value = 0;
         // can't fit into the value, overflow
         if (length > 16) {
@@ -150,7 +150,7 @@ namespace Alchemy::Compilation {
         return true;
     }
 
-    bool TryParseBinaryUInt64(char * src, int32 length, uint64* value) {
+    bool TryParseBinaryUInt64(char* src, int32 length, uint64* value) {
         *value = 0;
         for (int32 i = 0; i < length; i++) {
             // if uppermost bit is set, then the next bitshift will overflow
@@ -196,15 +196,15 @@ namespace Alchemy::Compilation {
     uint64 GetBinaryValue(char* str, int32 length) {
         uint64 value = 0;
         char buffer[65];
-        if(str[0] == '0' && str[1] == 'b') {
+        if (str[0] == '0' && str[1] == 'b') {
             str += 2;
-            length -=2;
+            length -= 2;
         }
 
         int32 cnt = 0;
-        for(int32 i = 0; i < length; i++) {
-            if(str[i] == '_') continue;
-            if(str[i] != '1' && str[i] != '0') {
+        for (int32 i = 0; i < length; i++) {
+            if (str[i] == '_') continue;
+            if (str[i] != '1' && str[i] != '0') {
                 break;
             }
             buffer[cnt++] = str[i];
@@ -216,7 +216,7 @@ namespace Alchemy::Compilation {
 
     uint64 GetHexValue(char* str, int32 length) {
         uint64 value = 0;
-        if(str[0] == '0' && str[1] == 'x') {
+        if (str[0] == '0' && str[1] == 'x') {
             str += 2;
             length -= 2;
         }
@@ -224,9 +224,9 @@ namespace Alchemy::Compilation {
         char buffer[17];
         int32 cnt = 0;
 
-        for(int32 i = 0; i < length; i++) {
-            if(str[i] == '_') continue;
-            if(!SyntaxFacts::IsHexDigit(str[i])){
+        for (int32 i = 0; i < length; i++) {
+            if (str[i] == '_') continue;
+            if (!SyntaxFacts::IsHexDigit(str[i])) {
                 break;
             }
             buffer[cnt++] = str[i];
@@ -598,6 +598,10 @@ namespace Alchemy::Compilation {
 
                 }
 
+            }
+            else if (identifier.size == 1 && *identifier.ptr == '_') {
+                info->kind = TokenKind::IdentifierToken;
+                info->contextualKind = TokenKind::UnderscoreToken;
             }
             else {
                 // not a keyword

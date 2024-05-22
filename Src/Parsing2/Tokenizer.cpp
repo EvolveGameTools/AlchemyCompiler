@@ -504,7 +504,6 @@ namespace Alchemy::Compilation {
                     break;
                 }
 
-
                 if (IsIdentifierStartCharacter(c)) {
                     ScanIdentifierOrKeyword(textWindow, info);
                     break;

@@ -315,5 +315,7 @@ namespace Alchemy::Compilation {
 
     void ParseStatements(Parser* parser, SyntaxListBuilder<StatementSyntax>* statements, bool stopOnSwitchSections);
 
+    SeparatedSyntaxList<SwitchExpressionArmSyntax>* ParseSwitchExpressionArms(Parser* parser);
+
     SyntaxBase* ConvertPatternToExpressionIfPossible(Parser* parser, PatternSyntax* pattern, bool permitTypeArguments = false);
 }
