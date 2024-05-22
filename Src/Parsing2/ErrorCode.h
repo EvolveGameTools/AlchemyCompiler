@@ -58,6 +58,9 @@ namespace Alchemy::Compilation {
         ERR_SwitchGoverningExpressionRequiresParens,
         ERR_ConstantExpected,
         ERR_DiscardPatternInSwitchStatement,
+        ERR_InvalidMemberDecl,
+        ERR_UnexpectedGenericName,
+        ERR_NoDelegateConstraint,
     };
 
 }

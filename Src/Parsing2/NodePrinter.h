@@ -160,7 +160,7 @@ namespace Alchemy::Compilation {
                 if(id > max) max = id;
             }
 
-            buffer.size += snprintf(buffer.array + buffer.size, 64, "[%d:%d - %d:%d] ",
+            buffer.size += snprintf(buffer.array + buffer.size, 64, "[%d:%d - %d:%d]",
                 lc[min].line,
                 lc[min].column,
                 lc[max].endLine,
@@ -220,7 +220,7 @@ namespace Alchemy::Compilation {
 
             buffer.EnsureAdditionalCapacity(64);
 
-            buffer.size += snprintf(buffer.array + buffer.size, 64, " [%d:%d - %d:%d] ",
+            buffer.size += snprintf(buffer.array + buffer.size, 64, " [%d:%d - %d:%d]",
                 lc[token.GetId()].line,
                 lc[token.GetId()].column,
                 lc[token.GetId()].endLine,
@@ -234,7 +234,7 @@ namespace Alchemy::Compilation {
         void PrintLineRange(int32 start, int32 end) {
             buffer.EnsureAdditionalCapacity(64);
 
-            buffer.size += snprintf(buffer.array + buffer.size, 64, " [%d:%d - %d:%d] ",
+            buffer.size += snprintf(buffer.array + buffer.size, 64, " [%d:%d - %d:%d]",
                 lc[start].line,
                 lc[start].column,
                 lc[end].endLine,

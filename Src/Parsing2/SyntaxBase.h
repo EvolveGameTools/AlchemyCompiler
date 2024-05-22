@@ -195,7 +195,22 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct BaseTypeSyntax : SyntaxBase {
 
+        explicit BaseTypeSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
+
+    };
+
+    struct TypeDeclarationSyntax : MemberDeclarationSyntax {
+
+        explicit TypeDeclarationSyntax(SyntaxKind kind) : MemberDeclarationSyntax(kind) {}
+
+    };
+    struct TypeParameterConstraintSyntax : MemberDeclarationSyntax {
+
+        explicit TypeParameterConstraintSyntax(SyntaxKind kind) : MemberDeclarationSyntax(kind) {}
+
+    };
     #define VALID_SYNTAX_KINDS static constexpr SyntaxKind kValidSyntaxKinds[]
     #define ASSERT_VALID_SYNTAX_KIND(k)  assert(IsValidSyntaxKind(k, (SyntaxKind*)kValidSyntaxKinds, sizeof(kValidSyntaxKinds) / sizeof(kValidSyntaxKinds[0])))
 

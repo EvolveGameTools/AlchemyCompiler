@@ -203,6 +203,10 @@ namespace Alchemy::Compilation {
 
     bool IsPossibleType(Parser* parser);
 
+    SyntaxList<AttributeListSyntax>* ParseAttributeDeclarations(Parser* parser);
+
+    void ParseTypeParameterConstraintClauses(Parser* parser, SyntaxListBuilder<TypeParameterConstraintClauseSyntax>* builder);
+
     VariableDesignationSyntax* ParseDesignation(Parser* parser, bool forPattern);
 
     VariableDesignationSyntax* ParseSimpleDesignation(Parser* parser);
@@ -253,7 +257,7 @@ namespace Alchemy::Compilation {
 
     ExpressionSyntax* ParseSubExpression(Parser* parser, Precedence precedence);
 
-    TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options);
+    NameSyntax* ParseQualifiedName(Parser* parser, NameOptions options);
 
     ExpressionSyntax* ParseVariableInitializer(Parser* parser);
 
@@ -318,4 +322,9 @@ namespace Alchemy::Compilation {
     SeparatedSyntaxList<SwitchExpressionArmSyntax>* ParseSwitchExpressionArms(Parser* parser);
 
     SyntaxBase* ConvertPatternToExpressionIfPossible(Parser* parser, PatternSyntax* pattern, bool permitTypeArguments = false);
+
+    TypeParameterListSyntax* ParseTypeParameterList(Parser* parser);
+
+    bool IsTerminator(Parser* parser);
+
 }

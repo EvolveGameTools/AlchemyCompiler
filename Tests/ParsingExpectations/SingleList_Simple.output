@@ -1,10 +1,10 @@
-ParameterListSyntax [1:1 - 1:10] 
-    openParen = OpenParenToken -> "(" [1:1 - 1:2] 
-    parameters = SeparatedSyntaxList [1:2 - 1:9] 
-        ParameterSyntax [1:2 - 1:9] 
+ParameterListSyntax [1:1 - 1:10]
+    openParen = OpenParenToken -> "(" [1:1 - 1:2]
+    parameters = SeparatedSyntaxList [1:2 - 1:9]
+        ParameterSyntax [1:2 - 1:9]
             modifiers = <empty>
-            type = PredefinedTypeSyntax [1:2 - 1:7] 
-                typeToken = FloatKeyword -> "float" [1:2 - 1:7] 
-            identifier = IdentifierToken -> "x" [1:8 - 1:9] 
+            type = PredefinedTypeSyntax [1:2 - 1:7]
+                typeToken = FloatKeyword -> "float" [1:2 - 1:7]
+            identifier = IdentifierToken -> "x" [1:8 - 1:9]
             defaultValue = nullptr
-    closeParen = CloseParenToken -> ")" [1:9 - 1:10] 
+    closeParen = CloseParenToken -> ")" [1:9 - 1:10]

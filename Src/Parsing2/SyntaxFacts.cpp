@@ -718,6 +718,10 @@ namespace Alchemy::Compilation::SyntaxFacts {
                 return SyntaxKind::TrueLiteralExpression;
             case TokenKind::FalseKeyword:
                 return SyntaxKind::FalseLiteralExpression;
+
+                // case TokenKind::DefaultKeyword:
+                //     return SyntaxKind::DefaultLiteralExpression;
+
             default:
                 return SyntaxKind::None;
         }
@@ -916,6 +920,10 @@ namespace Alchemy::Compilation::SyntaxFacts {
             default:
                 return false;
         }
+    }
+
+    bool IsLiteralExpression(TokenKind kind) {
+        return GetLiteralExpression(kind) == SyntaxKind::None;
     }
 
 }

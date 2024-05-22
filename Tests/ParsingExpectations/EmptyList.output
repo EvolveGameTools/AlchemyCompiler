@@ -1,4 +1,4 @@
-ParameterListSyntax [1:1 - 1:3] 
-    openParen = OpenParenToken -> "(" [1:1 - 1:2] 
+ParameterListSyntax [1:1 - 1:3]
+    openParen = OpenParenToken -> "(" [1:1 - 1:2]
     parameters = SeparatedSyntaxList <empty>
-    closeParen = CloseParenToken -> ")" [1:2 - 1:3] 
+    closeParen = CloseParenToken -> ")" [1:2 - 1:3]

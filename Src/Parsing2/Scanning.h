@@ -89,9 +89,9 @@ namespace Alchemy::Compilation {
 
         TokenKind kind {};
         TokenKind contextualKind {};
-        uint16 textSize {};
+        uint16 textSize {}; // todo -- we only need this for debugging (maybe?)
         uint32 id_flags {};
-        char * text {};
+        char * text {}; // todo -- we only need this for debugging
 
         inline FixedCharSpan GetText() {
             return FixedCharSpan(text, textSize);

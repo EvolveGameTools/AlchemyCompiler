@@ -413,6 +413,18 @@ namespace Alchemy::Compilation {
         DefaultSwitchLabel,
         UsingStatement,
         LabeledStatement,
+        BaseList,
+        SimpleBaseType,
+        PrimaryConstructorBaseType,
+        Attribute,
+        AttributeList,
+        EnumMemberDeclaration,
+        TypeConstraint,
+        TypeParameterConstraintClause,
+        ConstructorConstraint,
+        StructConstraint,
+        ClassConstraint,
+        ConstructorDeclaration,
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

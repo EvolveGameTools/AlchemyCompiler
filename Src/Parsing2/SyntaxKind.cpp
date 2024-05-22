@@ -205,6 +205,17 @@ namespace Alchemy::Compilation {
             case SyntaxKind::DefaultSwitchLabel: return "DefaultSwitchLabel";
             case SyntaxKind::UsingStatement: return "UsingStatement";
             case SyntaxKind::LabeledStatement: return "LabeledStatement";
+            case SyntaxKind::BaseList: return "BaseList";
+            case SyntaxKind::SimpleBaseType: return "SimpleBaseType";
+            case SyntaxKind::PrimaryConstructorBaseType: return "PrimaryConstructorBaseType";
+            case SyntaxKind::Attribute: return "Attribute";
+            case SyntaxKind::AttributeList: return "AttributeList";
+            case SyntaxKind::EnumMemberDeclaration: return "EnumMemberDeclaration";
+            case SyntaxKind::TypeConstraint: return "TypeConstraint";
+            case SyntaxKind::TypeParameterConstraintClause: return "TypeParameterConstraintClause";
+            case SyntaxKind::ConstructorConstraint: return "ConstructorConstraint";
+            case SyntaxKind::StructConstraint: return "StructConstraint";
+            case SyntaxKind::ClassConstraint: return "ClassConstraint";
             default: return "";
         }
     }

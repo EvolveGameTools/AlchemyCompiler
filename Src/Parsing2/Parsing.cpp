@@ -39,6 +39,102 @@ namespace Alchemy::Compilation {
 
     };
 
+    template<typename TNode>
+    SeparatedSyntaxList<TNode>* ParseCommaSeparatedSyntaxList(
+        Parser* parser,
+        SyntaxToken* openToken,
+        TokenKind closeTokenKind,
+        isPossibleElementFn isPossibleElement,
+        parseElementFn parseElement,
+        immediatelyAbortFn immediatelyAbort,
+        skipBadTokensFn skipBadTokens,
+        bool allowTrailingSeparator,
+        bool requireOneElement,
+        bool allowSemicolonAsSeparator) {
+
+        TokenKind separatorTokenKind = TokenKind::CommaToken;
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        SeparatedSyntaxListBuilder<TNode> nodes(parser->tempAllocator);
+        tryAgain:
+        if (requireOneElement || parser->currentToken.kind != closeTokenKind) {
+            if (requireOneElement || ShouldParseSeparatorOrElement(parser, separatorTokenKind, allowSemicolonAsSeparator, isPossibleElement)) {
+                // first argument
+                TNode* node = (TNode*) parseElement(parser);
+                nodes.Add(node);
+
+                // now that we've gotten one element, we don't require any more.
+                requireOneElement = false;
+
+                // Ensure that if parsing separators/elements doesn't move us forward, that we always bail out from parsing this list.
+                int32 lastTokenPosition = -1;
+
+                while ((immediatelyAbort == nullptr || !immediatelyAbort(parser, node)) && IsMakingProgress(parser, &lastTokenPosition)) {
+                    if (parser->currentToken.kind == closeTokenKind)
+                        break;
+
+                    if (ShouldParseSeparatorOrElement(parser, separatorTokenKind, allowSemicolonAsSeparator, isPossibleElement)) {
+                        // If we got a semicolon instead of comma, consume it with error and act as if it were a comma.
+                        nodes.AddSeparator(parser->currentToken.kind == TokenKind::SemicolonToken
+                            ? parser->EatTokenWithPrejudice(separatorTokenKind)
+                            : parser->EatToken(separatorTokenKind)
+                        );
+
+                        if (allowTrailingSeparator) {
+                            // check for exit case after legal trailing comma
+                            if (parser->currentToken.kind == closeTokenKind) {
+                                break;
+                            }
+                            else if (!isPossibleElement(parser)) {
+                                goto tryAgain;
+                            }
+                        }
+
+                        node = (TNode*) parseElement(parser);
+                        nodes.Add(node);
+                        continue;
+                    }
+
+                    // Something we didn't recognize, try to skip tokens, reporting that we expected a separator here.
+                    if (skipBadTokens(parser, separatorTokenKind, closeTokenKind) == PostSkipAction::Abort) {
+                        break;
+                    }
+                }
+            }
+            else if (skipBadTokens(parser, TokenKind::IdentifierToken, closeTokenKind) == PostSkipAction::Continue) {
+                // Something we didn't recognize, try to skip tokens, reporting that we expected an identifier here.
+                // While 'identifier' may not be completely accurate in terms of what the list needs, it's a
+                // generally good 'catch all' indicating that some name/expr was needed, where something else
+                // invalid was found.
+                goto tryAgain;
+            }
+        }
+        return nodes.ToList(parser->allocator);
+    }
+
+    template<typename TNode>
+    SeparatedSyntaxList<TNode>* ParseCommaSeparatedSyntaxList(
+        Parser* parser,
+        SyntaxToken* openToken,
+        TokenKind closeTokenKind,
+        isPossibleElementFn isPossibleElement,
+        parseElementFn parseElement,
+        skipBadTokensFn skipBadTokens,
+        bool allowTrailingSeparator,
+        bool requireOneElement,
+        bool allowSemicolonAsSeparator) {
+        return ParseCommaSeparatedSyntaxList<TNode>(
+            parser,
+            openToken,
+            closeTokenKind,
+            isPossibleElement,
+            parseElement,
+            nullptr,
+            skipBadTokens,
+            allowTrailingSeparator,
+            requireOneElement,
+            allowSemicolonAsSeparator
+        );
+    }
 
     bool IsPossibleType(Parser* parser) {
         TokenKind tk = parser->currentToken.kind;
@@ -191,18 +287,6 @@ namespace Alchemy::Compilation {
         }
 
         return false;
-    }
-
-    bool IsPossibleAnonymousMethodExpression(Parser* parser) {
-        // Skip past any static keywords
-
-        int32 tokenIndex = 0;
-
-        if (parser->PeekToken(tokenIndex).kind == TokenKind::StaticKeyword) {
-            tokenIndex++;
-        }
-
-        return parser->PeekToken(tokenIndex).kind == TokenKind::DelegateKeyword;
     }
 
     ScanTypeFlags ScanPossibleTypeArgumentList(Parser* parser, SyntaxToken* greaterThanToken, bool* pIsDefinitelyTypeArgumentList) {
@@ -590,9 +674,9 @@ namespace Alchemy::Compilation {
                 return DeclarationModifiers::Static;
             case TokenKind::VirtualKeyword:
                 return DeclarationModifiers::Virtual;
-//            case SyntaxKind.ExternKeyword:
+//            case TokenKind::ExternKeyword:
 //                return DeclarationModifiers.Extern;
-//            case SyntaxKind.NewKeyword:
+//            case TokenKind::NewKeyword:
 //                return DeclarationModifiers.New;
             case TokenKind::OverrideKeyword:
                 return DeclarationModifiers::Override;
@@ -683,8 +767,565 @@ namespace Alchemy::Compilation {
 
     }
 
-    MemberDeclarationSyntax* ParseTypeDeclaration(Parser* parser, TokenListBuffer* modifiers) {
-        NOT_IMPLEMENTED("ParseTypeDeclaration");
+    DelegateDeclarationSyntax* ParseDelegateDeclaration(Parser* parser, SyntaxList<AttributeListSyntax>* attributes, TokenListBuffer* modifiers) {
+        assert(parser->currentToken.kind == TokenKind::DelegateKeyword);
+
+        SyntaxToken delegateToken = parser->EatToken(TokenKind::DelegateKeyword);
+        TypeSyntax* type = ParseReturnType(parser);
+        TerminatorState saveTerm = parser->termState;
+        parser->termState |= TerminatorState::IsEndOfMethodSignature;
+        SyntaxToken name = ParseIdentifierToken(parser);
+        TypeParameterListSyntax* typeParameters = ParseTypeParameterList(parser);
+        ParameterListSyntax* parameterList = ParseParenthesizedParameterList(parser);
+
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        SyntaxListBuilder<TypeParameterConstraintClauseSyntax> constraints(parser->tempAllocator);
+
+        if (parser->currentToken.contextualKind == TokenKind::WhereKeyword) {
+            ParseTypeParameterConstraintClauses(parser, &constraints);
+        }
+
+        parser->termState = saveTerm;
+
+        SyntaxToken semicolon = parser->EatToken(TokenKind::SemicolonToken);
+
+        return parser->CreateNode<DelegateDeclarationSyntax>(
+            attributes,
+            modifiers->Persist(parser->allocator),
+            delegateToken,
+            type,
+            name,
+            typeParameters,
+            parameterList,
+            constraints.ToSyntaxList(parser->allocator),
+            semicolon
+        );
+
+    }
+
+    bool IsPossibleEnumMemberDeclaration(Parser* parser) {
+        return parser->currentToken.kind == TokenKind::OpenBracketToken || IsTrueIdentifier(parser);
+    }
+
+    PostSkipAction SkipBadEnumMemberListTokens(Parser* parser, TokenKind expected, TokenKind closeKind) {
+        return SkipBadSeparatedListTokensWithExpectedKind(
+            parser,
+            [](Parser* parser) { return parser->currentToken.kind != TokenKind::CommaToken && parser->currentToken.kind != TokenKind::SemicolonToken && !IsPossibleEnumMemberDeclaration(parser); },
+            [](Parser* parser, TokenKind closeKind) { return parser->currentToken.kind == closeKind; },
+            expected,
+            closeKind
+        );
+    }
+
+    EnumMemberDeclarationSyntax* ParseEnumMemberDeclaration(Parser* parser) {
+
+        SyntaxList<AttributeListSyntax>* memberAttrs = ParseAttributeDeclarations(parser);
+        SyntaxToken memberName = ParseIdentifierToken(parser);
+        EqualsValueClauseSyntax* equalsValue = nullptr;
+        if (parser->currentToken.kind == TokenKind::EqualsToken) {
+
+            SyntaxToken equalsToken = parser->EatToken();
+
+            ExpressionSyntax* value = parser->currentToken.kind == TokenKind::CommaToken || parser->currentToken.kind == TokenKind::CloseBraceToken
+                ? ParseIdentifierName(parser, ErrorCode::ERR_ConstantExpected)
+                : ParseExpression(parser);
+
+            // an identifier is a valid expression
+            equalsValue = parser->CreateNode<EqualsValueClauseSyntax>(equalsToken, value);
+        }
+
+        return parser->CreateNode<EnumMemberDeclarationSyntax>(memberAttrs, memberName, equalsValue);
+    }
+
+    EnumDeclarationSyntax* ParseEnumDeclaration(Parser* parser, SyntaxList<AttributeListSyntax>* attributes, TokenListBuffer* modifiers) {
+        assert(parser->currentToken.kind == TokenKind::EnumKeyword);
+
+        SyntaxToken enumToken = parser->EatToken();
+        SyntaxToken name = ParseIdentifierToken(parser);
+
+        // check to see if the user tried to create a generic enum.
+        TypeParameterListSyntax* typeParameters = ParseTypeParameterList(parser);
+
+        if (typeParameters != nullptr) {
+            parser->AddError(typeParameters, ErrorCode::ERR_UnexpectedGenericName);
+        }
+
+        BaseListSyntax* baseList = nullptr;
+        if (parser->currentToken.kind == TokenKind::ColonToken) {
+            SyntaxToken colon = parser->EatToken(TokenKind::ColonToken);
+            TypeSyntax* type = ParseType(parser);
+            TempAllocator::ScopedMarker m(parser->tempAllocator);
+            SeparatedSyntaxListBuilder<BaseTypeSyntax> tmpList(parser->tempAllocator);
+
+            tmpList.Add(parser->CreateNode<SimpleBaseTypeSyntax>(type));
+            baseList = parser->CreateNode<BaseListSyntax>(colon, tmpList.ToList(parser->allocator));
+        }
+
+        SeparatedSyntaxList<EnumMemberDeclarationSyntax>* members = nullptr;
+        SyntaxToken semicolon;
+        SyntaxToken openBrace;
+        SyntaxToken closeBrace;
+
+        if (parser->currentToken.kind == TokenKind::SemicolonToken) {
+            semicolon = parser->EatToken();
+        }
+        else {
+            openBrace = parser->EatToken(TokenKind::OpenBraceToken);
+
+            if (!openBrace.IsMissing()) {
+                // It's not uncommon for people to use semicolons to separate out enum members.  So be resilient to
+                // that, successfully consuming them as separators, while telling the user it needs to be a comma
+                // instead.
+                members = ParseCommaSeparatedSyntaxList<EnumMemberDeclarationSyntax>(
+                    parser,
+                    &openBrace,
+                    TokenKind::CloseBraceToken,
+                    [](Parser* p) { return IsPossibleEnumMemberDeclaration(p); },
+                    [](Parser* p) { return (SyntaxBase*) ParseEnumMemberDeclaration(p); },
+                    &SkipBadEnumMemberListTokens,
+                    true,
+                    false,
+                    true
+                );
+            }
+
+            closeBrace = parser->EatToken(TokenKind::CloseBraceToken);
+            if (parser->currentToken.kind == TokenKind::SemicolonToken) {
+                semicolon = parser->EatToken();
+            }
+
+        }
+
+        return parser->CreateNode<EnumDeclarationSyntax>(
+            attributes,
+            modifiers->Persist(parser->allocator),
+            enumToken,
+            name,
+            baseList,
+            openBrace,
+            members,
+            closeBrace,
+            semicolon
+        );
+
+    }
+
+    bool IsPossibleAttribute(Parser* parser) {
+        return IsTrueIdentifier(parser);
+    }
+
+    PostSkipAction SkipBadBaseListTokens(Parser* parser, TokenKind expected) {
+        return SkipBadSeparatedListTokensWithExpectedKind(
+            parser,
+            [](Parser* p) { return p->currentToken.kind != TokenKind::CommaToken && !IsPossibleAttribute(p); }, // todo -- I'm not sure we can accept attributes here
+            [](Parser* p, TokenKind unused) { return p->currentToken.kind == TokenKind::OpenBraceToken || IsCurrentTokenWhereOfConstraintClause(p); },
+            expected,
+            TokenKind::None
+        );
+    }
+
+    BaseListSyntax* ParseBaseList(Parser* parser) {
+        if (parser->currentToken.kind != TokenKind::ColonToken) {
+            return nullptr;
+        }
+
+        SyntaxToken colon = parser->EatToken();
+
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        SeparatedSyntaxListBuilder<BaseTypeSyntax> list(parser->tempAllocator);
+
+        TypeSyntax* firstType = ParseType(parser);
+
+        ArgumentListSyntax* argumentList = parser->currentToken.kind == TokenKind::OpenParenToken
+            ? ParseParenthesizedArgumentList(parser)
+            : nullptr;
+
+        list.Add(argumentList != nullptr
+            ? (BaseTypeSyntax*) parser->CreateNode<PrimaryConstructorBaseTypeSyntax>(firstType, argumentList)
+            : (BaseTypeSyntax*) parser->CreateNode<SimpleBaseTypeSyntax>(firstType)
+        );
+
+        // any additional types
+        while (true) {
+            // todo -- we will likely want to change the where : condition to support our version of generics
+            if (parser->currentToken.kind == TokenKind::OpenBraceToken ||
+                ((parser->termState & TerminatorState::IsEndOfClassOrStructOrInterfaceSignature) != 0 && parser->currentToken.kind == TokenKind::SemicolonToken) ||
+                IsCurrentTokenWhereOfConstraintClause(parser)) {
+                break;
+            }
+            else if (parser->currentToken.kind == TokenKind::CommaToken || IsPossibleType(parser)) {
+                list.AddSeparator(parser->EatToken(TokenKind::CommaToken));
+                list.Add(parser->CreateNode<SimpleBaseTypeSyntax>(ParseType(parser)));
+                continue;
+            }
+            else if (SkipBadBaseListTokens(parser, TokenKind::CommaToken) == PostSkipAction::Abort) {
+                break;
+            }
+        }
+
+        return parser->CreateNode<BaseListSyntax>(colon, list.ToList(parser->allocator));
+
+    }
+
+    bool IsPossibleTypeParameterConstraint(Parser* parser) {
+        switch (parser->currentToken.kind) {
+            case TokenKind::NewKeyword:
+            case TokenKind::ClassKeyword:
+            case TokenKind::StructKeyword:
+                return true;
+            case TokenKind::IdentifierToken:
+                return IsTrueIdentifier(parser);
+            default:
+                return SyntaxFacts::IsPredefinedType(parser->currentToken.kind);
+        }
+    }
+
+    TypeParameterConstraintSyntax* ParseTypeParameterConstraint(Parser* parser) {
+        switch (parser->currentToken.kind) {
+            case TokenKind::NewKeyword: {
+                SyntaxToken newKeyword = parser->EatToken();
+                SyntaxToken openParen = parser->EatToken(TokenKind::OpenParenToken);
+                SyntaxToken closeParen = parser->EatToken(TokenKind::CloseParenToken);
+                return parser->CreateNode<ConstructorConstraintSyntax>(newKeyword, openParen, closeParen);
+            }
+            case TokenKind::StructKeyword: {
+                SyntaxToken keyword = parser->EatToken();
+                SyntaxToken question;
+                if (parser->currentToken.kind == TokenKind::QuestionToken) {
+                    question = parser->EatToken();
+                    parser->AddError(question, ErrorCode::ERR_UnexpectedToken);
+                }
+                return parser->CreateNode<ClassOrStructConstraintSyntax>(SyntaxKind::StructConstraint, keyword, question);
+            }
+            case TokenKind::ClassKeyword: {
+                SyntaxToken keyword = parser->EatToken();
+                SyntaxToken question;
+                if (parser->currentToken.kind == TokenKind::QuestionToken) {
+                    question = parser->EatToken();
+                }
+                return parser->CreateNode<ClassOrStructConstraintSyntax>(SyntaxKind::ClassConstraint, keyword, question);
+            }
+            case TokenKind::DelegateKeyword: {
+                IdentifierNameSyntax* missing = CreateMissingIdentifierName(parser);
+                parser->AddError(missing, ErrorCode::ERR_NoDelegateConstraint);
+                parser->EatToken();
+                return parser->CreateNode<TypeConstraintSyntax>(missing);
+            }
+                // todo -- maybe add constraint for enum keyword
+            default: {
+                return parser->CreateNode<TypeConstraintSyntax>(ParseType(parser));
+            }
+        }
+    }
+
+    PostSkipAction SkipBadTypeParameterConstraintTokens(Parser* parser, TokenKind expected) {
+        return SkipBadSeparatedListTokensWithExpectedKind(
+            parser,
+            [](Parser* parser) { return parser->currentToken.kind != TokenKind::CommaToken && !IsPossibleTypeParameterConstraint(parser); },
+            [](Parser* parser, TokenKind unused) { return parser->currentToken.kind == TokenKind::OpenBraceToken || IsCurrentTokenWhereOfConstraintClause(parser); },
+            expected,
+            TokenKind::None
+        );
+    }
+
+    TypeParameterConstraintClauseSyntax* ParseTypeParameterConstraintClause(Parser* parser) {
+        SyntaxToken where = parser->EatContextualToken(TokenKind::WhereKeyword);
+        IdentifierNameSyntax* name = nullptr;
+        if (!IsTrueIdentifier(parser)) {
+            name = CreateMissingIdentifierName(parser);
+            parser->AddError(name, ErrorCode::ERR_IdentifierExpected);
+        }
+        else {
+            name = ParseIdentifierName(parser);
+        }
+
+        SyntaxToken colon = parser->EatToken(TokenKind::ColonToken);
+
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        SeparatedSyntaxListBuilder<TypeParameterConstraintSyntax> bounds(parser->tempAllocator);
+
+        if (parser->currentToken.kind == TokenKind::OpenBraceToken || IsCurrentTokenWhereOfConstraintClause(parser)) {
+            IdentifierNameSyntax* missing = CreateMissingIdentifierName(parser);
+            parser->AddError(missing, ErrorCode::ERR_TypeExpected);
+            bounds.Add(parser->CreateNode<TypeConstraintSyntax>(missing));
+        }
+        else {
+            bounds.Add(ParseTypeParameterConstraint(parser));
+            while (true) {
+                if (parser->currentToken.kind == TokenKind::OpenBraceToken
+                    || ((parser->termState & TerminatorState::IsEndOfClassOrStructOrInterfaceSignature) != 0 && parser->currentToken.kind == TokenKind::SemicolonToken)
+                    || parser->currentToken.kind == TokenKind::EqualsGreaterThanToken
+                    || parser->currentToken.contextualKind == TokenKind::WhereKeyword) {
+                    break;
+                }
+                else if (parser->currentToken.kind == TokenKind::CommaToken || IsPossibleTypeParameterConstraint(parser)) {
+                    bounds.AddSeparator(parser->EatToken(TokenKind::CommaToken));
+                    if (IsCurrentTokenWhereOfConstraintClause(parser)) {
+                        IdentifierNameSyntax* missing = CreateMissingIdentifierName(parser);
+                        parser->AddError(missing, ErrorCode::ERR_TypeExpected);
+                        bounds.Add(parser->CreateNode<TypeConstraintSyntax>(missing));
+                        break;
+                    }
+                    else {
+                        bounds.Add(ParseTypeParameterConstraint(parser));
+                    }
+                }
+                else if (SkipBadTypeParameterConstraintTokens(parser, TokenKind::CommaToken) == PostSkipAction::Abort) {
+                    break;
+                }
+            }
+        }
+
+        return parser->CreateNode<TypeParameterConstraintClauseSyntax>(
+            where,
+            name,
+            colon,
+            bounds.ToList(parser->allocator)
+        );
+
+    }
+
+    void ParseTypeParameterConstraintClauses(Parser* parser, SyntaxListBuilder<TypeParameterConstraintClauseSyntax>* list) {
+        while (parser->currentToken.contextualKind == TokenKind::WhereKeyword) {
+            list->Add(ParseTypeParameterConstraintClause(parser));
+        }
+    }
+
+    void SkipBadMemberListTokens(Parser* parser) {
+        int32 curlyCount = 0;
+
+        bool done = false;
+
+        // always consume at least one token.
+        SyntaxToken token = parser->EatToken();
+        parser->AddError(token, ErrorCode::ERR_InvalidMemberDecl);
+
+        while (!done) {
+            TokenKind kind = parser->currentToken.kind;
+
+            // If this token can start a member, we're done
+            if (CanStartMember(kind) && !(kind == TokenKind::DelegateKeyword && parser->PeekToken(1).kind == TokenKind::OpenBraceToken || parser->PeekToken(1).kind == TokenKind::OpenParenToken)) {
+                done = true;
+                continue;
+            }
+
+            // Watch curlies and look for end of file/close curly
+            switch (kind) {
+                case TokenKind::OpenBraceToken:
+                    curlyCount++;
+                    break;
+
+                case TokenKind::CloseBraceToken:
+                    if (curlyCount-- == 0) {
+                        done = true;
+                        continue;
+                    }
+
+                    break;
+
+                case TokenKind::EndOfFileToken:
+                    done = true;
+                    continue;
+
+                default:
+                    break;
+            }
+
+            parser->EatToken();
+        }
+
+    }
+
+    MemberDeclarationSyntax* ParseClassOrStructOrInterfaceDeclaration(Parser* parser, SyntaxList<AttributeListSyntax>* attributes, TokenListBuffer* modifiers) {
+
+        SyntaxToken keyword = parser->EatToken();
+        SyntaxKind topLevelKind;
+        switch (keyword.kind) {
+            case TokenKind::ClassKeyword: {
+                topLevelKind = SyntaxKind::ClassDeclaration;
+                break;
+            }
+            case TokenKind::StructKeyword: {
+                topLevelKind = SyntaxKind::StructDeclaration;
+                break;
+            }
+            case TokenKind::InterfaceKeyword: {
+                topLevelKind = SyntaxKind::InterfaceDeclaration;
+                break;
+            }
+            default: {
+                UNREACHABLE("ParseClassOrStructOrInterfaceDeclaration");
+                topLevelKind = SyntaxKind::ClassDeclaration;
+            }
+        }
+
+        TerminatorState outerSaveTerm = parser->termState;
+        parser->termState |= TerminatorState::IsEndOfClassOrStructOrInterfaceSignature;
+
+        TerminatorState saveTerm = parser->termState;
+        parser->termState |= TerminatorState::IsPossibleAggregateClauseStartOrStop;
+
+        SyntaxToken name = ParseIdentifierToken(parser);
+        TypeParameterListSyntax* typeParameters = ParseTypeParameterList(parser);
+
+        // for primary constructors
+        ParameterListSyntax* paramList = parser->currentToken.kind == TokenKind::OpenParenToken
+            ? ParseParenthesizedParameterList(parser)
+            : nullptr;
+
+        BaseListSyntax* baseList = ParseBaseList(parser);
+        parser->termState = saveTerm;
+
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+
+        bool parseMembers = true;
+        SyntaxListBuilder<MemberDeclarationSyntax> members(parser->tempAllocator);
+        SyntaxListBuilder<TypeParameterConstraintClauseSyntax> constraints(parser->tempAllocator);
+
+        if (parser->currentToken.contextualKind == TokenKind::WhereKeyword) {
+            ParseTypeParameterConstraintClauses(parser, &constraints);
+        }
+
+        parser->termState = outerSaveTerm;
+
+        SyntaxToken semicolon;
+        SyntaxToken openBrace;
+        SyntaxToken closeBrace;
+        if (parser->currentToken.kind == TokenKind::SemicolonToken) {
+            semicolon = parser->EatToken(TokenKind::SemicolonToken);
+        }
+        else {
+            openBrace = parser->EatToken(TokenKind::OpenBraceToken);
+            // ignore members if missing open curly
+            if (openBrace.IsMissing()) {
+                parseMembers = false;
+            }
+            // even if we saw a { or think we should parse members bail out early since
+            // we know namespaces can't be nested inside types
+            if (parseMembers) {
+
+                while (true) {
+                    TokenKind kind = parser->currentToken.kind;
+
+                    if (CanStartMember(kind)) {
+                        // This token can start a member -- go parse it
+                        TerminatorState saveTerm2 = parser->termState;
+                        parser->termState |= TerminatorState::IsPossibleMemberStartOrStop;
+
+                        MemberDeclarationSyntax* member = ParseMemberDeclaration(parser, topLevelKind);
+                        if (member != nullptr) {
+                            // statements are accepted here, a semantic error will be reported later
+                            members.Add(member);
+                        }
+                        else {
+                            // we get here if we couldn't parse the lookahead as a statement or a declaration (we haven't consumed any tokens):
+                            SkipBadMemberListTokens(parser);
+                        }
+
+                        parser->termState = saveTerm2;
+                    }
+                    else if (kind == TokenKind::CloseBraceToken || kind == TokenKind::EndOfFileToken || IsTerminator(parser)) {
+                        // This marks the end of members of this class
+                        break;
+                    }
+                    else {
+                        // Error -- try to sync up with intended reality
+                        SkipBadMemberListTokens(parser);
+                    }
+                }
+            }
+
+            if (openBrace.IsMissing()) {
+                closeBrace = MakeMissingToken(TokenKind::CloseBraceToken, parser->ptr);
+                ErrorCode errorCode = parser->GetExpectedTokenErrorCode(TokenKind::CloseBraceToken, parser->currentToken.kind);
+                parser->AddError(closeBrace, errorCode);
+            }
+            else {
+                closeBrace = parser->EatToken(TokenKind::CloseBraceToken);
+            }
+
+            if (parser->currentToken.kind == TokenKind::SemicolonToken) {
+                semicolon = parser->EatToken();
+            }
+
+        }
+
+        switch (topLevelKind) {
+            case SyntaxKind::ClassDeclaration: {
+                return parser->CreateNode<ClassDeclarationSyntax>(
+                    attributes,
+                    modifiers->Persist(parser->allocator),
+                    keyword,
+                    name,
+                    typeParameters,
+                    paramList,
+                    baseList,
+                    constraints.ToSyntaxList(parser->allocator),
+                    openBrace,
+                    members.ToSyntaxList(parser->allocator),
+                    closeBrace,
+                    semicolon
+                );
+            }
+
+            case SyntaxKind::StructDeclaration: {
+                return parser->CreateNode<StructDeclarationSyntax>(
+                    attributes,
+                    modifiers->Persist(parser->allocator),
+                    keyword,
+                    name,
+                    typeParameters,
+                    paramList,
+                    baseList,
+                    constraints.ToSyntaxList(parser->allocator),
+                    openBrace,
+                    members.ToSyntaxList(parser->allocator),
+                    closeBrace,
+                    semicolon
+                );
+            }
+
+            case SyntaxKind::InterfaceDeclaration: {
+                return parser->CreateNode<InterfaceDeclarationSyntax>(
+                    attributes,
+                    modifiers->Persist(parser->allocator),
+                    keyword,
+                    name,
+                    typeParameters,
+                    paramList,
+                    baseList,
+                    constraints.ToSyntaxList(parser->allocator),
+                    openBrace,
+                    members.ToSyntaxList(parser->allocator),
+                    closeBrace,
+                    semicolon
+                );
+            }
+            default: {
+                UNREACHABLE("ParseClassOrStructOrInterfaceDeclaration");
+                return nullptr;
+            }
+        }
+
+    }
+
+    MemberDeclarationSyntax* ParseTypeDeclaration(Parser* parser, SyntaxList<AttributeListSyntax>* attributes, TokenListBuffer* modifiers) {
+        switch (parser->currentToken.kind) {
+            case TokenKind::ClassKeyword:
+            case TokenKind::StructKeyword:
+            case TokenKind::InterfaceKeyword:
+                return ParseClassOrStructOrInterfaceDeclaration(parser, attributes, modifiers);
+
+            case TokenKind::DelegateKeyword:
+                return ParseDelegateDeclaration(parser, attributes, modifiers);
+
+            case TokenKind::EnumKeyword:
+                return ParseEnumDeclaration(parser, attributes, modifiers);
+
+            default:
+                UNREACHABLE("ParseTypeDeclaration");
+                break;
+        }
         return nullptr;
     }
 
@@ -707,102 +1348,6 @@ namespace Alchemy::Compilation {
         return false;
     }
 
-    template<typename TNode>
-    SeparatedSyntaxList<TNode>* ParseCommaSeparatedSyntaxList(
-        Parser* parser,
-        SyntaxToken* openToken,
-        TokenKind closeTokenKind,
-        isPossibleElementFn isPossibleElement,
-        parseElementFn parseElement,
-        immediatelyAbortFn immediatelyAbort,
-        skipBadTokensFn skipBadTokens,
-        bool allowTrailingSeparator,
-        bool requireOneElement,
-        bool allowSemicolonAsSeparator) {
-
-        TokenKind separatorTokenKind = TokenKind::CommaToken;
-        TempAllocator::ScopedMarker m(parser->tempAllocator);
-        SeparatedSyntaxListBuilder<TNode> nodes(parser->tempAllocator);
-        tryAgain:
-        if (requireOneElement || parser->currentToken.kind != closeTokenKind) {
-            if (requireOneElement || ShouldParseSeparatorOrElement(parser, separatorTokenKind, allowSemicolonAsSeparator, isPossibleElement)) {
-                // first argument
-                TNode* node = (TNode*) parseElement(parser);
-                nodes.Add(node);
-
-                // now that we've gotten one element, we don't require any more.
-                requireOneElement = false;
-
-                // Ensure that if parsing separators/elements doesn't move us forward, that we always bail out from parsing this list.
-                int32 lastTokenPosition = -1;
-
-                while ((immediatelyAbort == nullptr || !immediatelyAbort(parser, node)) && IsMakingProgress(parser, &lastTokenPosition)) {
-                    if (parser->currentToken.kind == closeTokenKind)
-                        break;
-
-                    if (ShouldParseSeparatorOrElement(parser, separatorTokenKind, allowSemicolonAsSeparator, isPossibleElement)) {
-                        // If we got a semicolon instead of comma, consume it with error and act as if it were a comma.
-                        nodes.AddSeparator(parser->currentToken.kind == TokenKind::SemicolonToken
-                            ? parser->EatTokenWithPrejudice(separatorTokenKind)
-                            : parser->EatToken(separatorTokenKind)
-                        );
-
-                        if (allowTrailingSeparator) {
-                            // check for exit case after legal trailing comma
-                            if (parser->currentToken.kind == closeTokenKind) {
-                                break;
-                            }
-                            else if (!isPossibleElement(parser)) {
-                                goto tryAgain;
-                            }
-                        }
-
-                        node = (TNode*) parseElement(parser);
-                        nodes.Add(node);
-                        continue;
-                    }
-
-                    // Something we didn't recognize, try to skip tokens, reporting that we expected a separator here.
-                    if (skipBadTokens(parser, separatorTokenKind, closeTokenKind) == PostSkipAction::Abort) {
-                        break;
-                    }
-                }
-            }
-            else if (skipBadTokens(parser, TokenKind::IdentifierToken, closeTokenKind) == PostSkipAction::Continue) {
-                // Something we didn't recognize, try to skip tokens, reporting that we expected an identifier here.
-                // While 'identifier' may not be completely accurate in terms of what the list needs, it's a
-                // generally good 'catch all' indicating that some name/expr was needed, where something else
-                // invalid was found.
-                goto tryAgain;
-            }
-        }
-        return nodes.ToList(parser->allocator);
-    }
-
-    template<typename TNode>
-    SeparatedSyntaxList<TNode>* ParseCommaSeparatedSyntaxList(
-        Parser* parser,
-        SyntaxToken* openToken,
-        TokenKind closeTokenKind,
-        isPossibleElementFn isPossibleElement,
-        parseElementFn parseElement,
-        skipBadTokensFn skipBadTokens,
-        bool allowTrailingSeparator,
-        bool requireOneElement,
-        bool allowSemicolonAsSeparator) {
-        return ParseCommaSeparatedSyntaxList<TNode>(
-            parser,
-            openToken,
-            closeTokenKind,
-            isPossibleElement,
-            parseElement,
-            nullptr,
-            skipBadTokens,
-            allowTrailingSeparator,
-            requireOneElement,
-            allowSemicolonAsSeparator
-        );
-    }
 
     bool IsVarType(Parser* parser) {
         // todo -- we might just always return true for this
@@ -1829,7 +2374,7 @@ namespace Alchemy::Compilation {
         ScanTypeFlags st = ScanType(parser, false);
 
         // We could always return true for st == AliasQualName in addition to MustBeType on the first line, however, we want it to return false in the case where
-        // CurrentToken.Kind != SyntaxKind.Identifier so that error cases, like: A::N(), are not parsed as variable declarations and instead are parsed as A.N() where we can give
+        // CurrentToken.Kind != TokenKind::Identifier so that error cases, like: A::N(), are not parsed as variable declarations and instead are parsed as A.N() where we can give
         // a better error message saying "did you meant to use a '.'?"
         if (st == ScanTypeFlags::MustBeType && parser->currentToken.kind != TokenKind::DotToken && parser->currentToken.kind != TokenKind::OpenParenToken) {
             return true;
@@ -2588,7 +3133,7 @@ namespace Alchemy::Compilation {
         }
     }
 
-    ExpressionSyntax* ParseLambdaExpression(Parser* parser) {
+    LambdaExpressionSyntax* ParseLambdaExpression(Parser* parser) {
 
         bool parentScopeForceConditionalAccess = parser->forceConditionalAccessExpression;
         parser->forceConditionalAccessExpression = false;
@@ -2600,14 +3145,22 @@ namespace Alchemy::Compilation {
         return result;
     }
 
-    ExpressionSyntax* ParseAnonymousMethodExpression(Parser* parser) {
-        NOT_IMPLEMENTED("ParseAnonymousMethodExpression");
-        return nullptr;
-    }
-
+    // Parse expected lambda expression but assume `x ? () => y :` is a conditional
+    // expression rather than a lambda expression with an explicit return type and
+    // return null in that case only.
     ExpressionSyntax* TryParseLambdaExpression(Parser* parser) {
-        NOT_IMPLEMENTED("TryParseLambdaExpression");
-        return nullptr;
+        ResetPoint resetPoint(parser, false);
+        LambdaExpressionSyntax* result = ParseLambdaExpression(parser);
+
+        if (parser->currentToken.kind == TokenKind::ColonToken && result->GetKind() == SyntaxKind::ParenthesizedLambdaExpression) {
+            ParenthesizedLambdaExpressionSyntax* typedResult = (ParenthesizedLambdaExpressionSyntax*) result;
+            if (typedResult->returnType->GetKind() == SyntaxKind::NullableType) {
+                resetPoint.Reset();
+                return nullptr;
+            }
+        }
+
+        return result;
     }
 
     static PostSkipAction SkipBadCollectionElementTokens(Parser* parser, TokenKind expected, TokenKind closeKind) {
@@ -3201,10 +3754,8 @@ namespace Alchemy::Compilation {
             case TokenKind::EqualsGreaterThanToken:
                 return ParseLambdaExpression(parser);
             case TokenKind::StaticKeyword:
-                if (IsPossibleAnonymousMethodExpression(parser)) {
-                    return ParseAnonymousMethodExpression(parser);
-                }
-                else if (IsPossibleLambdaExpression(parser, precedence)) {
+
+                if (IsPossibleLambdaExpression(parser, precedence)) {
                     return ParseLambdaExpression(parser);
                 }
                 else {
@@ -3214,10 +3765,6 @@ namespace Alchemy::Compilation {
                 }
             case TokenKind::IdentifierToken: {
                 if (IsTrueIdentifier(parser)) {
-
-                    if (IsPossibleAnonymousMethodExpression(parser)) {
-                        return ParseAnonymousMethodExpression(parser);
-                    }
 
                     if (IsPossibleLambdaExpression(parser, precedence)) {
                         ExpressionSyntax* lambda = TryParseLambdaExpression(parser);
@@ -3241,8 +3788,8 @@ namespace Alchemy::Compilation {
             }
             case TokenKind::OpenBracketToken:
                 return IsPossibleLambdaExpression(parser, precedence)
-                    ? ParseLambdaExpression(parser)
-                    : ParseCollectionExpression(parser);
+                    ? (ExpressionSyntax*) ParseLambdaExpression(parser)
+                    : (ExpressionSyntax*) ParseCollectionExpression(parser);
 
             case TokenKind::ThisKeyword:
                 return parser->CreateNode<ThisExpressionSyntax>(parser->EatToken());
@@ -3274,11 +3821,11 @@ namespace Alchemy::Compilation {
             case TokenKind::StackAllocKeyword:
                 return ParseStackAllocExpression(parser);
 
-            case TokenKind::DelegateKeyword:
-                // check for lambda expression with explicit function pointer return type
-                return IsPossibleLambdaExpression(parser, precedence)
-                    ? ParseLambdaExpression(parser)
-                    : ParseAnonymousMethodExpression(parser);
+//            case TokenKind::DelegateKeyword:
+//                // check for lambda expression with explicit function pointer return type
+//                return IsPossibleLambdaExpression(parser, precedence)
+//                    ? ParseLambdaExpression(parser)
+//                    : ParseAnonymousMethodExpression(parser);
             case TokenKind::RefKeyword: {
                 if (IsPossibleLambdaExpression(parser, precedence)) {
                     return ParseLambdaExpression(parser);
@@ -3700,7 +4247,7 @@ namespace Alchemy::Compilation {
 
     bool IsPossibleParameter(Parser* parser) {
         switch (parser->currentToken.kind) {
-//            case SyntaxKind.OpenBracketToken: // attribute
+//            case TokenKind::OpenBracketToken: // attribute
             case TokenKind::OpenParenToken:   // tuple
                 return true;
 
@@ -4024,10 +4571,9 @@ namespace Alchemy::Compilation {
             return nullptr;
         }
 
-        return parser->CreateNode<WhenClauseSyntax>(
-            parser->EatContextualToken(TokenKind::WhenKeyword),
-            ParseSubExpression(parser, precedence)
-        );
+        SyntaxToken whenKeyword = parser->EatContextualToken(TokenKind::WhenKeyword);
+        ExpressionSyntax* expression = ParseSubExpression(parser, precedence);
+        return parser->CreateNode<WhenClauseSyntax>(whenKeyword, expression);
     }
 
     SeparatedSyntaxList<SwitchExpressionArmSyntax>* ParseSwitchExpressionArms(Parser* parser) {
@@ -4056,15 +4602,19 @@ namespace Alchemy::Compilation {
             // not permitted as a constant expression here; it would have to be parenthesized.
 
             int32 ptr = parser->ptr;
+            WhenClauseSyntax* whenClause = ParseWhenClause(parser, Precedence::Coalescing);
+            // Help out in the case where a user is converting a switch statement to a switch expression.
+            // Consume the `:` as a `=>` and report an error.
+            SyntaxToken gteToken = parser->currentToken.kind == TokenKind::ColonToken
+                ? parser->EatTokenAsKind(TokenKind::EqualsGreaterThanToken)
+                : parser->EatToken(TokenKind::EqualsGreaterThanToken);
+
+            ExpressionSyntax* expression = ParseExpression(parser);
             SwitchExpressionArmSyntax* switchExpressionCase = parser->CreateNode<SwitchExpressionArmSyntax>(
                 pattern,
-                ParseWhenClause(parser, Precedence::Coalescing),
-                // Help out in the case where a user is converting a switch statement to a switch expression.
-                // Consume the `:` as a `=>` and report an error.
-                parser->currentToken.kind == TokenKind::ColonToken
-                    ? parser->EatTokenAsKind(TokenKind::EqualsGreaterThanToken)
-                    : parser->EatToken(TokenKind::EqualsGreaterThanToken),
-                ParseExpression(parser)
+                whenClause,
+                gteToken,
+                expression
             );
 
             // If we're not making progress, abort
@@ -4089,12 +4639,17 @@ namespace Alchemy::Compilation {
         // For better error recovery when an expression is typed on a line before a switch statement,
         // the caller checks if the switch keyword is followed by an open curly brace. Only if it is
         // would we attempt to parse it as a switch expression here.
+
+        SyntaxToken open = parser->EatToken(TokenKind::OpenBraceToken);
+        SeparatedSyntaxList<SwitchExpressionArmSyntax>* arms = ParseSwitchExpressionArms(parser);
+        SyntaxToken close = parser->EatToken(TokenKind::CloseBraceToken);
+
         return parser->CreateNode<SwitchExpressionSyntax>(
             governingExpression,
             switchKeyword,
-            parser->EatToken(TokenKind::OpenBraceToken),
-            ParseSwitchExpressionArms(parser),
-            parser->EatToken(TokenKind::CloseBraceToken)
+            open,
+            arms,
+            close
         );
 
     }
@@ -4115,7 +4670,7 @@ namespace Alchemy::Compilation {
             SyntaxBase* current = stack.Pop();
 
             NOT_IMPLEMENTED("ContainsTernaryCollectionToReinterpret");
-//            if (current is ConditionalExpressionSyntax conditionalExpression && conditionalExpression.WhenTrue.GetFirstToken().Kind == SyntaxKind.OpenBracketToken) {
+//            if (current is ConditionalExpressionSyntax conditionalExpression && conditionalExpression.WhenTrue.GetFirstToken().Kind == TokenKind::OpenBracketToken) {
 //                return true;
 //            }
 //
@@ -4349,8 +4904,8 @@ namespace Alchemy::Compilation {
 //                leftOperand,
 //                questionToken,
 //                whenTrue,
-//                SyntaxFactory.MissingToken(SyntaxKind.ColonToken),
-//                _syntaxFactory.IdentifierName(SyntaxFactory.MissingToken(SyntaxKind.IdentifierToken)));
+//                SyntaxFactory.MissingToken(TokenKind::ColonToken),
+//                _syntaxFactory.IdentifierName(SyntaxFactory.MissingToken(TokenKind::IdentifierToken)));
 //            return this.AddError(leftOperand, ErrorCode.ERR_ConditionalInInterpolation);
 //        }
 //        else {
@@ -4422,11 +4977,19 @@ namespace Alchemy::Compilation {
     }
 
     ArgumentSyntax* ParseArgumentExpression(Parser* parser, bool isIndexer) {
-        NameColonSyntax* nameColon = parser->currentToken.kind == TokenKind::IdentifierToken && parser->PeekToken(1).kind == TokenKind::ColonToken
-            ? parser->CreateNode<NameColonSyntax>(
-                ParseIdentifierName(parser),
-                parser->EatToken(TokenKind::ColonToken))
-            : nullptr;
+        NameColonSyntax* nameColon;
+
+        if (parser->currentToken.kind == TokenKind::IdentifierToken && parser->PeekToken(1).kind == TokenKind::ColonToken) {
+            IdentifierNameSyntax* identifierName = ParseIdentifierName(parser);
+            SyntaxToken colonToken = parser->EatToken(TokenKind::ColonToken);
+            nameColon = parser->CreateNode<NameColonSyntax>(
+                identifierName,
+                colonToken
+            );
+        }
+        else {
+            nameColon = nullptr;
+        }
 
         SyntaxToken refKindKeyword;
 
@@ -4570,13 +5133,15 @@ namespace Alchemy::Compilation {
             reportError = false;
         }
 
-        ArgumentListSyntax* argumentList = parser->currentToken.kind == TokenKind::OpenParenToken
-            ? ParseParenthesizedArgumentList(parser)
-            : parser->CreateNode<ArgumentListSyntax>(
-                parser->EatToken(TokenKind::OpenParenToken),
-                nullptr,
-                parser->CreateMissingToken(TokenKind::CloseParenToken)
-            );
+        ArgumentListSyntax* argumentList;
+        if (parser->currentToken.kind == TokenKind::OpenParenToken) {
+            argumentList = ParseParenthesizedArgumentList(parser);
+        }
+        else {
+            SyntaxToken openParen = parser->EatToken(TokenKind::OpenParenToken);
+            SyntaxToken closeParen = parser->CreateMissingToken(TokenKind::CloseParenToken);
+            argumentList = parser->CreateNode<ArgumentListSyntax>(openParen, nullptr, closeParen);
+        }
 
         if (kind == SyntaxKind::BaseConstructorInitializer) {
             return parser->CreateNode<BaseConstructorInitializerSyntax>(colon, token, argumentList);
@@ -4622,7 +5187,9 @@ namespace Alchemy::Compilation {
     }
 
     ArrowExpressionClauseSyntax* ParseArrowExpressionClause(Parser* parser) {
-        return parser->CreateNode<ArrowExpressionClauseSyntax>(parser->EatToken(TokenKind::EqualsGreaterThanToken), ParsePossibleRefExpression(parser));
+        SyntaxToken gteToken = parser->EatToken(TokenKind::EqualsGreaterThanToken);
+        ExpressionSyntax* expression = ParsePossibleRefExpression(parser);
+        return parser->CreateNode<ArrowExpressionClauseSyntax>(gteToken, expression);
     }
 
     void ParseBlockAndExpressionBodiesWithSemicolon(Parser* parser, BlockSyntax** blockBody, ArrowExpressionClauseSyntax** expressionBody, SyntaxToken* semicolon, bool parseSemicolonAfterBlock = true) {
@@ -4661,28 +5228,9 @@ namespace Alchemy::Compilation {
 
         // we may end up supporting both C# style construction as well as 'constructor' name syntax
 
-        NOT_IMPLEMENTED("ParseConstructorDeclaration");
+        SyntaxList<AttributeListSyntax>* attributes = nullptr;
 
-        bool isCtorKeyword = parser->currentToken.kind == TokenKind::ConstructorKeyword;
-
-        if (isCtorKeyword) {
-            parser->EatToken();
-            // look for a name or a (
-            if (parser->currentToken.kind == TokenKind::IdentifierToken) {
-
-            }
-            else if (parser->currentToken.kind == TokenKind::OpenParenToken) {
-
-            }
-            else {
-                // missing ( maybe? not sure
-            }
-        }
-        else {
-            SyntaxToken name = ParseIdentifierToken(parser);
-
-        }
-
+        SyntaxToken name = ParseIdentifierToken(parser);
         TerminatorState saveTerm = parser->termState;
         parser->termState |= TerminatorState::IsEndOfMethodSignature;
         ParameterListSyntax* paramList = ParseParenthesizedParameterList(parser);
@@ -4690,18 +5238,22 @@ namespace Alchemy::Compilation {
             ? ParseConstructorInitializer(parser)
             : nullptr;
 
-//        ParseBlockAndExpressionBodiesWithSemicolon(out
-//        var
-//            body, out
-//        var
-//            expressionBody, out
-//        var
-//        semicolon);
+        BlockSyntax* blockBody = nullptr;
+        ArrowExpressionClauseSyntax* expressionBody = nullptr;
+        SyntaxToken semicolon;
+
+        ParseBlockAndExpressionBodiesWithSemicolon(parser, &blockBody, &expressionBody, &semicolon);
 
         parser->termState = saveTerm;
-        return nullptr;
-//        return _syntaxFactory.ConstructorDeclaration(attributes, modifiers.ToList(), name, paramList, initializer, body, expressionBody, semicolon);
-
+        return parser->CreateNode<ConstructorDeclarationSyntax>(
+            attributes,
+            modifiers->Persist(parser->allocator),
+            name, paramList,
+            initializer,
+            blockBody,
+            expressionBody,
+            semicolon
+        );
     }
 
     FieldDeclarationSyntax* ParseConstantFieldDeclaration(Parser* parser, TokenListBuffer* modifiers, SyntaxKind parentKind) {
@@ -4732,6 +5284,9 @@ namespace Alchemy::Compilation {
         }
 
         NOT_IMPLEMENTED("TryParseConversionOperatorDeclaration");
+
+        // implicit conversion float(Thing t) {}
+        // implicit conversion
         return nullptr;
     }
 
@@ -4852,7 +5407,7 @@ namespace Alchemy::Compilation {
 //                modifiers.Add(scopedKeyword);
 //
 //                // Look if ref/out/in/readonly are next
-//                while (par is (SyntaxKind.RefKeyword or SyntaxKind.OutKeyword or SyntaxKind.InKeyword or SyntaxKind.ReadOnlyKeyword)) {
+//                while (par is (TokenKind::RefKeyword or TokenKind::OutKeyword or TokenKind::InKeyword or TokenKind::ReadOnlyKeyword)) {
 //                    modifiers.Add(this.EatToken());
 //                }
 //            }
@@ -4937,9 +5492,36 @@ namespace Alchemy::Compilation {
         return parser->CreateNode<ParameterListSyntax>(open, parameters, close);
     }
 
-    LocalFunctionStatementSyntax* TryParseLocalFunctionStatementBody(Parser* parser, TokenListBuffer* mods, TypeSyntax* parentType, SyntaxToken name) {
-        NOT_IMPLEMENTED("LocalFunctionStatementSyntax");
-        return nullptr;
+    LocalFunctionStatementSyntax* TryParseLocalFunctionStatementBody(Parser* parser, TokenListBuffer* modifiers, TypeSyntax* returnType, SyntaxToken name) {
+        // we've already got the return type
+        TypeParameterListSyntax* typeParameterListOpt = ParseTypeParameterList(parser);
+        ParameterListSyntax* paramList = ParseParenthesizedParameterList(parser);
+
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraints = nullptr;
+        if (parser->currentToken.contextualKind == TokenKind::WhereKeyword) {
+            TempAllocator::ScopedMarker m(parser->tempAllocator);
+            SyntaxListBuilder<TypeParameterConstraintClauseSyntax> builder(parser->tempAllocator);
+            ParseTypeParameterConstraintClauses(parser, &builder);
+            constraints = builder.ToSyntaxList(parser->allocator);
+        }
+
+        BlockSyntax* blockBody = nullptr;
+        ArrowExpressionClauseSyntax* expressionBody = nullptr;
+        SyntaxToken semicolon;
+
+        ParseBlockAndExpressionBodiesWithSemicolon(parser, &blockBody, &expressionBody, &semicolon, false);
+
+        return parser->CreateNode<LocalFunctionStatementSyntax>(
+            modifiers->Persist(parser->allocator),
+            returnType,
+            name,
+            typeParameterListOpt,
+            paramList,
+            constraints,
+            blockBody,
+            expressionBody,
+            semicolon
+        );
     }
 
     bool IsPossibleVariableInitializer(Parser* parser) {
@@ -5003,8 +5585,15 @@ namespace Alchemy::Compilation {
     }
 
     BracketedArgumentListSyntax* ParseBracketedArgumentList(Parser* parser) {
-        NOT_IMPLEMENTED("ParseBracketedArgumentList");
-        return nullptr;
+
+        SyntaxToken openToken;
+        SyntaxToken closeToken;
+        SeparatedSyntaxList<ArgumentSyntax>* argumentList = nullptr;
+
+        ParseArgumentList(parser, TokenKind::OpenBracketToken, TokenKind::CloseBracketToken, &openToken, &argumentList, &closeToken);
+
+        return parser->CreateNode<BracketedArgumentListSyntax>(openToken, argumentList, closeToken);
+
     }
 
     VariableDeclaratorSyntax* ParseVariableDeclarator(Parser* parser, TypeSyntax* parentType, VariableFlags flags, bool isFirst, bool allowLocalFunctions, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction, bool isExpressionContext) {
@@ -5281,10 +5870,99 @@ namespace Alchemy::Compilation {
         return kind == TokenKind::OpenBraceToken || kind == TokenKind::EqualsGreaterThanToken;
     }
 
+    bool IsPossibleAttributeDeclaration(Parser* parser) {
+        // Have to at least start with `[` to be an attribute
+        if (parser->currentToken.kind != TokenKind::OpenBracketToken) {
+            return false;
+        }
+
+        ResetPoint resetPoint(parser);
+
+        parser->EatToken();
+
+        if (IsTrueIdentifier(parser)) {
+            return true;
+        }
+
+        if (SyntaxFacts::IsLiteralExpression(parser->currentToken.kind)) {
+            return false;
+        }
+
+        return true;
+
+    }
+
+    AttributeSyntax* ParseAttribute(Parser* parser) {
+        NameSyntax* nameSyntax = ParseQualifiedName(parser, NameOptions::None);
+        ArgumentListSyntax* argumentList = ParseParenthesizedArgumentList(parser);
+        return parser->CreateNode<AttributeSyntax>(nameSyntax, argumentList);
+    }
+
+    PostSkipAction SkipBadAttributeListTokens(Parser* parser, TokenKind expectedKind, TokenKind closeKind) {
+        return SkipBadSeparatedListTokensWithExpectedKind(
+            parser,
+            [](Parser* parser) { return parser->currentToken.kind != TokenKind::CommaToken && !IsPossibleAttribute(parser); },
+            [](Parser* parser, TokenKind closeKind) { return parser->currentToken.kind == closeKind; },
+            expectedKind,
+            closeKind
+        );
+    }
+
+    AttributeListSyntax* TryParseAttributeDeclaration(Parser* parser) {
+
+        if (parser->currentToken.kind != TokenKind::OpenBracketToken) {
+            return nullptr;
+        }
+
+        SyntaxToken openBracket = parser->EatToken(TokenKind::OpenBracketToken);
+
+        SeparatedSyntaxList<AttributeSyntax>* attributes = ParseCommaSeparatedSyntaxList<AttributeSyntax>(
+            parser,
+            &openBracket,
+            TokenKind::CloseBracketToken,
+            [](Parser* parser) { return IsPossibleAttribute(parser); },
+            [](Parser* parser) { return (SyntaxBase*) ParseAttribute(parser); },
+            &SkipBadAttributeListTokens,
+            true,
+            true,
+            false
+        );
+
+        SyntaxToken closeBracket = parser->EatToken(TokenKind::CloseBracketToken);
+
+        return parser->CreateNode<AttributeListSyntax>(openBracket, attributes, closeBracket);
+
+    }
+
+    SyntaxList<AttributeListSyntax>* ParseAttributeDeclarations(Parser* parser) {
+
+        TempAllocator::ScopedMarker m(parser->tempAllocator);
+        SyntaxListBuilder<AttributeListSyntax> attributes(parser->tempAllocator);
+
+        TerminatorState saveTerm = parser->termState;
+        parser->termState |= TerminatorState::IsAttributeDeclarationTerminator;
+
+        while (IsPossibleAttributeDeclaration(parser)) {
+            AttributeListSyntax* attributeDeclaration = TryParseAttributeDeclaration(parser);
+            if (attributeDeclaration == nullptr) {
+                break;
+            }
+
+            attributes.Add(attributeDeclaration);
+        }
+
+        parser->termState = saveTerm;
+
+        return attributes.ToSyntaxList(parser->allocator);
+
+    }
+
     MemberDeclarationSyntax* ParseMemberDeclaration(Parser* parser, SyntaxKind parentKind) {
         assert(parentKind != SyntaxKind::CompilationUnit);
 
         TerminatorState saveTermState = parser->termState;
+
+        SyntaxList<AttributeListSyntax>* attributes = ParseAttributeDeclarations(parser);
 
         TempAllocator::ScopedMarker m(parser->tempAllocator);
         TokenListBuffer modifiers(parser->tempAllocator);
@@ -5312,7 +5990,7 @@ namespace Alchemy::Compilation {
 
         // It's valid to have a type declaration here -- check for those
         if (isPossibleTypeDeclaration && IsTypeDeclarationStart(parser)) {
-            return ParseTypeDeclaration(parser, &modifiers);
+            return ParseTypeDeclaration(parser, attributes, &modifiers);
         }
 
         // Everything that's left -- methods, fields, properties,
@@ -5540,7 +6218,7 @@ namespace Alchemy::Compilation {
             case TokenKind::OpenBracketToken: // collection expression
                 return true;
             case TokenKind::StaticKeyword:
-                return IsPossibleAnonymousMethodExpression(parser) || IsPossibleLambdaExpression(parser, Precedence::Expression);
+                return IsPossibleLambdaExpression(parser, Precedence::Expression);
             case TokenKind::IdentifierToken:
                 return IsTrueIdentifier(parser);
             default:
@@ -5643,83 +6321,100 @@ namespace Alchemy::Compilation {
         return parser->currentToken.kind == TokenKind::SemicolonToken || IsPossibleStatement(parser, true);
     }
 
-    bool IsEndOfFixedStatement() {
-        NOT_IMPLEMENTED("IsEndOfFixedStatement");
-        return false;
+    bool IsEndOfFixedStatement(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+        return tk == TokenKind::CloseParenToken || tk == TokenKind::OpenBraceToken || tk == TokenKind::SemicolonToken;
     }
 
-    bool IsEndOfTryBlock() {
-        NOT_IMPLEMENTED("IsEndOfTryBlock");
-        return false;
+    bool IsEndOfTryBlock(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+        return tk == TokenKind::CloseBraceToken || tk == TokenKind::CatchKeyword || tk == TokenKind::FinallyKeyword;
     }
 
-    bool IsEndOfCatchClause() {
-        NOT_IMPLEMENTED("IsEndOfCatchClause");
-        return false;
+    bool IsEndOfCatchClause(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+        return tk == TokenKind::CloseParenToken ||
+            tk == TokenKind::OpenBraceToken ||
+            tk == TokenKind::CloseBraceToken ||
+            tk == TokenKind::CatchKeyword ||
+            tk == TokenKind::FinallyKeyword;
     }
 
-    bool IsEndOfFilterClause() {
-        NOT_IMPLEMENTED("IsEndOfFilterClause");
-        return false;
+    bool IsEndOfFilterClause(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+
+        return tk == TokenKind::CloseParenToken ||
+            tk == TokenKind::OpenBraceToken ||
+            tk == TokenKind::CloseBraceToken ||
+            tk == TokenKind::CatchKeyword ||
+            tk == TokenKind::FinallyKeyword;
+
     }
 
-    bool IsEndOfCatchBlock() {
-        NOT_IMPLEMENTED("IsEndOfCatchBlock");
-        return false;
+    bool IsEndOfCatchBlock(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+
+        return tk == TokenKind::CloseBraceToken ||
+            tk == TokenKind::CatchKeyword ||
+            tk == TokenKind::FinallyKeyword;
     }
 
-    bool IsEndOfDoWhileExpression() {
-        NOT_IMPLEMENTED("IsEndOfDoWhileExpression");
-        return false;
+    bool IsEndOfDoWhileExpression(Parser* parser) {
+        return parser->currentToken.kind == TokenKind::CloseParenToken || parser->currentToken.kind == TokenKind::SemicolonToken;
     }
 
-    bool IsEndOfForStatementArgument() {
-        NOT_IMPLEMENTED("IsEndOfForStatementArgument");
-        return false;
+    bool IsEndOfForStatementArgument(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+        return tk == TokenKind::SemicolonToken || tk == TokenKind::CloseParenToken || tk == TokenKind::OpenBraceToken;
     }
 
-    bool IsEndOfDeclarationClause() {
-        NOT_IMPLEMENTED("IsEndOfDeclarationClause");
-        return false;
+    bool IsEndOfDeclarationClause(Parser* parser) {
+        return parser->currentToken.kind == TokenKind::SemicolonToken || parser->currentToken.kind == TokenKind::ColonToken;
     }
 
     bool IsEndOfArgumentList(Parser* parser) {
-        NOT_IMPLEMENTED("IsEndOfArgumentList");
-        return false;
+        return parser->currentToken.kind == TokenKind::CloseParenToken || parser->currentToken.kind == TokenKind::CloseBracketToken;
     }
 
     bool IsPossibleSwitchSection(Parser* parser) {
         return parser->currentToken.kind == TokenKind::CaseKeyword || (parser->currentToken.kind == TokenKind::DefaultKeyword && parser->PeekToken(1).kind != TokenKind::OpenParenToken);
     }
 
-    bool IsEndOfTypeParameterList() {
-        NOT_IMPLEMENTED("IsEndOfTypeParameterList");
+    bool IsEndOfTypeParameterList(Parser* parser) {
+        TokenKind tk = parser->currentToken.kind;
+        if (tk == TokenKind::OpenParenToken) {
+            // void Goo<T (
+            return true;
+        }
+
+        if (tk == TokenKind::ColonToken) {
+            // class C<T :
+            return true;
+        }
+
+        if (tk == TokenKind::OpenBraceToken) {
+            // class C<T {
+            return true;
+        }
+
+        if (IsCurrentTokenWhereOfConstraintClause(parser)) {
+            // class C<T where T :
+            return true;
+        }
+
         return false;
     }
 
-    bool IsEndOfMethodSignature() {
-        NOT_IMPLEMENTED("IsEndOfMethodSignature");
-        return false;
+    bool IsEndOfMethodSignature(Parser* parser) {
+        return parser->currentToken.kind == TokenKind::SemicolonToken || parser->currentToken.kind == TokenKind::OpenBraceToken;
     }
 
-    bool IsEndOfNameInExplicitInterface() {
-        NOT_IMPLEMENTED("IsEndOfNameInExplicitInterface");
-        return false;
+    bool IsEndOfNameInExplicitInterface(Parser* parser) {
+        return parser->currentToken.kind == TokenKind::DotToken || parser->currentToken.kind == TokenKind::ColonColonToken;
     }
 
-    bool IsEndOfFunctionPointerParameterList(bool b) {
-        NOT_IMPLEMENTED("IsEndOfFunctionPointerParameterList");
-        return false;
-    }
-
-    bool IsEndOfFunctionPointerCallingConvention() {
-        NOT_IMPLEMENTED("IsEndOfFunctionPointerCallingConvention");
-        return false;
-    }
-
-    bool IsEndOfRecordOrClassOrStructOrInterfaceSignature() {
-        NOT_IMPLEMENTED("IsEndOfRecordOrClassOrStructOrInterfaceSignature");
-        return false;
+    bool IsEndOfClassOrStructOrInterfaceSignature(Parser* parser) {
+        return parser->currentToken.kind == TokenKind::SemicolonToken || parser->currentToken.kind == TokenKind::OpenBraceToken;
     }
 
     bool IsPartialType(Parser* parser) {
@@ -5879,49 +6574,49 @@ namespace Alchemy::Compilation {
                     continue;
                 }
                 case TerminatorState::IsEndOfFixedStatement: {
-                    if (IsEndOfFixedStatement()) {
+                    if (IsEndOfFixedStatement(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfTryBlock: {
-                    if (IsEndOfTryBlock()) {
+                    if (IsEndOfTryBlock(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfCatchClause: {
-                    if (IsEndOfCatchClause()) {
+                    if (IsEndOfCatchClause(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfFilterClause: {
-                    if (IsEndOfFilterClause()) {
+                    if (IsEndOfFilterClause(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfCatchBlock: {
-                    if (IsEndOfCatchBlock()) {
+                    if (IsEndOfCatchBlock(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfDoWhileExpression: {
-                    if (IsEndOfDoWhileExpression()) {
+                    if (IsEndOfDoWhileExpression(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfForStatementArgument: {
-                    if (IsEndOfForStatementArgument()) {
+                    if (IsEndOfForStatementArgument(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfDeclarationClause: {
-                    if (IsEndOfDeclarationClause()) {
+                    if (IsEndOfDeclarationClause(parser)) {
                         return true;
                     }
                     continue;
@@ -5939,43 +6634,25 @@ namespace Alchemy::Compilation {
                     continue;
                 }
                 case TerminatorState::IsEndOfTypeParameterList: {
-                    if (IsEndOfTypeParameterList()) {
+                    if (IsEndOfTypeParameterList(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfMethodSignature: {
-                    if (IsEndOfMethodSignature()) {
+                    if (IsEndOfMethodSignature(parser)) {
                         return true;
                     }
                     continue;
                 }
                 case TerminatorState::IsEndOfNameInExplicitInterface: {
-                    if (IsEndOfNameInExplicitInterface()) {
+                    if (IsEndOfNameInExplicitInterface(parser)) {
                         return true;
                     }
                     continue;
                 }
-                case TerminatorState::IsEndOfFunctionPointerParameterList: {
-                    if (IsEndOfFunctionPointerParameterList(false)) {
-                        return true;
-                    }
-                    continue;
-                }
-                case TerminatorState::IsEndOfFunctionPointerParameterListErrored: {
-                    if (IsEndOfFunctionPointerParameterList(true)) {
-                        return true;
-                    }
-                    continue;
-                }
-                case TerminatorState::IsEndOfFunctionPointerCallingConvention: {
-                    if (IsEndOfFunctionPointerCallingConvention()) {
-                        return true;
-                    }
-                    continue;
-                }
-                case TerminatorState::IsEndOfRecordOrClassOrStructOrInterfaceSignature: {
-                    if (IsEndOfRecordOrClassOrStructOrInterfaceSignature()) {
+                case TerminatorState::IsEndOfClassOrStructOrInterfaceSignature: {
+                    if (IsEndOfClassOrStructOrInterfaceSignature(parser)) {
                         return true;
                     }
                     continue;
@@ -6350,7 +7027,6 @@ namespace Alchemy::Compilation {
     }
 
     NameSyntax* ParseQualifiedNameRight(Parser* parser, NameOptions options, NameSyntax* left, SyntaxToken separator) {
-        // assert(separator.Kind is SyntaxKind.DotToken or SyntaxKind.DotDotToken or SyntaxKind.ColonColonToken);
         SimpleNameSyntax* right = ParseSimpleName(parser, options);
 
         switch (separator.kind) {
@@ -6393,7 +7069,7 @@ namespace Alchemy::Compilation {
         }
     }
 
-    TypeSyntax* ParseQualifiedName(Parser* parser, NameOptions options) {
+    NameSyntax* ParseQualifiedName(Parser* parser, NameOptions options) {
         NameSyntax* name = ParseSimpleName(parser, options);
 
         // Handle .. tokens for error recovery purposes.
@@ -6692,7 +7368,7 @@ namespace Alchemy::Compilation {
                 nameOptions = NameOptions::None;
                 break;
             default:
-                NOT_IMPLEMENTED("invalid value");
+                UNREACHABLE("ParseTypeCore");
                 break;
         }
 
@@ -6735,10 +7411,13 @@ namespace Alchemy::Compilation {
 
         if (parser->currentToken.kind == TokenKind::RefKeyword) {
 
+            SyntaxToken refKeyword = parser->EatToken();
+            SyntaxToken readonlyKeyword = parser->currentToken.kind == TokenKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken();
+            TypeSyntax* type = ParseTypeCore(parser, ParseTypeMode::AfterRef);
             return parser->CreateNode<RefTypeSyntax>(
                 parser->EatToken(),
-                parser->currentToken.kind == TokenKind::ReadOnlyKeyword ? parser->EatToken() : SyntaxToken(),
-                ParseTypeCore(parser, ParseTypeMode::AfterRef)
+                readonlyKeyword,
+                type
             );
 
         }

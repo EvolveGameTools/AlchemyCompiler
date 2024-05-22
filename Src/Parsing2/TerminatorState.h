@@ -27,12 +27,9 @@ namespace Alchemy::Compilation {
         IsEndOfTypeParameterList = 1 << 20,
         IsEndOfMethodSignature = 1 << 21,
         IsEndOfNameInExplicitInterface = 1 << 22,
-        IsEndOfFunctionPointerParameterList = 1 << 23,
-        IsEndOfFunctionPointerParameterListErrored = 1 << 24,
-        IsEndOfFunctionPointerCallingConvention = 1 << 25,
-        IsEndOfRecordOrClassOrStructOrInterfaceSignature = 1 << 26,
-        IsExpressionOrPatternInCaseLabelOfSwitchStatement = 1 << 27,
-        IsPatternInSwitchExpressionArm = 1 << 28,
-        __LAST__
+        IsEndOfClassOrStructOrInterfaceSignature = 1 << 23,
+        IsExpressionOrPatternInCaseLabelOfSwitchStatement = 1 << 24,
+        IsPatternInSwitchExpressionArm = 1 << 25,
+        __LAST__ = 1 << 26
     })
 }

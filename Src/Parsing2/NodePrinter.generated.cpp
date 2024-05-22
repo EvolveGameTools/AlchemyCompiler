@@ -2361,6 +2361,291 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::BaseList: {
+                BaseListSyntax* p = (BaseListSyntax*)syntaxBase;
+                PrintNodeHeader("BaseListSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("colonToken");
+                PrintToken(p->colonToken);
+                PrintFieldName("types");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->types);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::Attribute: {
+                AttributeSyntax* p = (AttributeSyntax*)syntaxBase;
+                PrintNodeHeader("AttributeSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("name");
+                PrintNode(p->name);
+                PrintFieldName("argumentList");
+                PrintNode(p->argumentList);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::AttributeList: {
+                AttributeListSyntax* p = (AttributeListSyntax*)syntaxBase;
+                PrintNodeHeader("AttributeListSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("openBracket");
+                PrintToken(p->openBracket);
+                PrintFieldName("attributes");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->attributes);
+                PrintFieldName("closeBracket");
+                PrintToken(p->closeBracket);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::TypeConstraint: {
+                TypeConstraintSyntax* p = (TypeConstraintSyntax*)syntaxBase;
+                PrintNodeHeader("TypeConstraintSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("type");
+                PrintNode(p->type);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ConstructorConstraint: {
+                ConstructorConstraintSyntax* p = (ConstructorConstraintSyntax*)syntaxBase;
+                PrintNodeHeader("ConstructorConstraintSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("newKeyword");
+                PrintToken(p->newKeyword);
+                PrintFieldName("openParen");
+                PrintToken(p->openParen);
+                PrintFieldName("closeParen");
+                PrintToken(p->closeParen);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ClassConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                PrintNodeHeader("ClassOrStructConstraintSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("questionToken");
+                PrintToken(p->questionToken);
+                indent--;
+                break;
+            }
+            case SyntaxKind::StructConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                PrintNodeHeader("ClassOrStructConstraintSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("questionToken");
+                PrintToken(p->questionToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::TypeParameterConstraintClause: {
+                TypeParameterConstraintClauseSyntax* p = (TypeParameterConstraintClauseSyntax*)syntaxBase;
+                PrintNodeHeader("TypeParameterConstraintClauseSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("whereKeyword");
+                PrintToken(p->whereKeyword);
+                PrintFieldName("name");
+                PrintNode(p->name);
+                PrintFieldName("colonToken");
+                PrintToken(p->colonToken);
+                PrintFieldName("constraints");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->constraints);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::StructDeclaration: {
+                StructDeclarationSyntax* p = (StructDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("StructDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("typeParameterList");
+                PrintNode(p->typeParameterList);
+                PrintFieldName("parameterList");
+                PrintNode(p->parameterList);
+                PrintFieldName("baseList");
+                PrintNode(p->baseList);
+                PrintFieldName("constraintClauses");
+                PrintSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                PrintFieldName("openBraceToken");
+                PrintToken(p->openBraceToken);
+                PrintFieldName("members");
+                PrintSyntaxList((SyntaxListUntyped*)p->members);
+                PrintFieldName("closeBraceToken");
+                PrintToken(p->closeBraceToken);
+                PrintFieldName("semicolonToken");
+                PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::EnumMemberDeclaration: {
+                EnumMemberDeclarationSyntax* p = (EnumMemberDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("EnumMemberDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("equalsValue");
+                PrintNode(p->equalsValue);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::EnumDeclaration: {
+                EnumDeclarationSyntax* p = (EnumDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("EnumDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("baseList");
+                PrintNode(p->baseList);
+                PrintFieldName("openBrace");
+                PrintToken(p->openBrace);
+                PrintFieldName("members");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->members);
+                PrintFieldName("closeBrace");
+                PrintToken(p->closeBrace);
+                PrintFieldName("semicolonToken");
+                PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::DelegateDeclaration: {
+                DelegateDeclarationSyntax* p = (DelegateDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("DelegateDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("returnType");
+                PrintNode(p->returnType);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("typeParameterList");
+                PrintNode(p->typeParameterList);
+                PrintFieldName("parameterList");
+                PrintNode(p->parameterList);
+                PrintFieldName("constraintClauses");
+                PrintSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                PrintFieldName("semicolonToken");
+                PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::ClassDeclaration: {
+                ClassDeclarationSyntax* p = (ClassDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("ClassDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("typeParameterList");
+                PrintNode(p->typeParameterList);
+                PrintFieldName("parameterList");
+                PrintNode(p->parameterList);
+                PrintFieldName("baseList");
+                PrintNode(p->baseList);
+                PrintFieldName("constraintClauses");
+                PrintSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                PrintFieldName("openBraceToken");
+                PrintToken(p->openBraceToken);
+                PrintFieldName("members");
+                PrintSyntaxList((SyntaxListUntyped*)p->members);
+                PrintFieldName("closeBraceToken");
+                PrintToken(p->closeBraceToken);
+                PrintFieldName("semicolonToken");
+                PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::InterfaceDeclaration: {
+                InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("InterfaceDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("typeParameterList");
+                PrintNode(p->typeParameterList);
+                PrintFieldName("parameterList");
+                PrintNode(p->parameterList);
+                PrintFieldName("baseList");
+                PrintNode(p->baseList);
+                PrintFieldName("constraintClauses");
+                PrintSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                PrintFieldName("openBraceToken");
+                PrintToken(p->openBraceToken);
+                PrintFieldName("members");
+                PrintSyntaxList((SyntaxListUntyped*)p->members);
+                PrintFieldName("closeBraceToken");
+                PrintToken(p->closeBraceToken);
+                PrintFieldName("semicolonToken");
+                PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::SimpleBaseType: {
+                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
+                PrintNodeHeader("SimpleBaseTypeSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("type");
+                PrintNode(p->type);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::PrimaryConstructorBaseType: {
+                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+                PrintNodeHeader("PrimaryConstructorBaseTypeSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("type");
+                PrintNode(p->type);
+                PrintFieldName("argumentList");
+                PrintNode(p->argumentList);
+                indent--;
+                break;
+            }
+
             default: {
                 break;
             }

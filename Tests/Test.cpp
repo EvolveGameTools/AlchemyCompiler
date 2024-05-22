@@ -51,6 +51,7 @@ TEST_CASE("Parse Field", "[parser]") {
     }
 
 }
+
 TEST_CASE("Parse Switch Expression", "[parser]") {
     INITIALIZE_PARSER_TEST
 
@@ -65,14 +66,13 @@ expr switch {
 )")
 
         SyntaxBase* x = ParseExpression(&parser);
-
-//        REQUIRE(false); // todo -- this test is super busted, see output file
-        WriteTreeToFile(file, tokens, x);
-     //   REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
 
 }
+
 TEST_CASE("Parse Parameter List", "[parser]") {
     INITIALIZE_PARSER_TEST
 
@@ -82,7 +82,7 @@ TEST_CASE("Parse Parameter List", "[parser]") {
 
         SyntaxBase* x = ParseParenthesizedParameterList(&parser);
 
-        // WriteTreeToFile(file, tokens, x);
+        //WriteTreeToFile(file, tokens, x);
         REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
@@ -92,7 +92,7 @@ TEST_CASE("Parse Parameter List", "[parser]") {
 
         SyntaxBase* x = ParseParenthesizedParameterList(&parser);
 
-         //WriteTreeToFile(file, tokens, x);
+        //WriteTreeToFile(file, tokens, x);
         REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
@@ -106,12 +106,13 @@ TEST_CASE("binary expressions", "[parser]") {
         INITIALIZE_PARSER("x + y")
 
         ExpressionSyntax* x = ParseExpression(&parser);
-        // WriteTreeToFile(file, tokens, x);
+        //WriteTreeToFile(file, tokens, x);
         REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
 
 }
+
 TEST_CASE("Scan Type Arguments", "[tokenizer]") {
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32));
     Alchemy::TempAllocator* tempAllocator = Alchemy::GetThreadLocalAllocator();

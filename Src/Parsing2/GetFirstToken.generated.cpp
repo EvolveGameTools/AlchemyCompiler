@@ -1333,6 +1333,164 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::BaseList: {
+                BaseListSyntax* p = (BaseListSyntax*)syntaxBase;
+                if(p->colonToken.IsValid()) return p->colonToken;
+                if(p->types != nullptr && p->types->itemCount != 0) return GetFirstToken(p->types->items[0]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::Attribute: {
+                AttributeSyntax* p = (AttributeSyntax*)syntaxBase;
+                if(p->name != nullptr) return GetFirstToken((SyntaxBase*)p->name);
+                if(p->argumentList != nullptr) return GetFirstToken((SyntaxBase*)p->argumentList);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::AttributeList: {
+                AttributeListSyntax* p = (AttributeListSyntax*)syntaxBase;
+                if(p->openBracket.IsValid()) return p->openBracket;
+                if(p->attributes != nullptr && p->attributes->itemCount != 0) return GetFirstToken(p->attributes->items[0]);
+                if(p->closeBracket.IsValid()) return p->closeBracket;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::TypeConstraint: {
+                TypeConstraintSyntax* p = (TypeConstraintSyntax*)syntaxBase;
+                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ConstructorConstraint: {
+                ConstructorConstraintSyntax* p = (ConstructorConstraintSyntax*)syntaxBase;
+                if(p->newKeyword.IsValid()) return p->newKeyword;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->closeParen.IsValid()) return p->closeParen;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ClassConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->questionToken.IsValid()) return p->questionToken;
+                return SyntaxToken();
+            }
+            case SyntaxKind::StructConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->questionToken.IsValid()) return p->questionToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::TypeParameterConstraintClause: {
+                TypeParameterConstraintClauseSyntax* p = (TypeParameterConstraintClauseSyntax*)syntaxBase;
+                if(p->whereKeyword.IsValid()) return p->whereKeyword;
+                if(p->name != nullptr) return GetFirstToken((SyntaxBase*)p->name);
+                if(p->colonToken.IsValid()) return p->colonToken;
+                if(p->constraints != nullptr && p->constraints->itemCount != 0) return GetFirstToken(p->constraints->items[0]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::StructDeclaration: {
+                StructDeclarationSyntax* p = (StructDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->typeParameterList != nullptr) return GetFirstToken((SyntaxBase*)p->typeParameterList);
+                if(p->parameterList != nullptr) return GetFirstToken((SyntaxBase*)p->parameterList);
+                if(p->baseList != nullptr) return GetFirstToken((SyntaxBase*)p->baseList);
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetFirstToken(p->constraintClauses->array[0]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->members != nullptr && p->members->size != 0) return GetFirstToken(p->members->array[0]);
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::EnumMemberDeclaration: {
+                EnumMemberDeclarationSyntax* p = (EnumMemberDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->equalsValue != nullptr) return GetFirstToken((SyntaxBase*)p->equalsValue);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::EnumDeclaration: {
+                EnumDeclarationSyntax* p = (EnumDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->baseList != nullptr) return GetFirstToken((SyntaxBase*)p->baseList);
+                if(p->openBrace.IsValid()) return p->openBrace;
+                if(p->members != nullptr && p->members->itemCount != 0) return GetFirstToken(p->members->items[0]);
+                if(p->closeBrace.IsValid()) return p->closeBrace;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::DelegateDeclaration: {
+                DelegateDeclarationSyntax* p = (DelegateDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->returnType != nullptr) return GetFirstToken((SyntaxBase*)p->returnType);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->typeParameterList != nullptr) return GetFirstToken((SyntaxBase*)p->typeParameterList);
+                if(p->parameterList != nullptr) return GetFirstToken((SyntaxBase*)p->parameterList);
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetFirstToken(p->constraintClauses->array[0]);
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ClassDeclaration: {
+                ClassDeclarationSyntax* p = (ClassDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->typeParameterList != nullptr) return GetFirstToken((SyntaxBase*)p->typeParameterList);
+                if(p->parameterList != nullptr) return GetFirstToken((SyntaxBase*)p->parameterList);
+                if(p->baseList != nullptr) return GetFirstToken((SyntaxBase*)p->baseList);
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetFirstToken(p->constraintClauses->array[0]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->members != nullptr && p->members->size != 0) return GetFirstToken(p->members->array[0]);
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::InterfaceDeclaration: {
+                InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->typeParameterList != nullptr) return GetFirstToken((SyntaxBase*)p->typeParameterList);
+                if(p->parameterList != nullptr) return GetFirstToken((SyntaxBase*)p->parameterList);
+                if(p->baseList != nullptr) return GetFirstToken((SyntaxBase*)p->baseList);
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetFirstToken(p->constraintClauses->array[0]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->members != nullptr && p->members->size != 0) return GetFirstToken(p->members->array[0]);
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SimpleBaseType: {
+                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
+                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::PrimaryConstructorBaseType: {
+                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
+                if(p->argumentList != nullptr) return GetFirstToken((SyntaxBase*)p->argumentList);
+                return SyntaxToken();
+            }
+
             default: {
                 return SyntaxToken();
             }
@@ -2760,6 +2918,180 @@ namespace Alchemy::Compilation {
                 if(p->semicolon.IsValid()) return p->semicolon;
                 if(p->expressionSyntax != nullptr) return GetLastToken((SyntaxBase*)p->expressionSyntax);
                 if(p->returnKeyword.IsValid()) return p->returnKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::BaseList: {
+                BaseListSyntax* p = (BaseListSyntax*)syntaxBase;
+                if(p->types != nullptr && p->types->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->types->items[p->types->itemCount - 1]);
+                    SyntaxToken b = p->types->separatorCount == 0 ? SyntaxToken() : p->types->separators[p->types->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->colonToken.IsValid()) return p->colonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::Attribute: {
+                AttributeSyntax* p = (AttributeSyntax*)syntaxBase;
+                if(p->argumentList != nullptr) return GetLastToken((SyntaxBase*)p->argumentList);
+                if(p->name != nullptr) return GetLastToken((SyntaxBase*)p->name);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::AttributeList: {
+                AttributeListSyntax* p = (AttributeListSyntax*)syntaxBase;
+                if(p->closeBracket.IsValid()) return p->closeBracket;
+                if(p->attributes != nullptr && p->attributes->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->attributes->items[p->attributes->itemCount - 1]);
+                    SyntaxToken b = p->attributes->separatorCount == 0 ? SyntaxToken() : p->attributes->separators[p->attributes->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->openBracket.IsValid()) return p->openBracket;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::TypeConstraint: {
+                TypeConstraintSyntax* p = (TypeConstraintSyntax*)syntaxBase;
+                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ConstructorConstraint: {
+                ConstructorConstraintSyntax* p = (ConstructorConstraintSyntax*)syntaxBase;
+                if(p->closeParen.IsValid()) return p->closeParen;
+                if(p->openParen.IsValid()) return p->openParen;
+                if(p->newKeyword.IsValid()) return p->newKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ClassConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                if(p->questionToken.IsValid()) return p->questionToken;
+                if(p->keyword.IsValid()) return p->keyword;
+                return SyntaxToken();
+            }
+            case SyntaxKind::StructConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                if(p->questionToken.IsValid()) return p->questionToken;
+                if(p->keyword.IsValid()) return p->keyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::TypeParameterConstraintClause: {
+                TypeParameterConstraintClauseSyntax* p = (TypeParameterConstraintClauseSyntax*)syntaxBase;
+                if(p->constraints != nullptr && p->constraints->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->constraints->items[p->constraints->itemCount - 1]);
+                    SyntaxToken b = p->constraints->separatorCount == 0 ? SyntaxToken() : p->constraints->separators[p->constraints->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->colonToken.IsValid()) return p->colonToken;
+                if(p->name != nullptr) return GetLastToken((SyntaxBase*)p->name);
+                if(p->whereKeyword.IsValid()) return p->whereKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::StructDeclaration: {
+                StructDeclarationSyntax* p = (StructDeclarationSyntax*)syntaxBase;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->members != nullptr && p->members->size != 0) return GetLastToken(p->members->array[p->members->size - 1]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetLastToken(p->constraintClauses->array[p->constraintClauses->size - 1]);
+                if(p->baseList != nullptr) return GetLastToken((SyntaxBase*)p->baseList);
+                if(p->parameterList != nullptr) return GetLastToken((SyntaxBase*)p->parameterList);
+                if(p->typeParameterList != nullptr) return GetLastToken((SyntaxBase*)p->typeParameterList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::EnumMemberDeclaration: {
+                EnumMemberDeclarationSyntax* p = (EnumMemberDeclarationSyntax*)syntaxBase;
+                if(p->equalsValue != nullptr) return GetLastToken((SyntaxBase*)p->equalsValue);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::EnumDeclaration: {
+                EnumDeclarationSyntax* p = (EnumDeclarationSyntax*)syntaxBase;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                if(p->closeBrace.IsValid()) return p->closeBrace;
+                if(p->members != nullptr && p->members->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->members->items[p->members->itemCount - 1]);
+                    SyntaxToken b = p->members->separatorCount == 0 ? SyntaxToken() : p->members->separators[p->members->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->openBrace.IsValid()) return p->openBrace;
+                if(p->baseList != nullptr) return GetLastToken((SyntaxBase*)p->baseList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::DelegateDeclaration: {
+                DelegateDeclarationSyntax* p = (DelegateDeclarationSyntax*)syntaxBase;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetLastToken(p->constraintClauses->array[p->constraintClauses->size - 1]);
+                if(p->parameterList != nullptr) return GetLastToken((SyntaxBase*)p->parameterList);
+                if(p->typeParameterList != nullptr) return GetLastToken((SyntaxBase*)p->typeParameterList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->returnType != nullptr) return GetLastToken((SyntaxBase*)p->returnType);
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ClassDeclaration: {
+                ClassDeclarationSyntax* p = (ClassDeclarationSyntax*)syntaxBase;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->members != nullptr && p->members->size != 0) return GetLastToken(p->members->array[p->members->size - 1]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetLastToken(p->constraintClauses->array[p->constraintClauses->size - 1]);
+                if(p->baseList != nullptr) return GetLastToken((SyntaxBase*)p->baseList);
+                if(p->parameterList != nullptr) return GetLastToken((SyntaxBase*)p->parameterList);
+                if(p->typeParameterList != nullptr) return GetLastToken((SyntaxBase*)p->typeParameterList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::InterfaceDeclaration: {
+                InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                if(p->closeBraceToken.IsValid()) return p->closeBraceToken;
+                if(p->members != nullptr && p->members->size != 0) return GetLastToken(p->members->array[p->members->size - 1]);
+                if(p->openBraceToken.IsValid()) return p->openBraceToken;
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetLastToken(p->constraintClauses->array[p->constraintClauses->size - 1]);
+                if(p->baseList != nullptr) return GetLastToken((SyntaxBase*)p->baseList);
+                if(p->parameterList != nullptr) return GetLastToken((SyntaxBase*)p->parameterList);
+                if(p->typeParameterList != nullptr) return GetLastToken((SyntaxBase*)p->typeParameterList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SimpleBaseType: {
+                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
+                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::PrimaryConstructorBaseType: {
+                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+                if(p->argumentList != nullptr) return GetLastToken((SyntaxBase*)p->argumentList);
+                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
                 return SyntaxToken();
             }
 

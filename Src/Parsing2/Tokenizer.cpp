@@ -185,20 +185,7 @@ namespace Alchemy::Compilation {
 
     }
 
-    void ScanStringLiteral(TextWindow* pWindow, SyntaxToken* pInfo, bool b) {
-
-    }
-
-    void PrintTokens(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
-
-        for (int32 i = 0; i < tokens.size; i++) {
-            //[line:column] kind, contextualKind -> "text"
-
-            SyntaxToken token = tokens[i];
-            LineColumn lc = lineCols[i];
-            printf("[%d:%d] %s (%s) -> \"%.*s\" \n", lc.line, lc.column, TokenKindToString(token.kind), TokenKindToString(token.contextualKind), token.textSize, token.text);
-
-        }
+    void ScanStringLiteral(TextWindow* textWindow, SyntaxToken* pInfo, bool inDirective) {
 
     }
 
@@ -240,50 +227,6 @@ namespace Alchemy::Compilation {
 
     }
 
-    void ComputeTokenLineColumns2(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols) {
-
-        char* last = tokens[0].text;
-        char* lastNewLineEnd = last;
-
-        int32 lineNumber = 0;
-        for (int32 i = 0; i < tokens.size; i++) {
-            SyntaxToken token = tokens[i];
-            char* ptr = last;
-            lineCols[i].line = lineNumber + 1;
-            while (ptr != token.text) {
-
-                if (*ptr == '\r') {
-                    if (ptr + 1 != token.text && ptr[1] == '\n') {
-                        lineNumber++;
-                        lastNewLineEnd = ptr + 2; // we want byte width to end of the last new line char
-                        ptr += 2;
-                    }
-                    else {
-                        lineNumber++;
-                        lastNewLineEnd = ptr;
-                        ptr++;
-                    }
-                    continue;
-                }
-                if (*ptr == '\n') {
-                    lineNumber++;
-                    lastNewLineEnd = ptr + 1;
-                }
-
-                ptr++;
-            }
-
-            int32 col = (int32) (token.text - lastNewLineEnd);
-
-            // 1 based
-            lineCols[i].line = lineNumber + 1;
-            lineCols[i].column = col + 1;
-            last = token.text;
-
-        }
-
-    }
-
     void Tokenize(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens) {
 
         int32 badTokenCount = 0;
@@ -294,7 +237,34 @@ namespace Alchemy::Compilation {
             SyntaxToken tokenInfo;
 
             tokenInfo.text = textWindow->ptr;
-            ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
+            if(*textWindow->ptr == '\"') {
+                // %#"multiline string no need to escape"
+                // #rm"" raw multiline
+                // rm"" raw multiline
+                // r"" raw string
+                // r#"" raw string
+                // m""
+                // rm$ "" raw multiline with interpolations
+                // r"
+                // somehow we need to search the holes in our string for ${ } pairings
+                // "{value} $value {{value}} "
+                // " string "
+                // r" raw string "
+                // """ multiline string """
+                // """ raw multiline string """
+                // r#$""" raw multi line string {{with interpolations} }"""
+                // @ multi line string
+                // @""
+            }
+            else if(*textWindow->ptr == '\'') {
+
+            }
+            else if(*textWindow->ptr == '`') {
+
+            }
+            else {
+                ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
+            }
             tokenInfo.textSize = (int32) (textWindow->ptr - tokenInfo.text);
 
             if(tokenInfo.contextualKind == TokenKind::None) {
@@ -322,7 +292,7 @@ namespace Alchemy::Compilation {
         switch (character) {
             case '\"':
             case '\'': {
-                ScanStringLiteral(textWindow, info, false);
+                UNREACHABLE("Cannot scan string or character literals");
                 break;
             }
             case '/': {

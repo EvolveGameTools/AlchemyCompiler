@@ -71,4 +71,6 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     bool IsName(SyntaxKind kind);
 
+    bool IsLiteralExpression(TokenKind kind);
+
 }

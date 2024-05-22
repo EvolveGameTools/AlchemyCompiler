@@ -1332,6 +1332,164 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::BaseList: {
+                BaseListSyntax* p = (BaseListSyntax*)syntaxBase;
+                TouchToken(p->colonToken);
+                TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->types);
+                break;
+            }
+
+            case SyntaxKind::Attribute: {
+                AttributeSyntax* p = (AttributeSyntax*)syntaxBase;
+                TouchNode(p->name);
+                TouchNode(p->argumentList);
+                break;
+            }
+
+            case SyntaxKind::AttributeList: {
+                AttributeListSyntax* p = (AttributeListSyntax*)syntaxBase;
+                TouchToken(p->openBracket);
+                TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->attributes);
+                TouchToken(p->closeBracket);
+                break;
+            }
+
+            case SyntaxKind::TypeConstraint: {
+                TypeConstraintSyntax* p = (TypeConstraintSyntax*)syntaxBase;
+                TouchNode(p->type);
+                break;
+            }
+
+            case SyntaxKind::ConstructorConstraint: {
+                ConstructorConstraintSyntax* p = (ConstructorConstraintSyntax*)syntaxBase;
+                TouchToken(p->newKeyword);
+                TouchToken(p->openParen);
+                TouchToken(p->closeParen);
+                break;
+            }
+
+            case SyntaxKind::ClassConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                TouchToken(p->keyword);
+                TouchToken(p->questionToken);
+                break;
+            }
+            case SyntaxKind::StructConstraint: {
+                ClassOrStructConstraintSyntax* p = (ClassOrStructConstraintSyntax*)syntaxBase;
+                TouchToken(p->keyword);
+                TouchToken(p->questionToken);
+                break;
+            }
+
+            case SyntaxKind::TypeParameterConstraintClause: {
+                TypeParameterConstraintClauseSyntax* p = (TypeParameterConstraintClauseSyntax*)syntaxBase;
+                TouchToken(p->whereKeyword);
+                TouchNode(p->name);
+                TouchToken(p->colonToken);
+                TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->constraints);
+                break;
+            }
+
+            case SyntaxKind::StructDeclaration: {
+                StructDeclarationSyntax* p = (StructDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchToken(p->keyword);
+                TouchToken(p->identifier);
+                TouchNode(p->typeParameterList);
+                TouchNode(p->parameterList);
+                TouchNode(p->baseList);
+                TouchSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                TouchToken(p->openBraceToken);
+                TouchSyntaxList((SyntaxListUntyped*)p->members);
+                TouchToken(p->closeBraceToken);
+                TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::EnumMemberDeclaration: {
+                EnumMemberDeclarationSyntax* p = (EnumMemberDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchToken(p->identifier);
+                TouchNode(p->equalsValue);
+                break;
+            }
+
+            case SyntaxKind::EnumDeclaration: {
+                EnumDeclarationSyntax* p = (EnumDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchToken(p->keyword);
+                TouchToken(p->identifier);
+                TouchNode(p->baseList);
+                TouchToken(p->openBrace);
+                TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->members);
+                TouchToken(p->closeBrace);
+                TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::DelegateDeclaration: {
+                DelegateDeclarationSyntax* p = (DelegateDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchToken(p->keyword);
+                TouchNode(p->returnType);
+                TouchToken(p->identifier);
+                TouchNode(p->typeParameterList);
+                TouchNode(p->parameterList);
+                TouchSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::ClassDeclaration: {
+                ClassDeclarationSyntax* p = (ClassDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchToken(p->keyword);
+                TouchToken(p->identifier);
+                TouchNode(p->typeParameterList);
+                TouchNode(p->parameterList);
+                TouchNode(p->baseList);
+                TouchSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                TouchToken(p->openBraceToken);
+                TouchSyntaxList((SyntaxListUntyped*)p->members);
+                TouchToken(p->closeBraceToken);
+                TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::InterfaceDeclaration: {
+                InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchToken(p->keyword);
+                TouchToken(p->identifier);
+                TouchNode(p->typeParameterList);
+                TouchNode(p->parameterList);
+                TouchNode(p->baseList);
+                TouchSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                TouchToken(p->openBraceToken);
+                TouchSyntaxList((SyntaxListUntyped*)p->members);
+                TouchToken(p->closeBraceToken);
+                TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::SimpleBaseType: {
+                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
+                TouchNode(p->type);
+                break;
+            }
+
+            case SyntaxKind::PrimaryConstructorBaseType: {
+                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+                TouchNode(p->type);
+                TouchNode(p->argumentList);
+                break;
+            }
+
             default: {
                 UNREACHABLE("TouchNode");
                 return;

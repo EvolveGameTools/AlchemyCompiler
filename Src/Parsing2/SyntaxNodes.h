@@ -1234,9 +1234,7 @@ namespace Alchemy::Compilation {
 
     };
 
-    struct ConstraintClausesSyntax : SyntaxBase {
-        SyntaxToken dummy;
-    };
+    struct TypeParameterConstraintClauseSyntax;
 
     struct LocalFunctionStatementSyntax : StatementSyntax {
 
@@ -1245,10 +1243,12 @@ namespace Alchemy::Compilation {
         SyntaxToken identifier;
         TypeParameterListSyntax* typeParameters;
         ParameterListSyntax* parameters;
-        ConstraintClausesSyntax* constraints;
-        SyntaxBase* body; // todo -- change to a real type
+        SyntaxList <TypeParameterConstraintClauseSyntax>* constraints;
+        BlockSyntax* blockBody;
+        ArrowExpressionClauseSyntax* arrowBody;
+        SyntaxToken semicolon;
 
-        explicit LocalFunctionStatementSyntax(TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameters, ParameterListSyntax* parameters, ConstraintClausesSyntax* constraints, SyntaxBase* body)
+        LocalFunctionStatementSyntax(TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameters, ParameterListSyntax* parameters, SyntaxList <TypeParameterConstraintClauseSyntax>* constraints, BlockSyntax* blockBody, ArrowExpressionClauseSyntax* arrowBody, SyntaxToken semicolon)
             : StatementSyntax(SyntaxKind::LocalFunctionStatement)
             , modifiers(modifiers)
             , returnType(returnType)
@@ -1256,7 +1256,9 @@ namespace Alchemy::Compilation {
             , typeParameters(typeParameters)
             , parameters(parameters)
             , constraints(constraints)
-            , body(body) {}
+            , blockBody(blockBody)
+            , arrowBody(arrowBody)
+            , semicolon(semicolon) {}
 
     };
 
@@ -1777,6 +1779,350 @@ namespace Alchemy::Compilation {
 
 
     };
+
+    struct BaseListSyntax : SyntaxBase {
+
+        SyntaxToken colonToken;
+        SeparatedSyntaxList<BaseTypeSyntax>* types;
+
+        BaseListSyntax(SyntaxToken colonToken, SeparatedSyntaxList<BaseTypeSyntax>* types)
+            : SyntaxBase(SyntaxKind::BaseList)
+            , colonToken(colonToken)
+            , types(types) {
+            assert(types->itemCount >= 1);
+        }
+    };
+
+    struct AttributeSyntax : SyntaxBase {
+
+        NameSyntax* name;
+        ArgumentListSyntax* argumentList;
+
+        AttributeSyntax(NameSyntax* name, ArgumentListSyntax* argumentList)
+            : SyntaxBase(SyntaxKind::Attribute)
+            , name(name)
+            , argumentList(argumentList) {}
+
+    };
+
+    struct AttributeListSyntax : SyntaxBase {
+
+        SyntaxToken openBracket;
+        SeparatedSyntaxList<AttributeSyntax>* attributes;
+        SyntaxToken closeBracket;
+
+        AttributeListSyntax(SyntaxToken openBracket, SeparatedSyntaxList<AttributeSyntax>* attributes, SyntaxToken closeBracket)
+            : SyntaxBase(SyntaxKind::AttributeList)
+            , openBracket(openBracket)
+            , attributes(attributes)
+            , closeBracket(closeBracket) {}
+
+    };
+
+    struct TypeConstraintSyntax : TypeParameterConstraintSyntax {
+
+        TypeSyntax* type;
+
+        explicit TypeConstraintSyntax(TypeSyntax* type)
+            : TypeParameterConstraintSyntax(SyntaxKind::TypeConstraint)
+            , type(type) {}
+
+    };
+
+    struct ConstructorConstraintSyntax : TypeParameterConstraintSyntax {
+
+        SyntaxToken newKeyword;
+        SyntaxToken openParen;
+        SyntaxToken closeParen;
+
+        ConstructorConstraintSyntax(SyntaxToken newKeyword, SyntaxToken openParen, SyntaxToken closeParen)
+            : TypeParameterConstraintSyntax(SyntaxKind::ConstructorConstraint)
+            , newKeyword(newKeyword)
+            , openParen(openParen)
+            , closeParen(closeParen) {
+        }
+
+    };
+
+
+    struct ClassOrStructConstraintSyntax : TypeParameterConstraintSyntax {
+
+        SyntaxToken keyword;
+        SyntaxToken questionToken;
+
+        VALID_SYNTAX_KINDS = {
+            SyntaxKind::ClassConstraint,
+            SyntaxKind::StructConstraint,
+        };
+
+        ClassOrStructConstraintSyntax(SyntaxKind kind, SyntaxToken keyword, SyntaxToken questionToken)
+            : TypeParameterConstraintSyntax(kind)
+            , keyword(keyword)
+            , questionToken(questionToken) {
+            ASSERT_VALID_SYNTAX_KIND(kind);
+        }
+
+    };
+
+    struct TypeParameterConstraintClauseSyntax : SyntaxBase {
+
+        SyntaxToken whereKeyword;
+        IdentifierNameSyntax* name;
+        SyntaxToken colonToken;
+        SeparatedSyntaxList<TypeParameterConstraintSyntax>* constraints;
+
+        TypeParameterConstraintClauseSyntax(SyntaxToken whereKeyword, IdentifierNameSyntax* name, SyntaxToken colonToken, SeparatedSyntaxList<TypeParameterConstraintSyntax>* constraints)
+            : SyntaxBase(SyntaxKind::TypeParameterConstraintClause)
+            , whereKeyword(whereKeyword)
+            , name(name)
+            , colonToken(colonToken)
+            , constraints(constraints) {
+            assert(constraints->itemCount >= 1);
+        }
+    };
+
+    struct StructDeclarationSyntax : TypeDeclarationSyntax {
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        SyntaxToken keyword;
+        SyntaxToken identifier;
+        TypeParameterListSyntax* typeParameterList;
+        ParameterListSyntax* parameterList;
+        BaseListSyntax* baseList;
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses;
+        SyntaxToken openBraceToken;
+        SyntaxList<MemberDeclarationSyntax>* members;
+        SyntaxToken closeBraceToken;
+        SyntaxToken semicolonToken;
+
+        StructDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes,
+            TokenList* modifiers,
+            SyntaxToken keyword,
+            SyntaxToken identifier,
+            TypeParameterListSyntax* typeParameterList,
+            ParameterListSyntax* parameterList,
+            BaseListSyntax* baseList,
+            SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
+            SyntaxToken openBraceToken,
+            SyntaxList<MemberDeclarationSyntax>* members,
+            SyntaxToken closeBraceToken,
+            SyntaxToken semicolonToken
+        )
+            : TypeDeclarationSyntax(SyntaxKind::StructDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , keyword(keyword)
+            , identifier(identifier)
+            , typeParameterList(typeParameterList)
+            , parameterList(parameterList)
+            , baseList(baseList)
+            , constraintClauses(constraintClauses)
+            , openBraceToken(openBraceToken)
+            , members(members)
+            , closeBraceToken(closeBraceToken)
+            , semicolonToken(semicolonToken) {}
+    };
+
+    struct EnumMemberDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        SyntaxToken identifier;
+        EqualsValueClauseSyntax* equalsValue;
+
+        EnumMemberDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, SyntaxToken identifier, EqualsValueClauseSyntax* equalsValue)
+            : MemberDeclarationSyntax(SyntaxKind::EnumMemberDeclaration)
+            , attributes(attributes)
+            , identifier(identifier)
+            , equalsValue(equalsValue) {}
+
+    };
+
+    struct EnumDeclarationSyntax : TypeDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        SyntaxToken keyword;
+        SyntaxToken identifier;
+        BaseListSyntax* baseList;
+        SyntaxToken openBrace;
+        SeparatedSyntaxList<EnumMemberDeclarationSyntax>* members;
+        SyntaxToken closeBrace;
+        SyntaxToken semicolonToken;
+
+        EnumDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, SyntaxToken keyword, SyntaxToken identifier, BaseListSyntax* baseList, SyntaxToken openBrace, SeparatedSyntaxList<EnumMemberDeclarationSyntax>* members, SyntaxToken closeBrace, SyntaxToken semicolonToken)
+            : TypeDeclarationSyntax(SyntaxKind::EnumDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , keyword(keyword)
+            , identifier(identifier)
+            , baseList(baseList)
+            , openBrace(openBrace)
+            , members(members)
+            , closeBrace(closeBrace)
+            , semicolonToken(semicolonToken) {}
+
+    };
+
+    struct DelegateDeclarationSyntax : TypeDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        SyntaxToken keyword;
+        TypeSyntax* returnType;
+        SyntaxToken identifier;
+        TypeParameterListSyntax* typeParameterList;
+        ParameterListSyntax* parameterList;
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses;
+        SyntaxToken semicolonToken;
+
+        DelegateDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, SyntaxToken keyword, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameterList, ParameterListSyntax* parameterList, SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses, SyntaxToken semicolonToken)
+            : TypeDeclarationSyntax(SyntaxKind::DelegateDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , keyword(keyword)
+            , returnType(returnType)
+            , identifier(identifier)
+            , typeParameterList(typeParameterList)
+            , parameterList(parameterList)
+            , constraintClauses(constraintClauses)
+            , semicolonToken(semicolonToken) {}
+
+    };
+
+    struct ClassDeclarationSyntax : TypeDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        SyntaxToken keyword;
+        SyntaxToken identifier;
+        TypeParameterListSyntax* typeParameterList;
+        ParameterListSyntax* parameterList;
+        BaseListSyntax* baseList;
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses;
+        SyntaxToken openBraceToken;
+        SyntaxList<MemberDeclarationSyntax>* members;
+        SyntaxToken closeBraceToken;
+        SyntaxToken semicolonToken;
+
+        ClassDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes,
+            TokenList* modifiers,
+            SyntaxToken keyword,
+            SyntaxToken identifier,
+            TypeParameterListSyntax* typeParameterList,
+            ParameterListSyntax* parameterList,
+            BaseListSyntax* baseList,
+            SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
+            SyntaxToken openBraceToken,
+            SyntaxList<MemberDeclarationSyntax>* members,
+            SyntaxToken closeBraceToken,
+            SyntaxToken semicolonToken
+        )
+            : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , keyword(keyword)
+            , identifier(identifier)
+            , typeParameterList(typeParameterList)
+            , parameterList(parameterList)
+            , baseList(baseList)
+            , constraintClauses(constraintClauses)
+            , openBraceToken(openBraceToken)
+            , members(members)
+            , closeBraceToken(closeBraceToken)
+            , semicolonToken(semicolonToken) {}
+
+    };
+
+    struct InterfaceDeclarationSyntax : TypeDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        SyntaxToken keyword;
+        SyntaxToken identifier;
+        TypeParameterListSyntax* typeParameterList;
+        ParameterListSyntax* parameterList;
+        BaseListSyntax* baseList;
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses;
+        SyntaxToken openBraceToken;
+        SyntaxList<MemberDeclarationSyntax>* members;
+        SyntaxToken closeBraceToken;
+        SyntaxToken semicolonToken;
+
+        InterfaceDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes,
+            TokenList* modifiers,
+            SyntaxToken keyword,
+            SyntaxToken identifier,
+            TypeParameterListSyntax* typeParameterList,
+            ParameterListSyntax* parameterList,
+            BaseListSyntax* baseList,
+            SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
+            SyntaxToken openBraceToken,
+            SyntaxList<MemberDeclarationSyntax>* members,
+            SyntaxToken closeBraceToken,
+            SyntaxToken semicolonToken
+        )
+            : TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , keyword(keyword)
+            , identifier(identifier)
+            , typeParameterList(typeParameterList)
+            , parameterList(parameterList)
+            , baseList(baseList)
+            , constraintClauses(constraintClauses)
+            , openBraceToken(openBraceToken)
+            , members(members)
+            , closeBraceToken(closeBraceToken)
+            , semicolonToken(semicolonToken) {}
+
+    };
+
+    struct ConstructorDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        SyntaxToken identifier;
+        ParameterListSyntax* parameterList;
+        ConstructorInitializerSyntax* initializer;
+        BlockSyntax* bodyBlock;
+        ArrowExpressionClauseSyntax* bodyExpression;
+        SyntaxToken semiColon;
+
+        ConstructorDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, SyntaxToken identifier, ParameterListSyntax* parameterList, ConstructorInitializerSyntax* initializer, BlockSyntax* bodyBlock, ArrowExpressionClauseSyntax* bodyExpression, SyntaxToken semiColon)
+            : MemberDeclarationSyntax(SyntaxKind::ConstructorDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , identifier(identifier)
+            , parameterList(parameterList)
+            , initializer(initializer)
+            , bodyBlock(bodyBlock)
+            , bodyExpression(bodyExpression)
+            , semiColon(semiColon) {}
+
+    };
+
+    struct SimpleBaseTypeSyntax : BaseTypeSyntax {
+
+        TypeSyntax* type;
+
+        explicit SimpleBaseTypeSyntax(TypeSyntax* type)
+            : BaseTypeSyntax(SyntaxKind::SimpleBaseType)
+            , type(type) {}
+
+    };
+
+    struct PrimaryConstructorBaseTypeSyntax : BaseTypeSyntax {
+
+        TypeSyntax* type;
+        ArgumentListSyntax* argumentList;
+
+        PrimaryConstructorBaseTypeSyntax(TypeSyntax* type, ArgumentListSyntax* argumentList)
+            : BaseTypeSyntax(SyntaxKind::PrimaryConstructorBaseType)
+            , type(type)
+            , argumentList(argumentList) {}
+
+    };
+
 
 }
 
