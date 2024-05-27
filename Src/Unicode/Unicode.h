@@ -44,6 +44,8 @@ namespace Alchemy::Unicode {
 
     UnicodeCategory GetUnicodeCategory(uint32 codePoint);
 
+    int32 ByteWidth(uint32 codepoint);
+
     bool IsLetter(uint32 c);
 
     bool IsWhiteSpace(uint32 c);

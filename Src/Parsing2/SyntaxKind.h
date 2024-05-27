@@ -16,6 +16,7 @@ namespace Alchemy::Compilation {
         Int64Literal,
         UInt32Literal,
         UInt64Literal,
+        VerbatimStringLiteral,
         __LastLiteral__,
 
         // --- Reserved Keyword
@@ -198,6 +199,11 @@ namespace Alchemy::Compilation {
         Whitespace,
         NewLine,
 
+        StringLiteralStart,
+        InterpolatedIdentifier,
+        InterpolatedExpressionStart,
+        StringLiteralEmpty,
+        InterpolatedExpressionEnd,
     };
 
     enum class SyntaxKind : uint8 {

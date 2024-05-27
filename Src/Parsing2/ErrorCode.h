@@ -61,6 +61,10 @@ namespace Alchemy::Compilation {
         ERR_InvalidMemberDecl,
         ERR_UnexpectedGenericName,
         ERR_NoDelegateConstraint,
+        ERR_NewlineInConst,
+        ERR_IllegalAtSequence,
+        ERR_UnterminatedStringLiteral,
+        ERR_UnterminatedCharacterLiteral,
     };
 
 }
