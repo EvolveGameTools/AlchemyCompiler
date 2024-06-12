@@ -1,0 +1,6 @@
+StringLiteralExpression [1:1 - 1:25]
+    start = StringLiteralStart  "  [1:1 - 1:2]
+    parts = SyntaxList [1:2 - 1:24]
+        StringLiteralPartSyntax [1:2 - 1:24]
+            part = StringLiteralPart  hello this is a string  [1:2 - 1:24]
+    end = StringLiteralEnd  "  [1:24 - 1:25]

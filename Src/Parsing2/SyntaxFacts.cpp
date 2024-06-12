@@ -706,9 +706,11 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     SyntaxKind GetLiteralExpression(TokenKind kind) {
         switch (kind) {
-            case TokenKind::StringLiteralToken:
+            case TokenKind::StringLiteralStart:
                 return SyntaxKind::StringLiteralExpression;
-            case TokenKind::CharacterLiteralToken:
+            case TokenKind::StringLiteralEmpty:
+                return SyntaxKind::EmptyStringLiteralExpression;
+            case TokenKind::CharLiteralStart:
                 return SyntaxKind::CharacterLiteralExpression;
             case TokenKind::NumericLiteralToken:
                 return SyntaxKind::NumericLiteralExpression;
@@ -925,5 +927,19 @@ namespace Alchemy::Compilation::SyntaxFacts {
     bool IsLiteralExpression(TokenKind kind) {
         return GetLiteralExpression(kind) == SyntaxKind::None;
     }
+
+    SyntaxKind GetAccessorDeclarationKind(TokenKind keyword) {
+        switch (keyword) {
+            case TokenKind::GetKeyword:
+                return SyntaxKind::GetAccessorDeclaration;
+            case TokenKind::SetKeyword:
+                return SyntaxKind::SetAccessorDeclaration;
+            case TokenKind::InitKeyword:
+                return SyntaxKind::InitAccessorDeclaration;
+            default:
+                return SyntaxKind::None;
+        }
+    }
+
 
 }

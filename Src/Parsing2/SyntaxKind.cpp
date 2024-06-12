@@ -49,6 +49,9 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ArrayRankSpecifier: return "ArrayRankSpecifier";
             case SyntaxKind::TupleElement: return "TupleElement";
             case SyntaxKind::MemberDeclaration: return "MemberDeclaration";
+            case SyntaxKind::GetAccessorDeclaration: return "GetAccessorDeclaration";
+            case SyntaxKind::SetAccessorDeclaration: return "SetAccessorDeclaration";
+            case SyntaxKind::InitAccessorDeclaration: return "InitAccessorDeclaration";
             case SyntaxKind::TypeArgumentList: return "TypeArgumentList";
             case SyntaxKind::VariableDeclarator: return "VariableDeclarator";
             case SyntaxKind::__PATTERN_START__: return "__PATTERN_START__";
@@ -216,6 +219,14 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ConstructorConstraint: return "ConstructorConstraint";
             case SyntaxKind::StructConstraint: return "StructConstraint";
             case SyntaxKind::ClassConstraint: return "ClassConstraint";
+            case SyntaxKind::ConstructorDeclaration: return "ConstructorDeclaration";
+            case SyntaxKind::EmptyStringLiteralExpression: return "EmptyStringLiteralExpression";
+            case SyntaxKind::StringLiteralPart: return "StringLiteralPart";
+            case SyntaxKind::InterpolatedIdentifierPart: return "InterpolatedIdentifierPart";
+            case SyntaxKind::RawStringLiteralExpression: return "RawStringLiteralExpression";
+            case SyntaxKind::BracketedParameterList: return "BracketedParameterList";
+            case SyntaxKind::IndexerDeclaration: return "IndexerDeclaration";
+            case SyntaxKind::AccessorList: return "AccessorList";
             default: return "";
         }
     }

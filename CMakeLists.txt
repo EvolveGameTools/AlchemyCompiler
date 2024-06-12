@@ -9,19 +9,12 @@ list(APPEND Sources
         Src/Allocation/PodAllocation.cpp
         Src/Allocation/LinearAllocator.cpp
         Src/Allocation/BytePoolAllocator.cpp
+        Src/Allocation/ThreadLocalTemp.cpp
 
         Src/JobSystem/Job.cpp
-#        Src/Parsing/impl/AlchemyParsing.cpp
-#        Src/Parsing/impl/TokenType.cpp
-#        Src/Parsing/impl/Keyword.cpp
-#        Src/Parsing/impl/ParseResult.cpp
-#        Src/Parsing/impl/BuiltInTypeName.cpp
-#        Src/Parsing/impl/NodeType.cpp
-#        Src/Parsing/impl/Nodes.cpp
-        Src/Allocation/ThreadLocalTemp.cpp
-        Src/Parsing2/Tokenizer.cpp
-        Src/Parsing2/SyntaxFacts.cpp
+
         Src/Panic.cpp
+
         Src/Parsing2/TextWindow.cpp
         Src/Parsing2/Scanning.cpp
         Src/Parsing2/Diagnostics.cpp
@@ -30,11 +23,14 @@ list(APPEND Sources
         Src/Parsing2/SyntaxKind.cpp
         Src/Parsing2/TokenKind.cpp
         Src/Parsing2/FindSkippedTokens.cpp
-
+        Src/Parsing2/Tokenizer.cpp
+        Src/Parsing2/SyntaxFacts.cpp
         Src/Parsing2/MatchKeyword.generated.cpp
         Src/Parsing2/GetFirstToken.generated.cpp
         Src/Parsing2/NodePrinter.generated.cpp
         Src/Parsing2/FindSkippedTokens.generated.cpp
+
+        Src/Compiler2/Compilation.cpp
 
 )
 

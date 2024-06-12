@@ -8,7 +8,6 @@ namespace Alchemy::Compilation {
             case TokenKind::None: return "None";
             case TokenKind::__FirstLiteral__: return "__FirstLiteral__";
             case TokenKind::BoolLiteral: return "BoolLiteral";
-            case TokenKind::CharLiteral: return "CharLiteral";
             case TokenKind::FloatLiteral: return "FloatLiteral";
             case TokenKind::DoubleLiteral: return "DoubleLiteral";
             case TokenKind::Int32Literal: return "Int32Literal";
@@ -162,9 +161,7 @@ namespace Alchemy::Compilation {
             case TokenKind::GreaterThanToken: return "GreaterThanToken";
             case TokenKind::GreaterThanEqualsToken: return "GreaterThanEqualsToken";
             case TokenKind::NumericLiteralToken: return "NumericLiteralToken";
-            case TokenKind::StringLiteralToken: return "StringLiteralToken";
             case TokenKind::EndOfFileToken: return "EndOfFileToken";
-            case TokenKind::CharacterLiteralToken: return "CharacterLiteralToken";
             case TokenKind::GreaterThanGreaterThanToken: return "GreaterThanGreaterThanToken";
             case TokenKind::GreaterThanGreaterThanGreaterThanToken: return "GreaterThanGreaterThanGreaterThanToken";
             case TokenKind::GreaterThanGreaterThanEqualsToken: return "GreaterThanGreaterThanEqualsToken";
@@ -182,6 +179,18 @@ namespace Alchemy::Compilation {
             case TokenKind::SingleLineComment: return "SingleLineComment";
             case TokenKind::Whitespace: return "Whitespace";
             case TokenKind::NewLine: return "NewLine";
+            case TokenKind::InterpolatedIdentifier: return "InterpolatedIdentifier";
+            case TokenKind::InterpolatedExpressionStart: return "InterpolatedExpressionStart";
+            case TokenKind::InterpolatedExpressionEnd: return "InterpolatedExpressionEnd";
+            case TokenKind::StringLiteralEmpty: return "StringLiteralEmpty";
+            case TokenKind::StringLiteralStart: return "StringLiteralStart";
+            case TokenKind::StringLiteralPart: return "StringLiteralPart";
+            case TokenKind::StringLiteralEnd: return "StringLiteralEnd";
+            case TokenKind::RawStringLiteralStart: return "RawStringLiteralStart";
+            case TokenKind::RawStringLiteralEnd: return "RawStringLiteralEnd";
+            case TokenKind::CharLiteralStart: return "CharLiteralStart";
+            case TokenKind::CharLiteralContent: return "CharLiteralContent";
+            case TokenKind::CharLiteralEnd: return "CharLiteralEnd";
             default: return "";
         }
     }

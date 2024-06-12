@@ -11,14 +11,14 @@
 
 namespace Alchemy::Compilation {
 
-    void AddTrivia(TokenKind triviaType, FixedCharSpan span, bool isTrailing, PodList<SyntaxToken>* buffer) {
+    void AddTrivia(TokenKind triviaType, FixedCharSpan span, bool isTrailing, PodList<SyntaxToken>* tokens) {
         SyntaxToken token;
         token.text = span.ptr;
         token.textSize = span.size;
         token.kind = TokenKind::Trivia; // maybe we don't need this to be a kind
         token.contextualKind = triviaType;
         token.SetFlags(isTrailing ? SyntaxTokenFlags::TrailingTrivia : SyntaxTokenFlags::LeadingTrivia);
-        buffer->Add(token);
+        tokens->Add(token);
     }
 
     void LexMultiLineComment(TextWindow* textWindow, Diagnostics* diagnostics, bool isTrailing, PodList<SyntaxToken>* buffer) {
@@ -223,139 +223,7 @@ namespace Alchemy::Compilation {
 
     }
 
-    bool IsAtEnd(bool allowNewLines) {
-        return false;
-    }
-
-    void ScanInterpolatedStringLiteralHoleBalancedText(TextWindow* textWindow, char endingChar, bool isHole) {
-        while (true) {
-
-            if (IsAtEnd(true)) {
-                return; // caller will complain & set error
-            }
-
-            char ch = textWindow->PeekChar();
-
-            switch (ch) {
-                case '#': {
-                    // preprocessor is not allowed
-                    // TrySetError();
-                    textWindow->Advance();
-                    continue;
-                }
-                case '$': {
-
-                    break;
-                }
-                case ':': {
-                    if (isHole) {
-                        SyntaxToken colon;
-                        colon.text = textWindow->ptr;
-                        colon.textSize = 1;
-                        colon.kind = TokenKind::ColonToken;
-                        // ScanFormatSpecifier();
-                    }
-                    textWindow->Advance();
-                    continue;
-                }
-                case '}':
-                case ')':
-                case ']': {
-                    if (ch == endingChar) {
-                        return;
-                    }
-                    Diagnostic diagnostic;
-                    diagnostic.errorCode = ErrorCode::ERR_SyntaxError;
-                    diagnostic.start = textWindow->ptr;
-                    diagnostic.end = textWindow->ptr + 1;
-                    // TrySetError(_lexer.MakeError(_lexer.TextWindow.Position, 1, ErrorCode::ERR_SyntaxError, endingChar.ToString()));
-                    textWindow->Advance();
-                    continue;
-                }
-                case '"': {
-                    if (hasError) {
-                        return;
-                    }
-                    // handle string literal inside an expression hole.
-                    ScanInterpolatedStringLiteralNestedString();
-                    continue;
-                }
-                case '/': {
-                    switch (textWindow->PeekAhead(1)) {
-                        case '/': {
-                            FixedCharSpan span;
-                            ScanToEndOfLine(textWindow, &span);
-                            continue;
-                        }
-                        case '*': {
-                            bool isTerminated = true;
-                            FixedCharSpan span;
-                            ScanMultiLineComment(textWindow, &span, &isTerminated);
-                            continue;
-                        }
-                        default: {
-                            textWindow->Advance();
-                            continue;
-                        }
-                    }
-                }
-                case '{': {
-                    ScanInterpolatedStringLiteralHoleBracketed('{', '}');
-                    continue;
-                }
-                case '(': {
-                    ScanInterpolatedStringLiteralHoleBracketed('(', ')');
-                    continue;
-                }
-                case '[': {
-                    ScanInterpolatedStringLiteralHoleBracketed('[', ']');
-                    continue;
-                }
-                default: {
-                    textWindow->Advance();
-                    continue;
-                }
-            }
-
-        }
-    }
-
-    void ScanCharacterLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* token) {
-        char* start = textWindow->start;
-
-        assert(*textWindow->ptr == '\'');
-        // scan until new line or '
-        textWindow->Advance();
-
-        bool isTerminated = false;
-
-        while (textWindow->HasMoreContent()) {
-
-            if (textWindow->PeekChar() == '\'') {
-                isTerminated = true;
-                break;
-            }
-
-            if(textWindow->PeekChar() == '\r' || textWindow->PeekChar() == '\n' || textWindow->PeekChar() == '\0') {
-                break;
-            }
-
-        }
-
-        token->kind = TokenKind::CharacterLiteralToken;
-        token->textSize = (int32) (textWindow->ptr - start);
-        token->text = start;
-        if(!isTerminated) {
-            Diagnostic diagnostic;
-            diagnostic.start = start;
-            diagnostic.end = textWindow->ptr;
-            diagnostic.errorCode = ErrorCode::ERR_UnterminatedCharacterLiteral;
-            diagnostics->AddError(diagnostic);
-        }
-
-    }
-
-    void ScanStringInterpolationHole(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens, bool allowMultiLine, TextWindow* retn) {
+    void ScanStringInterpolationHole(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens, TextWindow* retn) {
         int32 brace = 1;
 
         int32 tokenCount = tokens->size;
@@ -371,8 +239,7 @@ namespace Alchemy::Compilation {
                     continue;
                 }
                 case '\'': {
-                    SyntaxToken token;
-                    ScanCharacterLiteral(textWindow, diagnostics, &token);
+                    LexCharacterLiteral(textWindow, diagnostics, tokens);
                     continue;
                 }
                 case '/': {
@@ -381,14 +248,12 @@ namespace Alchemy::Compilation {
                             // end of line
                             FixedCharSpan span;
                             ScanToEndOfLine(textWindow, &span);
-                            // todo -- probably want to mark this as unterminated if single line
                             continue;
                         }
                         case '*': {
                             FixedCharSpan span;
                             bool isTerminated = false;
                             ScanMultiLineComment(textWindow, &span, &isTerminated);
-                            // todo -- probably want to check for newlines if not allowed
                             continue;
                         }
                         default: {
@@ -419,7 +284,7 @@ namespace Alchemy::Compilation {
                     continue;
                 }
 
-                // ignoring (), [], and <> because it just gives bad errors, better to do a greedy match
+                    // ignoring (), [], and <> because it just gives bad errors, better to do a greedy match
 
             }
         }
@@ -436,20 +301,186 @@ namespace Alchemy::Compilation {
 
     }
 
+    int32 CountQuoteSequence(TextWindow* textWindow) {
+        char* ptr = textWindow->ptr;
+
+        while (ptr != textWindow->end && *ptr == '"') {
+            ptr++;
+        }
+        return (int32) (ptr - textWindow->ptr);
+    }
+
+    void LexRawStringLiteral(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens) {
+        char* start = textWindow->ptr;
+
+        int32 cnt = CountQuoteSequence(textWindow);
+        SyntaxToken startToken;
+        startToken.kind = TokenKind::RawStringLiteralStart;
+        startToken.text = start;
+        startToken.textSize = cnt;
+        tokens->Add(startToken);
+
+        textWindow->ptr += cnt;
+
+        char last = '\0';
+        char c = textWindow->PeekChar();
+        SyntaxToken stringPart;
+        stringPart.kind = TokenKind::StringLiteralPart;
+        stringPart.textSize = 0;
+        stringPart.text = textWindow->ptr;
+
+        while (true) {
+            bool addToStringPart = false;
+
+            switch (c) {
+                case '$': {
+                    if (last == '\\') {
+                        addToStringPart = true;
+                        break; // escaped \$, just keep going
+                    }
+
+                    // ${ marks the start of an interpolation
+                    if (textWindow->PeekAhead(1) == '{') {
+
+                        if (stringPart.textSize != 0) {
+                            tokens->Add(stringPart);
+                        }
+
+                        SyntaxToken interpolationStart;
+                        interpolationStart.kind = TokenKind::InterpolatedExpressionStart;
+                        interpolationStart.contextualKind = TokenKind::InterpolatedExpressionStart;
+                        interpolationStart.text = textWindow->ptr;
+                        interpolationStart.textSize = 2; // ${
+
+                        tokens->Add(interpolationStart);
+
+                        // we want to sub-tokenize these
+
+                        textWindow->Advance(2); // step over ${
+
+                        TextWindow holeWindow(nullptr, 0);
+                        // scan ahead and find the matching } greedily
+                        ScanStringInterpolationHole(textWindow, diagnostics, tokens, &holeWindow);
+                        Tokenize(&holeWindow, diagnostics, tokens);
+
+                        // textWindow points at the } now (or '\0' if we ran out of things to tokenize)
+                        SyntaxToken interpolationEnd;
+                        interpolationStart.kind = TokenKind::InterpolatedExpressionEnd;
+                        interpolationStart.contextualKind = TokenKind::InterpolatedExpressionEnd;
+                        interpolationStart.text = textWindow->ptr;
+                        interpolationStart.textSize = 1; // }
+                        tokens->Add(interpolationEnd);
+
+                        stringPart.text = textWindow->ptr + 1; // we'll advance after break but set this here
+                        stringPart.textSize = 0;
+
+                        break;
+                    }
+
+                    char* tokenText = textWindow->ptr;
+                    textWindow->Advance(); // step over $
+                    SyntaxToken token;
+                    if (ScanIdentifierOrKeyword(textWindow, &token)) {
+                        token.kind = TokenKind::InterpolatedIdentifier;
+                        token.contextualKind = TokenKind::InterpolatedIdentifier;
+                        token.text = tokenText;
+                        token.textSize += 1;
+                        // add accumulated string parts
+                        if (stringPart.textSize > 0) {
+                            tokens->Add(stringPart);
+                        }
+                        stringPart.text = textWindow->ptr;
+                        stringPart.textSize = 0;
+                        textWindow->ptr--; // don't over advance
+
+                        tokens->Add(token);
+                    }
+                    else {
+                        // it was nothing, just move on, reset to $ for normal handling
+                        textWindow->ptr = tokenText;
+                        addToStringPart = true;
+                    }
+                    break;
+                }
+                case '"': {
+                    int32 sequence = CountQuoteSequence(textWindow);
+                    if (sequence == cnt) {
+                        // done
+                        if (stringPart.textSize > 0) {
+                            tokens->Add(stringPart);
+                        }
+                        SyntaxToken endToken;
+                        endToken.kind = TokenKind::RawStringLiteralEnd;
+                        endToken.contextualKind = TokenKind::RawStringLiteralEnd;
+                        endToken.text = textWindow->ptr;
+                        endToken.textSize = 1; // "
+                        tokens->Add(endToken);
+                        textWindow->Advance();
+                        return;
+                    }
+                    else {
+                        // keep going, we only add 1 instead of the whole sequence so that we can deal with
+                        // strings being too long to fit inside uint16 storage.
+                        addToStringPart = true;
+                        break;
+                    }
+
+                }
+                case '\0': {
+                    // done, unterminated
+                    if (stringPart.textSize > 0) {
+                        tokens->Add(stringPart);
+                    }
+                    SyntaxToken endToken;
+                    endToken.kind = TokenKind::RawStringLiteralEnd;
+                    endToken.contextualKind = TokenKind::RawStringLiteralEnd;
+                    endToken.text = textWindow->ptr;
+                    endToken.textSize = 0;
+                    endToken.SetFlags(SyntaxTokenFlags::Missing);
+                    tokens->Add(endToken);
+                    Diagnostic diagnostic(ErrorCode::ERR_UnterminatedStringLiteral, start, textWindow->ptr);
+                    diagnostics->AddError(diagnostic);
+                    return;
+                }
+                default: {
+                    addToStringPart = true;
+                    break;
+                }
+            }
+            last = c;
+            textWindow->Advance();
+            c = textWindow->PeekChar();
+            if(addToStringPart) {
+                if (stringPart.textSize + 1 == UINT16_MAX) {
+                    // if we have a string that is too long, make another
+                    tokens->Add(stringPart);
+                    stringPart.textSize = 0;
+                    stringPart.text = textWindow->ptr;
+                }
+                stringPart.textSize++;
+            }
+        }
+
+    }
+
     void LexStringLiteral(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens) {
         assert(textWindow->PeekChar() == '"');
         bool secondIsQuote = textWindow->PeekAhead(1) == '"';
         bool thirdIsQuote = textWindow->PeekAhead(2) == '"';
         char* start = textWindow->ptr;
+
         if (secondIsQuote && thirdIsQuote) {
-            // multi string
+            // raw multi string
+            // delimited by quote count
+            LexRawStringLiteral(textWindow, diagnostics, tokens);
         }
         else if (secondIsQuote) {
             // empty string
             SyntaxToken token;
             token.kind = TokenKind::StringLiteralEmpty;
+            token.contextualKind = TokenKind::StringLiteralEmpty;
             token.text = start;
-            token.textSize = 2;
+            token.textSize = 2; // ""
             tokens->Add(token);
             textWindow->Advance(2);
             return;
@@ -458,105 +489,179 @@ namespace Alchemy::Compilation {
             // single string
             SyntaxToken startToken;
             startToken.kind = TokenKind::StringLiteralStart;
+            startToken.contextualKind = TokenKind::StringLiteralStart;
             startToken.text = start;
-            startToken.textSize = 1;
+            startToken.textSize = 1; // "
             tokens->Add(startToken);
 
-            SyntaxToken content;
-            // we won't scan escapes other than \$
+            // we won't scan escapes other than \$, parser / code generator will need to do that
             textWindow->Advance();
             char last = '\0';
             char c = textWindow->PeekChar();
+            SyntaxToken stringPart;
+            stringPart.kind = TokenKind::StringLiteralPart;
+            stringPart.contextualKind = TokenKind::StringLiteralPart;
+            stringPart.textSize = 0;
+            stringPart.text = textWindow->ptr;
 
+            while (true) {
+                bool addToStringPart = false;
 
-            // if we're at the end of file or we hit a new line that isn't allowed, we're done
-            // if(IsAtEnd()) {
-            //
-            // }
-
-            while (c != '\0') {
                 switch (c) {
                     case '\n':
                     case '\r': {
+                        // todo -- we don't need to do this, Rust doesn't. Multiline strings are fine in rust
+                        if (stringPart.textSize > 0) {
+                            tokens->Add(stringPart);
+                        }
+                        SyntaxToken endToken;
+                        endToken.kind = TokenKind::StringLiteralEnd;
+                        endToken.contextualKind = TokenKind::StringLiteralEnd;
+                        endToken.text = textWindow->ptr;
+                        endToken.textSize = 0; // missing "
+                        endToken.SetFlags(SyntaxTokenFlags::Missing);
+                        tokens->Add(endToken);
+
                         Diagnostic diagnostic;
                         diagnostic.start = start;
                         diagnostic.end = textWindow->ptr;
                         diagnostic.errorCode = ErrorCode::ERR_NewlineInConst;
                         diagnostics->AddError(diagnostic);
-                        goto end;
+                        if (c == '\r' && textWindow->PeekAhead(1) == '\n') {
+                            textWindow->Advance(2);
+                        }
+                        else {
+                            textWindow->Advance();
+                        }
+                        return;
                     }
                     case '$': {
+
                         if (last == '\\') {
-                            break; // escaped, just keep going
+                            addToStringPart = true;
+                            break; // escaped \$, just keep going
                         }
 
+                        // ${ marks the start of an interpolation
                         if (textWindow->PeekAhead(1) == '{') {
-                            // template hole
-                            // Where the contents contains zero or more sequences
-                            //                ${ STUFF }
-                            // where these curly braces delimit STUFF in expression "holes".
-                            // In order to properly find the closing quote of the whole string,
-                            // we need to locate the closing brace of each hole, as strings
-                            // may appear in expressions in the holes. So we
-                            // need to match up any braces that appear between them.
-                            // But in order to do that, we also need to match up any
-                            // /**/ comments, ' characters quotes, () parens
-                            // [] brackets, and "" strings, including interpolated holes in the latter.
+
+                            if (stringPart.textSize != 0) {
+                                tokens->Add(stringPart);
+                            }
 
                             SyntaxToken interpolationStart;
                             interpolationStart.kind = TokenKind::InterpolatedExpressionStart;
+                            interpolationStart.contextualKind = TokenKind::InterpolatedExpressionStart;
                             interpolationStart.text = textWindow->ptr;
-                            interpolationStart.textSize = 2;
+                            interpolationStart.textSize = 2; // ${
+
+                            tokens->Add(interpolationStart);
 
                             // we want to sub-tokenize these
-                            // we don't accept // comments
-                            // we don't accept new lines right?
 
-                            textWindow->Advance(); // step over {
+                            textWindow->Advance(2); // step over ${
 
                             TextWindow holeWindow(nullptr, 0);
+                            // scan ahead and find the matching } greedily
                             ScanStringInterpolationHole(textWindow, diagnostics, tokens, &holeWindow);
                             Tokenize(&holeWindow, diagnostics, tokens);
 
                             // textWindow points at the } now (or '\0' if we ran out of things to tokenize)
                             SyntaxToken interpolationEnd;
-                            interpolationStart.kind = TokenKind::InterpolatedExpressionEnd;
-                            interpolationStart.text = textWindow->ptr;
-                            interpolationStart.textSize = 1;
+                            interpolationEnd.kind = TokenKind::InterpolatedExpressionEnd;
+                            interpolationEnd.contextualKind = TokenKind::InterpolatedExpressionEnd;
+                            interpolationEnd.text = textWindow->ptr;
+                            interpolationEnd.textSize = 1; // }
+                            tokens->Add(interpolationEnd);
 
+                            stringPart.text = textWindow->ptr + 1; // we'll advance after break but set this here
+                            stringPart.textSize = 0;
 
                             break;
                         }
 
-
-                        SyntaxToken dollar;
-                        dollar.kind = TokenKind::InterpolatedIdentifier;
-                        dollar.textSize = 1;
-                        dollar.text = textWindow->ptr;
-
+                        char* tokenText = textWindow->ptr;
+                        textWindow->Advance(); // step over $
                         SyntaxToken token;
                         if (ScanIdentifierOrKeyword(textWindow, &token)) {
-                            tokens->Add(dollar);
+                            token.kind = TokenKind::InterpolatedIdentifier;
+                            token.text = tokenText;
+                            token.textSize += 1;
+                            // add accumulated string parts
+                            if (stringPart.textSize > 0) {
+                                tokens->Add(stringPart);
+                            }
+
+                            stringPart.text = textWindow->ptr;
+                            stringPart.textSize = 0;
+
+                            textWindow->ptr--; // we'll over advance below if we don't step back here
                             tokens->Add(token);
                         }
-
-                        // it was nothing, just move on
+                        else {
+                            // it was nothing, just move on, reset to $ for normal handling
+                            textWindow->ptr = tokenText;
+                            addToStringPart = true;
+                        }
                         break;
 
                     }
+                    case '\0': {
+                        // done, unterminated
+                        if (stringPart.textSize > 0) {
+                            tokens->Add(stringPart);
+                        }
+                        SyntaxToken endToken;
+                        endToken.kind = TokenKind::StringLiteralEnd;
+                        endToken.contextualKind = TokenKind::StringLiteralEnd;
+                        endToken.text = textWindow->ptr;
+                        endToken.textSize = 0;
+                        endToken.SetFlags(SyntaxTokenFlags::Missing);
+                        tokens->Add(endToken);
+                        Diagnostic diagnostic(ErrorCode::ERR_UnterminatedStringLiteral, start, textWindow->ptr);
+                        diagnostics->AddError(diagnostic);
+                        return;
+                    }
+                    case '"': {
+                        if (last != '\\') {
+                            // done
+                            if (stringPart.textSize > 0) {
+                                tokens->Add(stringPart);
+                            }
+                            SyntaxToken endToken;
+                            endToken.kind = TokenKind::StringLiteralEnd;
+                            endToken.contextualKind = TokenKind::StringLiteralEnd;
+                            endToken.text = textWindow->ptr;
+                            endToken.textSize = 1; // "
+                            tokens->Add(endToken);
+                            textWindow->Advance();
+                            return;
+                        }
+                        else {
+                            addToStringPart = true;
+                            break;
+                        }
+                    }
                     default: {
+                        addToStringPart = true;
                         break;
                     }
                 }
                 last = c;
+                textWindow->Advance();
                 c = textWindow->PeekChar();
+                if(addToStringPart) {
+                    if (stringPart.textSize + 1 == UINT16_MAX) {
+                        // if we have a string that is too long, make another
+                        tokens->Add(stringPart);
+                        stringPart.textSize = 0;
+                        stringPart.text = textWindow->ptr;
+                    }
+                    stringPart.textSize++;
+                }
             }
 
-            if (!textWindow->HasMoreContent()) {
-                // failed to find end of string
-            }
         }
-        end:
 
     }
 
@@ -578,11 +683,13 @@ namespace Alchemy::Compilation {
 
                 // we either have 1 quote or 3, anything else is an error
                 LexStringLiteral(textWindow, diagnostics, tokens);
-
+                LexSyntaxTrivia(textWindow, true, true, diagnostics, tokens);
+                continue;
             }
-
-            else if (*textWindow->ptr == '\'') {
-
+            else if(*textWindow->ptr == '\'') {
+                LexCharacterLiteral(textWindow, diagnostics, tokens);
+                LexSyntaxTrivia(textWindow, true, true, diagnostics, tokens);
+                continue;
             }
             else {
                 ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
@@ -605,185 +712,65 @@ namespace Alchemy::Compilation {
 
     }
 
-    void ScanVerbatimStringLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info) {
-        char* start = textWindow->ptr;
-        while (textWindow->PeekChar() == '@') {
-            textWindow->Advance();
-        }
+    void LexCharacterLiteral(TextWindow* textWindow, Diagnostics * diagnostics, PodList<SyntaxToken> * tokens) {
+        // read until unescaped ' or end of line
 
-        if (textWindow->ptr - start >= 2) {
-            Diagnostic diagnostic;
-            diagnostic.start = start;
-            diagnostic.errorCode = ErrorCode::ERR_IllegalAtSequence;
-            diagnostic.end = textWindow->ptr;
-            diagnostics->AddError(diagnostic);
-        }
-
-        assert(textWindow->PeekChar() == '"');
+        SyntaxToken start;
+        start.kind = TokenKind::CharLiteralStart;
+        start.contextualKind = TokenKind::CharLiteralStart;
+        start.text = textWindow->ptr;
+        start.textSize = 1;
+        tokens->Add(start);
         textWindow->Advance();
 
-        while (true) {
-            char ch = textWindow->PeekChar();
+        char * charStart = textWindow->ptr;
 
-            if (ch == '"') {
+        SyntaxToken content;
+        content.kind = TokenKind::CharLiteralContent;
+        content.contextualKind = TokenKind::CharLiteralContent;
+        content.text = charStart;
 
-                textWindow->Advance();
-                if (textWindow->PeekChar() == '"') {
-                    // Doubled quote -- skip & keep going. -- we'll need to re-process this when emitting the string contents I think
-                    textWindow->Advance();
-                    continue;
+        char last = '\0';
+        while(true) {
+            char c = textWindow->PeekChar();
+            if(c == '\'' && last != '\\') {
+                // if we had '' don't add it, let the parser mark that as an error
+                int32 size = (int32)(textWindow->ptr - charStart);
+                if(size > 0) {
+                    content.textSize = size;
+                    tokens->Add(content);
                 }
-
-                // otherwise, the string is finished.
-                break;
-            }
-
-            if (ch == '\0') {
-                // Reached the end of the source without finding the end-quote.  Give an error back at the
-                // starting point. And finish lexing this string.
-                Diagnostic diagnostic;
-                diagnostic.start = start;
-                diagnostic.errorCode = ErrorCode::ERR_UnterminatedStringLiteral;
-                diagnostic.end = textWindow->ptr;
-                diagnostics->AddError(diagnostic);
-                break;
-            }
-
-            textWindow->Advance();
-        }
-
-        info->kind = TokenKind::VerbatimStringLiteral;
-        info->textSize = (int32) (textWindow->ptr - start);
-        info->text = start;
-
-    }
-
-    enum class InterpolatedStringKind {
-        // Normal interpolated string that just starts with <c>$"</c>
-        Normal,
-        // Verbatim interpolated string that starts with <c>$@"</c> or <c>@$"</c>
-        Verbatim,
-        // Single-line raw interpolated string that starts with at least one <c>$</c>, and at least three <c>"</c>s.
-        SingleLineRaw,
-        // Multi-line raw interpolated string that starts with at least one <c>$</c>, and at least three <c>"</c>s.
-        MultiLineRaw,
-    };
-
-    struct InterpolatedStringScanner {
-
-        Diagnostics* diagnostics;
-        TextWindow* textWindow;
-        Diagnostic diagnostic;
-        bool hasError;
-
-        void TrySetError(Diagnostic error) {
-            // only need to record the first error we hit
-            if (hasError) {
+                SyntaxToken end;
+                end.kind = TokenKind::CharLiteralEnd;
+                end.contextualKind = TokenKind::CharLiteralEnd;
+                end.text = textWindow->ptr;
+                end.textSize = 1;
+                tokens->Add(end);
+                textWindow->Advance(); // step over '
                 return;
             }
-            hasError = true;
-            diagnostic = error;
-        }
-
-        bool IsNewLine() {
-            char ch = textWindow->PeekChar();
-            return ch == '\r' || ch == '\n';
-        }
-
-        bool IsAtEnd(InterpolatedStringKind kind) {
-            return IsAtEnd(kind == InterpolatedStringKind::Verbatim || kind == InterpolatedStringKind::MultiLineRaw);
-        }
-
-        bool IsAtEnd(bool allowNewline) {
-            char ch = textWindow->PeekChar();
-            if (ch == '\0') {
-                return true;
+            else if (c == '\0' || c == '\r' || c == '\n') {
+                int32 size = (int32)(textWindow->ptr - charStart);
+                if(size > 0) {
+                    content.textSize = size;
+                    tokens->Add(content);
+                }
+                SyntaxToken end;
+                end.kind = TokenKind::CharLiteralEnd;
+                end.contextualKind = TokenKind::CharLiteralEnd;
+                end.text = textWindow->ptr;
+                end.textSize = 0;
+                diagnostics->AddError(Diagnostic(ErrorCode::ERR_UnterminatedCharacterLiteral, start.text, textWindow->ptr));
+                tokens->Add(end);
+                // don't advance
+                return;
             }
-            return (!allowNewline && IsNewLine());
+            else {
+                last = c;
+                textWindow->Advance();
+            }
         }
 
-        void ScanInterpolatedStringLiteralTop(
-            InterpolatedStringKind* kind,
-            SyntaxToken openQuoteRange,
-            SyntaxToken closeQuoteRange
-        ) {
-
-            char* start = textWindow->ptr;
-        }
-
-        bool ScanOpenQuote(InterpolatedStringKind* kind) {
-            // verbatim start
-            // interpolated start -> we remove and just scan ${} and $identifier
-            // raw strings still use ${} if you don't want interpolated
-        }
-
-    };
-
-    void ScanInterpolatedStringLiteralTop(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info
-//        ref TokenInfo info,
-//        out SyntaxDiagnosticInfo? error,
-//    out InterpolatedStringKind kind,
-//    out Range openQuoteRange,
-//    ArrayBuilder<Interpolation>? interpolations,
-//    out Range closeQuoteRange
-    ) {
-//    var subScanner = new InterpolatedStringScanner(this);
-//    subScanner.ScanInterpolatedStringLiteralTop(out kind, out openQuoteRange, interpolations, out closeQuoteRange);
-//    error = subScanner.Error;
-//    info->kind = TokenKind::InterpolatedStringToken;
-//    info.Text = TextWindow.GetText(intern: false);
-    }
-
-    void ScanInterpolatedStringLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info) {
-        // We have a string of one of the forms
-        //                $" ... "
-        //                $@" ... "
-        //                @$" ... "
-        // Where the contents contains zero or more sequences
-        //                { STUFF }
-        // where these curly braces delimit STUFF in expression "holes".
-        // In order to properly find the closing quote of the whole string,
-        // we need to locate the closing brace of each hole, as strings
-        // may appear in expressions in the holes. So we
-        // need to match up any braces that appear between them.
-        // But in order to do that, we also need to match up any
-        // /**/ comments, ' characters quotes, () parens
-        // [] brackets, and "" strings, including interpolated holes in the latter.
-
-//        ScanInterpolatedStringLiteralTop(
-//            ref
-//        info,
-//            out
-//        var error,
-//        kind:
-//        out _,
-//        openQuoteRange:
-//        out _,
-//        interpolations:
-//        null,
-//            closeQuoteRange: out
-//        _);
-//        this.AddError(error);
-    }
-
-    bool TryScanAtStringToken(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info) {
-        int32 index = 0;
-        while (textWindow->PeekAhead(index) == '@') {
-            index++;
-        }
-
-        if (textWindow->PeekAhead(index) == '"') {
-            // @"
-            ScanVerbatimStringLiteral(textWindow, diagnostics, info);
-            return true;
-        }
-        else if (textWindow->PeekAhead(index) == '$') {
-            // @$"
-            ScanInterpolatedStringLiteral(textWindow, info);
-            return true;
-        }
-
-        return false;
     }
 
     void ScanSyntaxToken(TextWindow* textWindow, SyntaxToken* info, Diagnostics* diagnostics, int32* badTokenCount) {
@@ -794,8 +781,10 @@ namespace Alchemy::Compilation {
 
         switch (character) {
             case '\"':
+                UNREACHABLE("Cannot scan string literals");
+                break;
             case '\'': {
-                UNREACHABLE("Cannot scan string or character literals");
+
                 break;
             }
             case '/': {
@@ -845,7 +834,7 @@ namespace Alchemy::Compilation {
                 textWindow->Advance();
                 info->kind =
                     textWindow->TryAdvance('=') ? TokenKind::EqualsEqualsToken :
-                        textWindow->TryAdvance('>') ? TokenKind::EqualsGreaterThanToken : TokenKind::EqualsToken;
+                    textWindow->TryAdvance('>') ? TokenKind::EqualsGreaterThanToken : TokenKind::EqualsToken;
                 break;
             }
             case '*': {
@@ -890,8 +879,8 @@ namespace Alchemy::Compilation {
             case '?': {
                 textWindow->Advance();
                 info->kind = textWindow->TryAdvance('?')
-                    ? textWindow->TryAdvance('=') ? TokenKind::QuestionQuestionEqualsToken : TokenKind::QuestionQuestionToken
-                    : TokenKind::QuestionToken;
+                             ? textWindow->TryAdvance('=') ? TokenKind::QuestionQuestionEqualsToken : TokenKind::QuestionQuestionToken
+                             : TokenKind::QuestionToken;
                 break;
             }
 
@@ -899,7 +888,7 @@ namespace Alchemy::Compilation {
                 textWindow->Advance();
                 info->kind =
                     textWindow->TryAdvance('=') ? TokenKind::PlusEqualsToken :
-                        textWindow->TryAdvance('+') ? TokenKind::PlusPlusToken : TokenKind::PlusToken;
+                    textWindow->TryAdvance('+') ? TokenKind::PlusPlusToken : TokenKind::PlusToken;
                 break;
             }
 
@@ -907,8 +896,8 @@ namespace Alchemy::Compilation {
                 textWindow->Advance();
                 info->kind =
                     textWindow->TryAdvance('=') ? TokenKind::MinusEqualsToken :
-                        textWindow->TryAdvance('-') ? TokenKind::MinusMinusToken :
-                            textWindow->TryAdvance('>') ? TokenKind::MinusGreaterThanToken : TokenKind::MinusToken;
+                    textWindow->TryAdvance('-') ? TokenKind::MinusMinusToken :
+                    textWindow->TryAdvance('>') ? TokenKind::MinusGreaterThanToken : TokenKind::MinusToken;
                 break;
             }
 
@@ -922,7 +911,7 @@ namespace Alchemy::Compilation {
                 textWindow->Advance();
                 info->kind =
                     textWindow->TryAdvance('=') ? TokenKind::AmpersandEqualsToken :
-                        textWindow->TryAdvance('&') ? TokenKind::AmpersandAmpersandToken : TokenKind::AmpersandToken;
+                    textWindow->TryAdvance('&') ? TokenKind::AmpersandAmpersandToken : TokenKind::AmpersandToken;
                 break;
             }
 
@@ -936,7 +925,7 @@ namespace Alchemy::Compilation {
                 textWindow->Advance();
                 info->kind =
                     textWindow->TryAdvance('=') ? TokenKind::BarEqualsToken :
-                        textWindow->TryAdvance('|') ? TokenKind::BarBarToken : TokenKind::BarToken;
+                    textWindow->TryAdvance('|') ? TokenKind::BarBarToken : TokenKind::BarToken;
                 break;
             }
 
@@ -944,9 +933,9 @@ namespace Alchemy::Compilation {
                 textWindow->Advance();
                 info->kind =
                     textWindow->TryAdvance('=') ? TokenKind::LessThanEqualsToken :
-                        textWindow->TryAdvance('<')
-                            ? textWindow->TryAdvance('=') ? TokenKind::LessThanLessThanEqualsToken : TokenKind::LessThanLessThanToken
-                            : TokenKind::LessThanToken;
+                    textWindow->TryAdvance('<')
+                    ? textWindow->TryAdvance('=') ? TokenKind::LessThanLessThanEqualsToken : TokenKind::LessThanLessThanToken
+                    : TokenKind::LessThanToken;
                 break;
             }
 

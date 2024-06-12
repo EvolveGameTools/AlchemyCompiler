@@ -909,7 +909,7 @@ namespace Alchemy::Compilation {
                 indent--;
                 break;
             }
-            case SyntaxKind::StringLiteralExpression: {
+            case SyntaxKind::EmptyStringLiteralExpression: {
                 LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
                 PrintNodeHeader("LiteralExpressionSyntax", syntaxBase);
                 indent++;
@@ -1395,12 +1395,16 @@ namespace Alchemy::Compilation {
                 break;
             }
 
-            case SyntaxKind::ConstraintClauses: {
-                ConstraintClausesSyntax* p = (ConstraintClausesSyntax*)syntaxBase;
-                PrintNodeHeader("ConstraintClausesSyntax", syntaxBase);
+            case SyntaxKind::BracketedParameterList: {
+                BracketedParameterListSyntax* p = (BracketedParameterListSyntax*)syntaxBase;
+                PrintNodeHeader("BracketedParameterListSyntax", syntaxBase);
                 indent++;
-                PrintFieldName("dummy");
-                PrintToken(p->dummy);
+                PrintFieldName("openBracket");
+                PrintToken(p->openBracket);
+                PrintFieldName("parameters");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->parameters);
+                PrintFieldName("closeBracket");
+                PrintToken(p->closeBracket);
                 indent--;
                 break;
             }
@@ -1420,9 +1424,13 @@ namespace Alchemy::Compilation {
                 PrintFieldName("parameters");
                 PrintNode(p->parameters);
                 PrintFieldName("constraints");
-                PrintNode(p->constraints);
-                PrintFieldName("body");
-                PrintNode(p->body);
+                PrintSyntaxList((SyntaxListUntyped*)p->constraints);
+                PrintFieldName("blockBody");
+                PrintNode(p->blockBody);
+                PrintFieldName("arrowBody");
+                PrintNode(p->arrowBody);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
                 indent--;
                 break;
             }
@@ -2624,6 +2632,30 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::ConstructorDeclaration: {
+                ConstructorDeclarationSyntax* p = (ConstructorDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("ConstructorDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("identifier");
+                PrintToken(p->identifier);
+                PrintFieldName("parameterList");
+                PrintNode(p->parameterList);
+                PrintFieldName("initializer");
+                PrintNode(p->initializer);
+                PrintFieldName("bodyBlock");
+                PrintNode(p->bodyBlock);
+                PrintFieldName("bodyExpression");
+                PrintNode(p->bodyExpression);
+                PrintFieldName("semiColon");
+                PrintToken(p->semiColon);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::SimpleBaseType: {
                 SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
                 PrintNodeHeader("SimpleBaseTypeSyntax", syntaxBase);
@@ -2642,6 +2674,186 @@ namespace Alchemy::Compilation {
                 PrintNode(p->type);
                 PrintFieldName("argumentList");
                 PrintNode(p->argumentList);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::StringLiteralExpression: {
+                StringLiteralExpression* p = (StringLiteralExpression*)syntaxBase;
+                PrintNodeHeader("StringLiteralExpression", syntaxBase);
+                indent++;
+                PrintFieldName("start");
+                PrintToken(p->start);
+                PrintFieldName("parts");
+                PrintSyntaxList((SyntaxListUntyped*)p->parts);
+                PrintFieldName("end");
+                PrintToken(p->end);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::RawStringLiteralExpression: {
+                RawStringLiteralExpression* p = (RawStringLiteralExpression*)syntaxBase;
+                PrintNodeHeader("RawStringLiteralExpression", syntaxBase);
+                indent++;
+                PrintFieldName("start");
+                PrintToken(p->start);
+                PrintFieldName("parts");
+                PrintSyntaxList((SyntaxListUntyped*)p->parts);
+                PrintFieldName("end");
+                PrintToken(p->end);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::InterpolatedIdentifierPart: {
+                InterpolatedIdentifierPartSyntax* p = (InterpolatedIdentifierPartSyntax*)syntaxBase;
+                PrintNodeHeader("InterpolatedIdentifierPartSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("interpolatedIdentifier");
+                PrintToken(p->interpolatedIdentifier);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::InterpolatedStringExpression: {
+                InterpolatedStringExpressionSyntax* p = (InterpolatedStringExpressionSyntax*)syntaxBase;
+                PrintNodeHeader("InterpolatedStringExpressionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("start");
+                PrintToken(p->start);
+                PrintFieldName("expression");
+                PrintNode(p->expression);
+                PrintFieldName("end");
+                PrintToken(p->end);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::StringLiteralPart: {
+                StringLiteralPartSyntax* p = (StringLiteralPartSyntax*)syntaxBase;
+                PrintNodeHeader("StringLiteralPartSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("part");
+                PrintToken(p->part);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::CharacterLiteralExpression: {
+                CharacterLiteralExpressionSyntax* p = (CharacterLiteralExpressionSyntax*)syntaxBase;
+                PrintNodeHeader("CharacterLiteralExpressionSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("start");
+                PrintToken(p->start);
+                PrintFieldName("contents");
+                PrintToken(p->contents);
+                PrintFieldName("end");
+                PrintToken(p->end);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::IncompleteMember: {
+                IncompleteMemberSyntax* p = (IncompleteMemberSyntax*)syntaxBase;
+                PrintNodeHeader("IncompleteMemberSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("type");
+                PrintNode(p->type);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::GetAccessorDeclaration: {
+                AccessorDeclarationSyntax* p = (AccessorDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("AccessorDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("bodyBlock");
+                PrintNode(p->bodyBlock);
+                PrintFieldName("expressionBody");
+                PrintNode(p->expressionBody);
+                PrintFieldName("semiColon");
+                PrintToken(p->semiColon);
+                indent--;
+                break;
+            }
+            case SyntaxKind::SetAccessorDeclaration: {
+                AccessorDeclarationSyntax* p = (AccessorDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("AccessorDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("bodyBlock");
+                PrintNode(p->bodyBlock);
+                PrintFieldName("expressionBody");
+                PrintNode(p->expressionBody);
+                PrintFieldName("semiColon");
+                PrintToken(p->semiColon);
+                indent--;
+                break;
+            }
+            case SyntaxKind::InitAccessorDeclaration: {
+                AccessorDeclarationSyntax* p = (AccessorDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("AccessorDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("bodyBlock");
+                PrintNode(p->bodyBlock);
+                PrintFieldName("expressionBody");
+                PrintNode(p->expressionBody);
+                PrintFieldName("semiColon");
+                PrintToken(p->semiColon);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::AccessorList: {
+                AccessorListSyntax* p = (AccessorListSyntax*)syntaxBase;
+                PrintNodeHeader("AccessorListSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("openBraceToken");
+                PrintToken(p->openBraceToken);
+                PrintFieldName("accessors");
+                PrintSyntaxList((SyntaxListUntyped*)p->accessors);
+                PrintFieldName("closeBraceToken");
+                PrintToken(p->closeBraceToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::IndexerDeclaration: {
+                IndexerDeclarationSyntax* p = (IndexerDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("IndexerDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("attributes");
+                PrintSyntaxList((SyntaxListUntyped*)p->attributes);
+                PrintFieldName("modifiers");
+                PrintTokenList(p->modifiers);
+                PrintFieldName("type");
+                PrintNode(p->type);
+                PrintFieldName("thisKeyword");
+                PrintToken(p->thisKeyword);
+                PrintFieldName("parameters");
+                PrintNode(p->parameters);
+                PrintFieldName("accessorList");
+                PrintNode(p->accessorList);
+                PrintFieldName("expressionBody");
+                PrintNode(p->expressionBody);
+                PrintFieldName("semiColon");
+                PrintToken(p->semiColon);
                 indent--;
                 break;
             }

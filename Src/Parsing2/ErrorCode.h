@@ -65,6 +65,9 @@ namespace Alchemy::Compilation {
         ERR_IllegalAtSequence,
         ERR_UnterminatedStringLiteral,
         ERR_UnterminatedCharacterLiteral,
+        ERR_StringLiteralTooLong,
+        ERR_EmptyCharLiteral,
+        ERR_GetOrSetExpected,
     };
 
 }

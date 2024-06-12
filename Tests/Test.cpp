@@ -52,6 +52,8 @@ TEST_CASE("Parse Field", "[parser]") {
 
 }
 
+
+
 TEST_CASE("Parse Switch Expression", "[parser]") {
     INITIALIZE_PARSER_TEST
 
@@ -96,6 +98,61 @@ TEST_CASE("Parse Parameter List", "[parser]") {
         REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
 
     }
+}
+
+TEST_CASE("string literal expressions", "[parser]") {
+    INITIALIZE_PARSER_TEST
+
+    FILE_TEST_SECTION("SimpleStringLiteral") {
+
+        INITIALIZE_PARSER("\"hello this is a string\"")
+
+        ExpressionSyntax* x = ParseExpression(&parser);
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
+    FILE_TEST_SECTION("InterpolatedIdentifierStringLiteral") {
+
+        INITIALIZE_PARSER("\"hello $user, this is a string\"")
+
+        ExpressionSyntax* x = ParseExpression(&parser);
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
+    FILE_TEST_SECTION("EmptyStringLiteral") {
+
+        INITIALIZE_PARSER("\"\"")
+
+        ExpressionSyntax* x = ParseExpression(&parser);
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
+    FILE_TEST_SECTION("InterpolatedStringLiteral") {
+
+        INITIALIZE_PARSER("\"hello ${SomeExpression()}, this is a string\"")
+
+        ExpressionSyntax* x = ParseExpression(&parser);
+        //WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
+    FILE_TEST_SECTION("InterpolatedNestedStringLiteral") {
+
+        INITIALIZE_PARSER("\"this is ${SomeExpression(\"also ${interpolated} you see?\")}\"")
+
+        ExpressionSyntax* x = ParseExpression(&parser);
+        // WriteTreeToFile(file, tokens, x);
+        REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
 }
 
 TEST_CASE("binary expressions", "[parser]") {

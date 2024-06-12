@@ -307,6 +307,8 @@ namespace Alchemy::Compilation {
 
     bool IsStartOfPropertyBody(TokenKind kind);
 
+    bool ShouldParseSeparatorOrElement(Parser* parser, TokenKind separatorTokenKind, bool allowSemicolonAsSeparator, isPossibleElementFn isPossibleElement);
+
     bool IsPossibleExpression(Parser* parser, bool allowBinaryExpressions = true, bool allowAssignmentExpressions = true);
 
     PatternSyntax* ParsePattern(Parser* parser, Precedence precedence, bool afterIs = false, bool whenIsKeyword = false);

@@ -839,7 +839,7 @@ namespace Alchemy::Compilation {
             SyntaxKind::FalseLiteralExpression,
             SyntaxKind::NullLiteralExpression,
             SyntaxKind::NumericLiteralExpression,
-            SyntaxKind::StringLiteralExpression,
+            SyntaxKind::EmptyStringLiteralExpression,
             SyntaxKind::TrueLiteralExpression,
         };
 
@@ -1231,6 +1231,20 @@ namespace Alchemy::Compilation {
             , openParen(openParen)
             , parameters(parameters)
             , closeParen(closeParen) {}
+
+    };
+
+    struct BracketedParameterListSyntax : SyntaxBase {
+
+        SyntaxToken openBracket;
+        SeparatedSyntaxList<ParameterSyntax>* parameters;
+        SyntaxToken closeBracket;
+
+        explicit BracketedParameterListSyntax(SyntaxToken openBracket, SeparatedSyntaxList<ParameterSyntax>* parameters, SyntaxToken closeBracket)
+            : SyntaxBase(SyntaxKind::BracketedParameterList)
+            , openBracket(openBracket)
+            , parameters(parameters)
+            , closeBracket(closeBracket) {}
 
     };
 
@@ -2123,7 +2137,164 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct StringLiteralExpression : ExpressionSyntax {
 
+        SyntaxToken start;
+        SyntaxList<StringPartSyntax> * parts;
+        SyntaxToken end;
+
+        StringLiteralExpression(SyntaxToken start, SyntaxList<StringPartSyntax> * parts, SyntaxToken end)
+            : ExpressionSyntax(SyntaxKind::StringLiteralExpression)
+            , start(start)
+            , parts(parts)
+            , end(end) {}
+
+    };
+
+    struct RawStringLiteralExpression : ExpressionSyntax {
+
+        SyntaxToken start;
+        SyntaxList<StringPartSyntax> * parts;
+        SyntaxToken end;
+
+        RawStringLiteralExpression(SyntaxToken start, SyntaxList<StringPartSyntax> * parts, SyntaxToken end)
+            : ExpressionSyntax(SyntaxKind::RawStringLiteralExpression)
+            , start(start)
+            , parts(parts)
+            , end(end) {}
+
+    };
+
+    struct InterpolatedIdentifierPartSyntax : StringPartSyntax {
+
+        SyntaxToken interpolatedIdentifier; // includes $
+
+        explicit InterpolatedIdentifierPartSyntax(SyntaxToken interpolatedIdentifier)
+            : StringPartSyntax(SyntaxKind::InterpolatedIdentifierPart)
+            , interpolatedIdentifier(interpolatedIdentifier) {}
+
+    };
+
+    struct InterpolatedStringExpressionSyntax : StringPartSyntax {
+
+        SyntaxToken start;
+        ExpressionSyntax * expression;
+        SyntaxToken end;
+
+        InterpolatedStringExpressionSyntax(SyntaxToken start, ExpressionSyntax * expression, SyntaxToken end)
+            : StringPartSyntax(SyntaxKind::InterpolatedStringExpression)
+            , start(start)
+            , expression(expression)
+            , end(end) {}
+
+    };
+
+    struct StringLiteralPartSyntax : StringPartSyntax {
+
+        SyntaxToken part;
+
+        explicit StringLiteralPartSyntax(SyntaxToken part)
+            : StringPartSyntax(SyntaxKind::StringLiteralPart)
+            , part(part) {}
+
+    };
+
+    struct CharacterLiteralExpressionSyntax : ExpressionSyntax {
+
+        SyntaxToken start;
+        SyntaxToken contents;
+        SyntaxToken end;
+
+        CharacterLiteralExpressionSyntax(SyntaxToken start, SyntaxToken contents, SyntaxToken end)
+            : ExpressionSyntax(SyntaxKind::RawStringLiteralExpression)
+            , start(start)
+            , contents(contents)
+            , end(end) {}
+
+    };
+
+    struct IncompleteMemberSyntax : MemberDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList * modifiers;
+        TypeSyntax * type;
+
+        IncompleteMemberSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList * modifiers, TypeSyntax * type)
+            : MemberDeclarationSyntax(SyntaxKind::IncompleteMember)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , type(type)
+        {}
+
+    };
+
+    struct AccessorDeclarationSyntax : SyntaxBase {
+
+        TokenList * modifiers;
+        SyntaxToken keyword;
+        // todo context list
+        BlockSyntax * bodyBlock;
+        ArrowExpressionClauseSyntax * expressionBody;
+        SyntaxToken semiColon;
+
+        VALID_SYNTAX_KINDS = {
+            SyntaxKind::GetAccessorDeclaration,
+            SyntaxKind::SetAccessorDeclaration,
+            SyntaxKind::InitAccessorDeclaration
+        };
+
+        AccessorDeclarationSyntax(SyntaxKind kind, TokenList * modifiers, SyntaxToken keyword,  BlockSyntax * bodyBlock, ArrowExpressionClauseSyntax * expressionBody, SyntaxToken semiColon)
+            : SyntaxBase(kind)
+            , keyword(keyword)
+            , modifiers(modifiers)
+            , bodyBlock(bodyBlock)
+            , expressionBody(expressionBody)
+            , semiColon(semiColon) {
+            ASSERT_VALID_SYNTAX_KIND(kind);
+        }
+
+    };
+
+    struct AccessorListSyntax : SyntaxBase {
+
+        SyntaxToken openBraceToken;
+        SyntaxList<AccessorDeclarationSyntax> * accessors;
+        SyntaxToken closeBraceToken;
+
+        AccessorListSyntax(SyntaxToken openBraceToken, SyntaxList<AccessorDeclarationSyntax> * accessors, SyntaxToken closeBraceToken)
+            : SyntaxBase(SyntaxKind::AccessorList)
+            , openBraceToken(openBraceToken)
+            , accessors(accessors)
+            , closeBraceToken(closeBraceToken)
+        {}
+
+    };
+
+    // maybe split into 2? one w/ accessor list one with body
+    struct IndexerDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax> * attributes;
+        TokenList * modifiers;
+        TypeSyntax * type;
+        SyntaxToken thisKeyword;
+        BracketedParameterListSyntax * parameters;
+        AccessorListSyntax * accessorList; // optional
+        ArrowExpressionClauseSyntax * expressionBody;
+        SyntaxToken semiColon;
+
+        IndexerDeclarationSyntax(SyntaxList<AttributeListSyntax> * attributes, TokenList * modifiers, TypeSyntax * type, SyntaxToken thisKeyword, BracketedParameterListSyntax * parameters, AccessorListSyntax * accessorList,  ArrowExpressionClauseSyntax * expressionBody, SyntaxToken semiColon)
+            : MemberDeclarationSyntax(SyntaxKind::IndexerDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , type(type)
+            , thisKeyword(thisKeyword)
+            , parameters(parameters)
+            , accessorList(accessorList)
+            , expressionBody(expressionBody)
+            , semiColon(semiColon)
+        {}
+
+    };
 }
 
 #undef abstract

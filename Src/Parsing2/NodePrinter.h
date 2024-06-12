@@ -62,6 +62,16 @@ namespace Alchemy::Compilation {
                 return;
             }
 
+            if (list->size > 0) {
+                PrintInline("SyntaxList");
+                int32 startTokenId = list->array[0]->startTokenId;
+                int32 endTokenId = list->array[list->size - 1]->endTokenId;
+                PrintLineRange(startTokenId, endTokenId);
+                buffer.Add('\n');
+            }
+            else {
+                PrintLine("SyntaxList <empty>");
+            }
             indent++;
             for (int32 i = 0; i < list->size; i++) {
                 PrintIndent();
@@ -73,7 +83,7 @@ namespace Alchemy::Compilation {
 
         void PrintSeparatedSyntaxList(SeparatedSyntaxListUntyped* list) {
             if (list == nullptr) {
-                PrintInline("SeparatedSyntaxList <empty>");
+                PrintInline("SeparatedSyntaxList <empty>\n");
                 return;
             }
 
@@ -195,6 +205,7 @@ namespace Alchemy::Compilation {
         void PrintToken(SyntaxToken token) {
 
             if (!token.IsValid()) {
+                PrintInline("<unset> \n");
                 return;
             }
 
@@ -214,9 +225,9 @@ namespace Alchemy::Compilation {
                 PrintInline(")");
             }
 
-            PrintInline(" -> \"");
+            PrintInline("  ");
             PrintInline(token.text, token.textSize);
-            PrintInline("\"");
+            PrintInline(" ");
 
             buffer.EnsureAdditionalCapacity(64);
 

@@ -73,4 +73,5 @@ namespace Alchemy::Compilation::SyntaxFacts {
 
     bool IsLiteralExpression(TokenKind kind);
 
+    SyntaxKind GetAccessorDeclarationKind(TokenKind kind);
 }

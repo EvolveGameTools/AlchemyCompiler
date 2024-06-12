@@ -93,6 +93,7 @@ namespace Alchemy::Compilation {
         uint32 id_flags {};
         char * text {}; // todo -- we only need this for debugging
 
+        // todo -- adjust this to not save the text pointer on the token
         inline FixedCharSpan GetText() {
             return FixedCharSpan(text, textSize);
         }

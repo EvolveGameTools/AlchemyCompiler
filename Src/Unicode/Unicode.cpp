@@ -1559,35 +1559,4 @@ namespace Alchemy::Unicode {
 
     }
 
-    int32 ByteWidth(uint32 codepoint) {
-        char32 result = 0;
-        // Check the number of bytes in the current UTF-8 char based on the first byte
-        if ((codepoint & 0x80) == 0) {           // 0xxxxxxx
-            result = codepoint;
-            *advance = 1;
-        }
-        else if ((codepoint & 0xE0) == 0xC0) {  // 110xxxxx
-            result = (codepoint & 0x1F) << 6;
-            result |= (ptr[1] & 0x3F);
-            *advance = 2;
-        }
-        else if ((codepoint & 0xF0) == 0xE0) {  // 1110xxxx
-            result = (codepoint & 0x0F) << 12;
-            result |= (ptr[1] & 0x3F) << 6;
-            result |= (ptr[2] & 0x3F);
-            *advance = 3;
-        }
-        else if ((codepoint & 0xF8) == 0xF0) {  // 11110xxx
-            result = (codepoint & 0x07) << 18;
-            result |= (ptr[1] & 0x3F) << 12;
-            result |= (ptr[2] & 0x3F) << 6;
-            result |= (ptr[3] & 0x3F);
-            *advance = 4;
-        }
-        else {
-            *advance = 0;
-        }
-        return 0;
-    }
-
 }

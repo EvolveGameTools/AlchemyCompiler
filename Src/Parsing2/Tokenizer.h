@@ -15,5 +15,6 @@ namespace Alchemy::Compilation {
     void PrintTokens(CheckedArray<SyntaxToken> tokens, CheckedArray<LineColumn> lineCols);
     void Tokenize(TextWindow * textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens);
     void LexStringLiteral(TextWindow* textWindow, Diagnostics* diagnostics, PodList<SyntaxToken>* tokens);
+    void LexCharacterLiteral(TextWindow* textWindow, Diagnostics * diagnostics, PodList<SyntaxToken> * tokens);
 
 }

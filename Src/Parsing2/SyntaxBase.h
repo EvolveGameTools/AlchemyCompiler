@@ -201,6 +201,12 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct StringPartSyntax : SyntaxBase {
+
+        explicit StringPartSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
+
+    };
+
     struct TypeDeclarationSyntax : MemberDeclarationSyntax {
 
         explicit TypeDeclarationSyntax(SyntaxKind kind) : MemberDeclarationSyntax(kind) {}

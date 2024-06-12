@@ -9,14 +9,12 @@ namespace Alchemy::Compilation {
         // --- Literal Types ---
         __FirstLiteral__,
         BoolLiteral,
-        CharLiteral,
         FloatLiteral,
         DoubleLiteral,
         Int32Literal,
         Int64Literal,
         UInt32Literal,
         UInt64Literal,
-        VerbatimStringLiteral,
         __LastLiteral__,
 
         // --- Reserved Keyword
@@ -175,9 +173,7 @@ namespace Alchemy::Compilation {
         GreaterThanToken,
         GreaterThanEqualsToken,
         NumericLiteralToken,
-        StringLiteralToken,
         EndOfFileToken,
-        CharacterLiteralToken,
         GreaterThanGreaterThanToken,
         GreaterThanGreaterThanGreaterThanToken,
         GreaterThanGreaterThanEqualsToken,
@@ -199,11 +195,18 @@ namespace Alchemy::Compilation {
         Whitespace,
         NewLine,
 
-        StringLiteralStart,
         InterpolatedIdentifier,
         InterpolatedExpressionStart,
-        StringLiteralEmpty,
         InterpolatedExpressionEnd,
+        StringLiteralEmpty,
+        StringLiteralStart,
+        StringLiteralPart,
+        StringLiteralEnd,
+        RawStringLiteralStart,
+        RawStringLiteralEnd,
+        CharLiteralStart,
+        CharLiteralContent,
+        CharLiteralEnd,
     };
 
     enum class SyntaxKind : uint8 {
@@ -256,6 +259,9 @@ namespace Alchemy::Compilation {
         ArrayRankSpecifier,
         TupleElement,
         MemberDeclaration,
+        GetAccessorDeclaration,
+        SetAccessorDeclaration,
+        InitAccessorDeclaration,
         TypeArgumentList,
         VariableDeclarator,
 
@@ -431,6 +437,14 @@ namespace Alchemy::Compilation {
         StructConstraint,
         ClassConstraint,
         ConstructorDeclaration,
+        EmptyStringLiteralExpression,
+        StringLiteralPart,
+        InterpolatedIdentifierPart,
+        RawStringLiteralExpression,
+        BracketedParameterList,
+        IndexerDeclaration,
+        AccessorList,
+
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);
