@@ -215,6 +215,21 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::SimpleMemberAccessExpression: {
+                MemberAccessExpressionSyntax* p = (MemberAccessExpressionSyntax*)syntaxBase;
+                TouchNode(p->expression);
+                TouchToken(p->operatorToken);
+                TouchNode(p->name);
+                break;
+            }
+            case SyntaxKind::PointerMemberAccessExpression: {
+                MemberAccessExpressionSyntax* p = (MemberAccessExpressionSyntax*)syntaxBase;
+                TouchNode(p->expression);
+                TouchToken(p->operatorToken);
+                TouchNode(p->name);
+                break;
+            }
+
             case SyntaxKind::QualifiedName: {
                 QualifiedNameSyntax* p = (QualifiedNameSyntax*)syntaxBase;
                 TouchNode(p->left);
@@ -495,11 +510,6 @@ namespace Alchemy::Compilation {
                 break;
             }
 
-            case SyntaxKind::CharacterLiteralExpression: {
-                LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
-                TouchToken(p->literal);
-                break;
-            }
             case SyntaxKind::DefaultLiteralExpression: {
                 LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
                 TouchToken(p->literal);
@@ -1605,6 +1615,62 @@ namespace Alchemy::Compilation {
                 TouchNode(p->accessorList);
                 TouchNode(p->expressionBody);
                 TouchToken(p->semiColon);
+                break;
+            }
+
+            case SyntaxKind::PropertyDeclaration: {
+                PropertyDeclarationSyntax* p = (PropertyDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchNode(p->type);
+                TouchToken(p->identifier);
+                TouchNode(p->accessorList);
+                TouchNode(p->expressionBody);
+                TouchNode(p->initializer);
+                TouchToken(p->semiColon);
+                break;
+            }
+
+            case SyntaxKind::MethodDeclaration: {
+                MethodDeclarationSyntax* p = (MethodDeclarationSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->attributes);
+                TouchTokenList(p->modifiers);
+                TouchNode(p->returnType);
+                TouchToken(p->identifier);
+                TouchNode(p->typeParameterList);
+                TouchNode(p->parameterList);
+                TouchSyntaxList((SyntaxListUntyped*)p->constraintClauses);
+                TouchNode(p->body);
+                TouchNode(p->expressionBody);
+                TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::UsingDeclaration: {
+                UsingDeclarationSyntax* p = (UsingDeclarationSyntax*)syntaxBase;
+                TouchToken(p->usingKeyword);
+                TouchToken(p->staticKeyword);
+                TouchNode(p->alias);
+                TouchNode(p->namespaceOrType);
+                TouchToken(p->semicolon);
+                break;
+            }
+
+            case SyntaxKind::ExternDeclaration: {
+                ExternDeclarationSyntax* p = (ExternDeclarationSyntax*)syntaxBase;
+                TouchToken(p->externKeyword);
+                TouchTokenList(p->modifiers);
+                TouchNode(p->returnType);
+                TouchToken(p->identifier);
+                TouchNode(p->parameterList);
+                TouchToken(p->semicolon);
+                break;
+            }
+
+            case SyntaxKind::CompilationUnit: {
+                CompilationUnitSyntax* p = (CompilationUnitSyntax*)syntaxBase;
+                TouchSyntaxList((SyntaxListUntyped*)p->members);
+                TouchToken(p->eof);
                 break;
             }
 

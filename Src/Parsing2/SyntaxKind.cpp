@@ -226,7 +226,11 @@ namespace Alchemy::Compilation {
             case SyntaxKind::RawStringLiteralExpression: return "RawStringLiteralExpression";
             case SyntaxKind::BracketedParameterList: return "BracketedParameterList";
             case SyntaxKind::IndexerDeclaration: return "IndexerDeclaration";
+            case SyntaxKind::PropertyDeclaration: return "PropertyDeclaration";
             case SyntaxKind::AccessorList: return "AccessorList";
+            case SyntaxKind::MethodDeclaration: return "MethodDeclaration";
+            case SyntaxKind::UsingDeclaration: return "UsingDeclaration";
+            case SyntaxKind::ExternDeclaration: return "ExternDeclaration";
             default: return "";
         }
     }

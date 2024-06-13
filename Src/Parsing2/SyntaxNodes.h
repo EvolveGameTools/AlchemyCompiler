@@ -2,8 +2,6 @@
 
 #include "./SyntaxBase.h"
 
-#define abstract
-
 namespace Alchemy::Compilation {
 
     struct ParameterListSyntax;
@@ -381,17 +379,24 @@ namespace Alchemy::Compilation {
 
     };
 
-    abstract struct MemberAccessExpressionSyntax : ExpressionSyntax {
+    struct MemberAccessExpressionSyntax : ExpressionSyntax {
 
         ExpressionSyntax* expression;
         SyntaxToken operatorToken;
         SimpleNameSyntax* name;
 
+        VALID_SYNTAX_KINDS = {
+            SyntaxKind::SimpleMemberAccessExpression,
+            SyntaxKind::PointerMemberAccessExpression,
+        };
+
         MemberAccessExpressionSyntax(SyntaxKind kind, ExpressionSyntax* expression, SyntaxToken operatorToken, SimpleNameSyntax* name)
             : ExpressionSyntax(kind)
             , expression(expression)
             , operatorToken(operatorToken)
-            , name(name) {}
+            , name(name) {
+            ASSERT_VALID_SYNTAX_KIND(kind);
+        }
 
     };
 
@@ -834,7 +839,6 @@ namespace Alchemy::Compilation {
         SyntaxToken literal;
 
         VALID_SYNTAX_KINDS = {
-            SyntaxKind::CharacterLiteralExpression,
             SyntaxKind::DefaultLiteralExpression,
             SyntaxKind::FalseLiteralExpression,
             SyntaxKind::NullLiteralExpression,
@@ -1257,12 +1261,12 @@ namespace Alchemy::Compilation {
         SyntaxToken identifier;
         TypeParameterListSyntax* typeParameters;
         ParameterListSyntax* parameters;
-        SyntaxList <TypeParameterConstraintClauseSyntax>* constraints;
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraints;
         BlockSyntax* blockBody;
         ArrowExpressionClauseSyntax* arrowBody;
         SyntaxToken semicolon;
 
-        LocalFunctionStatementSyntax(TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameters, ParameterListSyntax* parameters, SyntaxList <TypeParameterConstraintClauseSyntax>* constraints, BlockSyntax* blockBody, ArrowExpressionClauseSyntax* arrowBody, SyntaxToken semicolon)
+        LocalFunctionStatementSyntax(TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameters, ParameterListSyntax* parameters, SyntaxList<TypeParameterConstraintClauseSyntax>* constraints, BlockSyntax* blockBody, ArrowExpressionClauseSyntax* arrowBody, SyntaxToken semicolon)
             : StatementSyntax(SyntaxKind::LocalFunctionStatement)
             , modifiers(modifiers)
             , returnType(returnType)
@@ -2140,10 +2144,10 @@ namespace Alchemy::Compilation {
     struct StringLiteralExpression : ExpressionSyntax {
 
         SyntaxToken start;
-        SyntaxList<StringPartSyntax> * parts;
+        SyntaxList<StringPartSyntax>* parts;
         SyntaxToken end;
 
-        StringLiteralExpression(SyntaxToken start, SyntaxList<StringPartSyntax> * parts, SyntaxToken end)
+        StringLiteralExpression(SyntaxToken start, SyntaxList<StringPartSyntax>* parts, SyntaxToken end)
             : ExpressionSyntax(SyntaxKind::StringLiteralExpression)
             , start(start)
             , parts(parts)
@@ -2154,10 +2158,10 @@ namespace Alchemy::Compilation {
     struct RawStringLiteralExpression : ExpressionSyntax {
 
         SyntaxToken start;
-        SyntaxList<StringPartSyntax> * parts;
+        SyntaxList<StringPartSyntax>* parts;
         SyntaxToken end;
 
-        RawStringLiteralExpression(SyntaxToken start, SyntaxList<StringPartSyntax> * parts, SyntaxToken end)
+        RawStringLiteralExpression(SyntaxToken start, SyntaxList<StringPartSyntax>* parts, SyntaxToken end)
             : ExpressionSyntax(SyntaxKind::RawStringLiteralExpression)
             , start(start)
             , parts(parts)
@@ -2178,10 +2182,10 @@ namespace Alchemy::Compilation {
     struct InterpolatedStringExpressionSyntax : StringPartSyntax {
 
         SyntaxToken start;
-        ExpressionSyntax * expression;
+        ExpressionSyntax* expression;
         SyntaxToken end;
 
-        InterpolatedStringExpressionSyntax(SyntaxToken start, ExpressionSyntax * expression, SyntaxToken end)
+        InterpolatedStringExpressionSyntax(SyntaxToken start, ExpressionSyntax* expression, SyntaxToken end)
             : StringPartSyntax(SyntaxKind::InterpolatedStringExpression)
             , start(start)
             , expression(expression)
@@ -2216,25 +2220,24 @@ namespace Alchemy::Compilation {
     struct IncompleteMemberSyntax : MemberDeclarationSyntax {
 
         SyntaxList<AttributeListSyntax>* attributes;
-        TokenList * modifiers;
-        TypeSyntax * type;
+        TokenList* modifiers;
+        TypeSyntax* type;
 
-        IncompleteMemberSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList * modifiers, TypeSyntax * type)
+        IncompleteMemberSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, TypeSyntax* type)
             : MemberDeclarationSyntax(SyntaxKind::IncompleteMember)
             , attributes(attributes)
             , modifiers(modifiers)
-            , type(type)
-        {}
+            , type(type) {}
 
     };
 
     struct AccessorDeclarationSyntax : SyntaxBase {
 
-        TokenList * modifiers;
+        TokenList* modifiers;
         SyntaxToken keyword;
         // todo context list
-        BlockSyntax * bodyBlock;
-        ArrowExpressionClauseSyntax * expressionBody;
+        BlockSyntax* bodyBlock;
+        ArrowExpressionClauseSyntax* expressionBody;
         SyntaxToken semiColon;
 
         VALID_SYNTAX_KINDS = {
@@ -2243,7 +2246,7 @@ namespace Alchemy::Compilation {
             SyntaxKind::InitAccessorDeclaration
         };
 
-        AccessorDeclarationSyntax(SyntaxKind kind, TokenList * modifiers, SyntaxToken keyword,  BlockSyntax * bodyBlock, ArrowExpressionClauseSyntax * expressionBody, SyntaxToken semiColon)
+        AccessorDeclarationSyntax(SyntaxKind kind, TokenList* modifiers, SyntaxToken keyword, BlockSyntax* bodyBlock, ArrowExpressionClauseSyntax* expressionBody, SyntaxToken semiColon)
             : SyntaxBase(kind)
             , keyword(keyword)
             , modifiers(modifiers)
@@ -2258,31 +2261,30 @@ namespace Alchemy::Compilation {
     struct AccessorListSyntax : SyntaxBase {
 
         SyntaxToken openBraceToken;
-        SyntaxList<AccessorDeclarationSyntax> * accessors;
+        SyntaxList<AccessorDeclarationSyntax>* accessors;
         SyntaxToken closeBraceToken;
 
-        AccessorListSyntax(SyntaxToken openBraceToken, SyntaxList<AccessorDeclarationSyntax> * accessors, SyntaxToken closeBraceToken)
+        AccessorListSyntax(SyntaxToken openBraceToken, SyntaxList<AccessorDeclarationSyntax>* accessors, SyntaxToken closeBraceToken)
             : SyntaxBase(SyntaxKind::AccessorList)
             , openBraceToken(openBraceToken)
             , accessors(accessors)
-            , closeBraceToken(closeBraceToken)
-        {}
+            , closeBraceToken(closeBraceToken) {}
 
     };
 
     // maybe split into 2? one w/ accessor list one with body
     struct IndexerDeclarationSyntax : MemberDeclarationSyntax {
 
-        SyntaxList<AttributeListSyntax> * attributes;
-        TokenList * modifiers;
-        TypeSyntax * type;
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        TypeSyntax* type;
         SyntaxToken thisKeyword;
-        BracketedParameterListSyntax * parameters;
-        AccessorListSyntax * accessorList; // optional
-        ArrowExpressionClauseSyntax * expressionBody;
+        BracketedParameterListSyntax* parameters;
+        AccessorListSyntax* accessorList; // optional
+        ArrowExpressionClauseSyntax* expressionBody;
         SyntaxToken semiColon;
 
-        IndexerDeclarationSyntax(SyntaxList<AttributeListSyntax> * attributes, TokenList * modifiers, TypeSyntax * type, SyntaxToken thisKeyword, BracketedParameterListSyntax * parameters, AccessorListSyntax * accessorList,  ArrowExpressionClauseSyntax * expressionBody, SyntaxToken semiColon)
+        IndexerDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, TypeSyntax* type, SyntaxToken thisKeyword, BracketedParameterListSyntax* parameters, AccessorListSyntax* accessorList, ArrowExpressionClauseSyntax* expressionBody, SyntaxToken semiColon)
             : MemberDeclarationSyntax(SyntaxKind::IndexerDeclaration)
             , attributes(attributes)
             , modifiers(modifiers)
@@ -2291,10 +2293,110 @@ namespace Alchemy::Compilation {
             , parameters(parameters)
             , accessorList(accessorList)
             , expressionBody(expressionBody)
-            , semiColon(semiColon)
-        {}
+            , semiColon(semiColon) {}
+
+    };
+
+    struct PropertyDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        TypeSyntax* type;
+        SyntaxToken identifier;
+        AccessorListSyntax* accessorList; // optional
+        ArrowExpressionClauseSyntax* expressionBody;
+        EqualsValueClauseSyntax* initializer; // optional
+        SyntaxToken semiColon;
+
+        PropertyDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, TypeSyntax* type, SyntaxToken identifier, AccessorListSyntax* accessorList, ArrowExpressionClauseSyntax* expressionBody, EqualsValueClauseSyntax* initializer, SyntaxToken semiColon)
+            : MemberDeclarationSyntax(SyntaxKind::PropertyDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , type(type)
+            , identifier(identifier)
+            , accessorList(accessorList)
+            , expressionBody(expressionBody)
+            , initializer(initializer)
+            , semiColon(semiColon) {}
+
+    };
+
+    struct MethodDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxList<AttributeListSyntax>* attributes;
+        TokenList* modifiers;
+        TypeSyntax* returnType;
+        SyntaxToken identifier;
+        TypeParameterListSyntax* typeParameterList;
+        ParameterListSyntax* parameterList;
+        SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses;
+        BlockSyntax* body;
+        ArrowExpressionClauseSyntax* expressionBody;
+        SyntaxToken semicolonToken;
+
+        MethodDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes, TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, TypeParameterListSyntax* typeParameterList, ParameterListSyntax* parameterList, SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses, BlockSyntax* body, ArrowExpressionClauseSyntax* expressionBody, SyntaxToken semicolonToken)
+            : MemberDeclarationSyntax(SyntaxKind::MethodDeclaration)
+            , attributes(attributes)
+            , modifiers(modifiers)
+            , returnType(returnType)
+            , identifier(identifier)
+            , typeParameterList(typeParameterList)
+            , parameterList(parameterList)
+            , constraintClauses(constraintClauses)
+            , body(body)
+            , expressionBody(expressionBody)
+            , semicolonToken(semicolonToken) {}
+
+    };
+
+    struct UsingDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxToken usingKeyword;
+        SyntaxToken staticKeyword;
+        NameEqualsSyntax* alias;
+        TypeSyntax* namespaceOrType;
+        SyntaxToken semicolon;
+
+        UsingDeclarationSyntax(SyntaxToken usingKeyword, SyntaxToken staticKeyword, NameEqualsSyntax* alias, TypeSyntax* namespaceOrType, SyntaxToken semicolon)
+            : MemberDeclarationSyntax(SyntaxKind::UsingDeclaration)
+            , usingKeyword(usingKeyword)
+            , staticKeyword(staticKeyword)
+            , alias(alias)
+            , namespaceOrType(namespaceOrType)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct ExternDeclarationSyntax : MemberDeclarationSyntax {
+
+        SyntaxToken externKeyword;
+        TokenList* modifiers;
+        TypeSyntax* returnType;
+        SyntaxToken identifier;
+        ParameterListSyntax* parameterList;
+        SyntaxToken semicolon;
+
+        ExternDeclarationSyntax(SyntaxToken externKeyword, TokenList* modifiers, TypeSyntax* returnType, SyntaxToken identifier, ParameterListSyntax* parameterList, SyntaxToken semicolon)
+            : MemberDeclarationSyntax(SyntaxKind::ExternDeclaration)
+            , externKeyword(externKeyword)
+            , modifiers(modifiers)
+            , returnType(returnType)
+            , identifier(identifier)
+            , parameterList(parameterList)
+            , semicolon(semicolon) {}
+
+    };
+
+    struct CompilationUnitSyntax : SyntaxBase {
+
+        SyntaxList<MemberDeclarationSyntax>* members;
+        SyntaxToken eof;
+
+        explicit CompilationUnitSyntax(SyntaxList<MemberDeclarationSyntax>* members, SyntaxToken eof)
+            : SyntaxBase(SyntaxKind::CompilationUnit)
+            , members(members)
+            , eof(eof)
+            {}
 
     };
 }
-
-#undef abstract

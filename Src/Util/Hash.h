@@ -17,23 +17,16 @@ namespace Alchemy::MsiHash {
         return static_cast<int32>(hash);
     }
 
-    inline int32 Lookup32(int32
-    hash,
-    int32 exponent, int32
-    idx) {
-    uint32 mask = ((uint32)
-    1 << exponent) - 1;
-    uint32 step = (hash >> (32 - exponent)) | 1;
-    return (idx + step) &
-    mask;
-}
+    inline int32 Lookup32(int32 hash, int32 exponent, int32 idx) {
+        uint32 mask = ((uint32) 1 << exponent) - 1;
+        uint32 step = (hash >> (32 - exponent)) | 1;
+        return (idx + step) & mask;
+    }
 
-inline int64 Lookup64(int64 hash, int32 exponent, int32 idx) {
-    uint32
-            mask = ((uint32)
-            1 << exponent) - 1;
-    uint32 step = (hash >> (64 - exponent)) | 1;
-    return (idx + step) & mask;
-}
+    inline int64 Lookup64(int64 hash, int32 exponent, int32 idx) {
+        uint32 mask = ((uint32) 1 << exponent) - 1;
+        uint32 step = (hash >> (64 - exponent)) | 1;
+        return (idx + step) & mask;
+    }
 
 }

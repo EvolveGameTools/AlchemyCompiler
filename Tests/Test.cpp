@@ -100,6 +100,30 @@ TEST_CASE("Parse Parameter List", "[parser]") {
     }
 }
 
+TEST_CASE("compilation unit", "[parser]") {
+
+    INITIALIZE_PARSER_TEST
+
+    FILE_TEST_SECTION("DeclareClassOnly") {
+
+        INITIALIZE_PARSER(R"(
+
+public class Thing {
+    public float X {
+        get => 10f;
+        set => v = value;
+    }
+}
+        )")
+
+        CompilationUnitSyntax* x = ParseCompilationUnit(&parser);
+        WriteTreeToFile(file, tokens, x);
+        // REQUIRE(CompareLines(file, TreeToLine(tokens, x)));
+
+    }
+
+}
+
 TEST_CASE("string literal expressions", "[parser]") {
     INITIALIZE_PARSER_TEST
 

@@ -37,8 +37,17 @@ namespace Alchemy::Compilation {
             return _kind;
         }
 
-        inline bool IsMissing() {
-            return false; // (flags & SyntaxTokenFlags::IsNotMissing) == 0;
+        inline bool IsMissing(CheckedArray<SyntaxToken> tokens) {
+            for(int32 i = startTokenId; i < endTokenId; i++) {
+                SyntaxToken * pToken = &tokens[i];
+                if(pToken->kind == TokenKind::Trivia) {
+                    continue;
+                }
+                if(pToken->IsMissing()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 //        #if true // shows better debugger output if polymorphic

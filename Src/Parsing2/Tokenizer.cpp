@@ -691,6 +691,14 @@ namespace Alchemy::Compilation {
                 LexSyntaxTrivia(textWindow, true, true, diagnostics, tokens);
                 continue;
             }
+            else if(!textWindow->HasMoreContent()) {
+                tokenInfo.kind = TokenKind::EndOfFileToken;
+                tokenInfo.contextualKind = TokenKind::EndOfFileToken;
+                tokenInfo.textSize = 0;
+                tokenInfo.text = textWindow->end;
+                tokens->Add(tokenInfo);
+                break;
+            }
             else {
                 ScanSyntaxToken(textWindow, &tokenInfo, diagnostics, &badTokenCount);
             }

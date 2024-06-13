@@ -1,0 +1,53 @@
+CompilationUnitSyntax [3:1 - 9:9]
+    members = SyntaxList [3:1 - 8:2]
+        ClassDeclarationSyntax [3:1 - 8:2]
+            attributes = SyntaxList <empty>
+            modifiers = [3:1 - 3:7]
+                PublicKeyword  public  [3:1 - 3:7]
+            keyword = ClassKeyword  class  [3:8 - 3:13]
+            identifier = IdentifierToken  Thing  [3:14 - 3:19]
+            typeParameterList = nullptr
+            parameterList = nullptr
+            baseList = nullptr
+            constraintClauses = SyntaxList <empty>
+            openBraceToken = OpenBraceToken  {  [3:20 - 3:21]
+            members = SyntaxList [4:5 - 7:6]
+                PropertyDeclarationSyntax [4:5 - 7:6]
+                    attributes = SyntaxList <empty>
+                    modifiers = [4:5 - 4:11]
+                        PublicKeyword  public  [4:5 - 4:11]
+                    type = PredefinedTypeSyntax [4:12 - 4:17]
+                        typeToken = FloatKeyword  float  [4:12 - 4:17]
+                    identifier = IdentifierToken  X  [4:18 - 4:19]
+                    accessorList = AccessorListSyntax [4:20 - 7:6]
+                        openBraceToken = OpenBraceToken  {  [4:20 - 4:21]
+                        accessors = SyntaxList [5:9 - 6:26]
+                            AccessorDeclarationSyntax [5:9 - 5:20]
+                                modifiers = <empty>
+                                keyword = GetKeyword  get  [5:9 - 5:12]
+                                bodyBlock = nullptr
+                                expressionBody = ArrowExpressionClauseSyntax [5:13 - 5:19]
+                                    arrowToken = EqualsGreaterThanToken  =>  [5:13 - 5:15]
+                                    expression = LiteralExpressionSyntax [5:16 - 5:19]
+                                        literal = NumericLiteralToken (FloatLiteral)  10f  [5:16 - 5:19]
+                                semiColon = SemicolonToken  ;  [5:19 - 5:20]
+                            AccessorDeclarationSyntax [6:9 - 6:26]
+                                modifiers = <empty>
+                                keyword = SetKeyword  set  [6:9 - 6:12]
+                                bodyBlock = nullptr
+                                expressionBody = ArrowExpressionClauseSyntax [6:13 - 6:25]
+                                    arrowToken = EqualsGreaterThanToken  =>  [6:13 - 6:15]
+                                    expression = AssignmentExpressionSyntax [6:16 - 6:25]
+                                        left = IdentifierNameSyntax [6:16 - 6:17]
+                                            identifier = IdentifierToken  v  [6:16 - 6:17]
+                                        operatorToken = EqualsToken  =  [6:18 - 6:19]
+                                        right = IdentifierNameSyntax [6:20 - 6:25]
+                                            identifier = IdentifierToken  value  [6:20 - 6:25]
+                                semiColon = SemicolonToken  ;  [6:25 - 6:26]
+                        closeBraceToken = CloseBraceToken  }  [7:5 - 7:6]
+                    expressionBody = nullptr
+                    initializer = nullptr
+                    semiColon = <unset> 
+            closeBraceToken = CloseBraceToken  }  [8:1 - 8:2]
+            semicolonToken = <unset> 
+    eof = EndOfFileToken    [9:9 - 9:9]

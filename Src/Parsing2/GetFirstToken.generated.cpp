@@ -216,6 +216,21 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::SimpleMemberAccessExpression: {
+                MemberAccessExpressionSyntax* p = (MemberAccessExpressionSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->operatorToken.IsValid()) return p->operatorToken;
+                if(p->name != nullptr) return GetFirstToken((SyntaxBase*)p->name);
+                return SyntaxToken();
+            }
+            case SyntaxKind::PointerMemberAccessExpression: {
+                MemberAccessExpressionSyntax* p = (MemberAccessExpressionSyntax*)syntaxBase;
+                if(p->expression != nullptr) return GetFirstToken((SyntaxBase*)p->expression);
+                if(p->operatorToken.IsValid()) return p->operatorToken;
+                if(p->name != nullptr) return GetFirstToken((SyntaxBase*)p->name);
+                return SyntaxToken();
+            }
+
             case SyntaxKind::QualifiedName: {
                 QualifiedNameSyntax* p = (QualifiedNameSyntax*)syntaxBase;
                 if(p->left != nullptr) return GetFirstToken((SyntaxBase*)p->left);
@@ -496,11 +511,6 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
-            case SyntaxKind::CharacterLiteralExpression: {
-                LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
-                if(p->literal.IsValid()) return p->literal;
-                return SyntaxToken();
-            }
             case SyntaxKind::DefaultLiteralExpression: {
                 LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
                 if(p->literal.IsValid()) return p->literal;
@@ -1609,6 +1619,62 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::PropertyDeclaration: {
+                PropertyDeclarationSyntax* p = (PropertyDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->accessorList != nullptr) return GetFirstToken((SyntaxBase*)p->accessorList);
+                if(p->expressionBody != nullptr) return GetFirstToken((SyntaxBase*)p->expressionBody);
+                if(p->initializer != nullptr) return GetFirstToken((SyntaxBase*)p->initializer);
+                if(p->semiColon.IsValid()) return p->semiColon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::MethodDeclaration: {
+                MethodDeclarationSyntax* p = (MethodDeclarationSyntax*)syntaxBase;
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->returnType != nullptr) return GetFirstToken((SyntaxBase*)p->returnType);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->typeParameterList != nullptr) return GetFirstToken((SyntaxBase*)p->typeParameterList);
+                if(p->parameterList != nullptr) return GetFirstToken((SyntaxBase*)p->parameterList);
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetFirstToken(p->constraintClauses->array[0]);
+                if(p->body != nullptr) return GetFirstToken((SyntaxBase*)p->body);
+                if(p->expressionBody != nullptr) return GetFirstToken((SyntaxBase*)p->expressionBody);
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::UsingDeclaration: {
+                UsingDeclarationSyntax* p = (UsingDeclarationSyntax*)syntaxBase;
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                if(p->staticKeyword.IsValid()) return p->staticKeyword;
+                if(p->alias != nullptr) return GetFirstToken((SyntaxBase*)p->alias);
+                if(p->namespaceOrType != nullptr) return GetFirstToken((SyntaxBase*)p->namespaceOrType);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ExternDeclaration: {
+                ExternDeclarationSyntax* p = (ExternDeclarationSyntax*)syntaxBase;
+                if(p->externKeyword.IsValid()) return p->externKeyword;
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[0];
+                if(p->returnType != nullptr) return GetFirstToken((SyntaxBase*)p->returnType);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->parameterList != nullptr) return GetFirstToken((SyntaxBase*)p->parameterList);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CompilationUnit: {
+                CompilationUnitSyntax* p = (CompilationUnitSyntax*)syntaxBase;
+                if(p->members != nullptr && p->members->size != 0) return GetFirstToken(p->members->array[0]);
+                if(p->eof.IsValid()) return p->eof;
+                return SyntaxToken();
+            }
+
             default: {
                 return SyntaxToken();
             }
@@ -1841,6 +1907,21 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ConditionalAccessExpression: {
                 ConditionalAccessExpressionSyntax* p = (ConditionalAccessExpressionSyntax*)syntaxBase;
                 if(p->whenNotNull != nullptr) return GetLastToken((SyntaxBase*)p->whenNotNull);
+                if(p->operatorToken.IsValid()) return p->operatorToken;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::SimpleMemberAccessExpression: {
+                MemberAccessExpressionSyntax* p = (MemberAccessExpressionSyntax*)syntaxBase;
+                if(p->name != nullptr) return GetLastToken((SyntaxBase*)p->name);
+                if(p->operatorToken.IsValid()) return p->operatorToken;
+                if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
+                return SyntaxToken();
+            }
+            case SyntaxKind::PointerMemberAccessExpression: {
+                MemberAccessExpressionSyntax* p = (MemberAccessExpressionSyntax*)syntaxBase;
+                if(p->name != nullptr) return GetLastToken((SyntaxBase*)p->name);
                 if(p->operatorToken.IsValid()) return p->operatorToken;
                 if(p->expression != nullptr) return GetLastToken((SyntaxBase*)p->expression);
                 return SyntaxToken();
@@ -2170,11 +2251,6 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
-            case SyntaxKind::CharacterLiteralExpression: {
-                LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
-                if(p->literal.IsValid()) return p->literal;
-                return SyntaxToken();
-            }
             case SyntaxKind::DefaultLiteralExpression: {
                 LiteralExpressionSyntax* p = (LiteralExpressionSyntax*)syntaxBase;
                 if(p->literal.IsValid()) return p->literal;
@@ -3332,6 +3408,62 @@ namespace Alchemy::Compilation {
                 if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
                 if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
                 if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::PropertyDeclaration: {
+                PropertyDeclarationSyntax* p = (PropertyDeclarationSyntax*)syntaxBase;
+                if(p->semiColon.IsValid()) return p->semiColon;
+                if(p->initializer != nullptr) return GetLastToken((SyntaxBase*)p->initializer);
+                if(p->expressionBody != nullptr) return GetLastToken((SyntaxBase*)p->expressionBody);
+                if(p->accessorList != nullptr) return GetLastToken((SyntaxBase*)p->accessorList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::MethodDeclaration: {
+                MethodDeclarationSyntax* p = (MethodDeclarationSyntax*)syntaxBase;
+                if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                if(p->expressionBody != nullptr) return GetLastToken((SyntaxBase*)p->expressionBody);
+                if(p->body != nullptr) return GetLastToken((SyntaxBase*)p->body);
+                if(p->constraintClauses != nullptr && p->constraintClauses->size != 0) return GetLastToken(p->constraintClauses->array[p->constraintClauses->size - 1]);
+                if(p->parameterList != nullptr) return GetLastToken((SyntaxBase*)p->parameterList);
+                if(p->typeParameterList != nullptr) return GetLastToken((SyntaxBase*)p->typeParameterList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->returnType != nullptr) return GetLastToken((SyntaxBase*)p->returnType);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::UsingDeclaration: {
+                UsingDeclarationSyntax* p = (UsingDeclarationSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->namespaceOrType != nullptr) return GetLastToken((SyntaxBase*)p->namespaceOrType);
+                if(p->alias != nullptr) return GetLastToken((SyntaxBase*)p->alias);
+                if(p->staticKeyword.IsValid()) return p->staticKeyword;
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::ExternDeclaration: {
+                ExternDeclarationSyntax* p = (ExternDeclarationSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->parameterList != nullptr) return GetLastToken((SyntaxBase*)p->parameterList);
+                if(p->identifier.IsValid()) return p->identifier;
+                if(p->returnType != nullptr) return GetLastToken((SyntaxBase*)p->returnType);
+                if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
+                if(p->externKeyword.IsValid()) return p->externKeyword;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::CompilationUnit: {
+                CompilationUnitSyntax* p = (CompilationUnitSyntax*)syntaxBase;
+                if(p->eof.IsValid()) return p->eof;
+                if(p->members != nullptr && p->members->size != 0) return GetLastToken(p->members->array[p->members->size - 1]);
                 return SyntaxToken();
             }
 

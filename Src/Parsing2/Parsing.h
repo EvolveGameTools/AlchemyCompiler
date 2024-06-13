@@ -203,6 +203,8 @@ namespace Alchemy::Compilation {
 
     bool IsPossibleType(Parser* parser);
 
+    CompilationUnitSyntax* ParseCompilationUnit(Parser* parser);
+
     SyntaxList<AttributeListSyntax>* ParseAttributeDeclarations(Parser* parser);
 
     void ParseTypeParameterConstraintClauses(Parser* parser, SyntaxListBuilder<TypeParameterConstraintClauseSyntax>* builder);
@@ -223,9 +225,13 @@ namespace Alchemy::Compilation {
 
     IdentifierNameSyntax* CreateMissingIdentifierName(Parser* parser);
 
+    bool ShouldParseLambdaParameterType(Parser* parser);
+
     TypeSyntax* ParseTypeOrVoid(Parser* parser);
 
     ExpressionSyntax* ParseExpressionOrDeclaration(Parser* parser, ParseTypeMode mode, bool permitTupleDesignation);
+
+    SyntaxList<AttributeListSyntax>* ParseAttributeDeclarations(Parser* parser);
 
     bool CanStartExpression(Parser* parser);
 

@@ -443,8 +443,11 @@ namespace Alchemy::Compilation {
         RawStringLiteralExpression,
         BracketedParameterList,
         IndexerDeclaration,
+        PropertyDeclaration,
         AccessorList,
-
+        MethodDeclaration,
+        UsingDeclaration,
+        ExternDeclaration,
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

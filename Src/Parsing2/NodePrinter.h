@@ -58,7 +58,7 @@ namespace Alchemy::Compilation {
 
         void PrintSyntaxList(SyntaxListUntyped* list) {
             if (list == nullptr || list->size == 0) {
-                PrintInline("SyntaxList <empty>");
+                PrintInline("SyntaxList <empty>\n");
                 return;
             }
 
