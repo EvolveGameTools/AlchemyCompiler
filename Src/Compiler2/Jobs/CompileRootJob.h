@@ -11,9 +11,8 @@ namespace Alchemy::Compilation {
         FixedCharSpan rootPackageName;
         CheckedArray<TypeInfo*> builtInTypes;
         Compiler* compiler;
-        MSIDictionary<FixedCharSpan, FileInfo*> fileInfoByAbsolutePath;
 
-        CheckedArray<AssemblyInfo> assemblies;
+        CheckedArray<AssemblyInfo> libraries;
 
         explicit CompileRootJob(Compiler* compiler)
             : compiler(compiler)
@@ -22,7 +21,25 @@ namespace Alchemy::Compilation {
 
         void Execute() override;
 
-        void LoadAssemblyFiles(AssemblyInfo info, PagedList<FileInfo*>* addedFiles, PagedList<FileInfo*>* touchedFiles, PagedList<FileInfo*>* changedFiles);
+    };
+
+    struct ParseFilesJob : Jobs::IJob {
+
+        CheckedArray<SourceFileInfo*> fileInfos;
+        VirtualFileSystem * vfs;
+
+        void Execute(int32 idx) override {
+
+            SourceFileInfo * fileInfo = fileInfos[idx];
+
+            if(!fileInfo->wasChanged) {
+                return;
+            }
+
+            FixedCharSpan span = vfs->ReadFile(fileInfo->path, GetAllocator());
+
+        }
 
     };
+
 }

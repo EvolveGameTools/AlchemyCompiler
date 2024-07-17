@@ -8,8 +8,8 @@ namespace Alchemy {
     struct PoolAllocator {
 
         explicit PoolAllocator(int32 pageSize = 128)
-                : buffer(pageSize)
-                  , allocator() {}
+            : buffer(pageSize)
+            , allocator() {}
 
         T* Allocate() {
 
@@ -39,7 +39,6 @@ namespace Alchemy {
 
         PagedAllocator<T> buffer;
         BlockHeader allocator;
-
 
     };
 

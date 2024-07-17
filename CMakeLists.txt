@@ -25,8 +25,12 @@ list(APPEND Sources
         Src/Parsing3/Parsing.cpp
 
         Src/Compiler2/Compiler.cpp
+        Src/Compiler2/SourceFileInfo.cpp
+        Src/Compiler2/Jobs/ParseFilesJob.cpp
         
         Src/Compiler2/Jobs/CompileRootJob.cpp
+        Src/FileSystem/VirtualFileSystem.cpp
+        Src/Util/StringTable.cpp
 
         Generated/FindSkippedTokens.generated.cpp
         Generated/GetFirstToken.generated.cpp

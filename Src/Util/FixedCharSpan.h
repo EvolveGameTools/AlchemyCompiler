@@ -8,16 +8,17 @@ namespace Alchemy {
     struct FixedCharSpan {
 
         char* ptr;
-        int32 size;
+        size_t size;
 
         FixedCharSpan() : ptr(nullptr), size(0) {}
 
         explicit FixedCharSpan(const char* ptr_) : ptr((char*) ptr_), size(strlen(ptr_)) {}
 
-        FixedCharSpan(char* ptr, int32 size) : ptr(ptr), size(size) {}
+        FixedCharSpan(char* ptr, size_t size) : ptr(ptr), size(size) {}
+        FixedCharSpan(const char* ptr, size_t size) : ptr((char*)ptr), size(size) {}
 
         bool operator==(const char* other) const {
-            int32 len = strlen(other);
+            size_t len = strlen(other);
             if (len != size) {
                 return false;
             }
@@ -25,7 +26,7 @@ namespace Alchemy {
         }
 
         bool operator!=(const char* other) const {
-            int32 len = strlen(other);
+            size_t len = strlen(other);
             if (len == size) {
                 return false;
             }

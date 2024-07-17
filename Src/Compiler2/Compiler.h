@@ -1,49 +1,48 @@
 #pragma once
 
-#include "../JobSystem/JobSystem.h"
 #include "../Parsing3/Diagnostics.h"
 #include "./TypeInfo.h"
 #include "../Collections/MSIHashmap.h"
 #include "../Collections/PagedList.h"
 #include "../Allocation/PoolAllocator.h"
+#include "../FileSystem/VirtualFileSystem.h"
+#include "../JobSystem/JobSystem.h"
+#include "SourceFileInfo.h"
 
 namespace Alchemy::Compilation {
-
-    struct FileInfo {
-
-        FixedCharSpan assemblyName;
-        FixedCharSpan path;
-        uint64 lastEditTime;
-        PodList<FileInfo*> dependencies;
-
-        FileInfo(FixedCharSpan assemblyName, FixedCharSpan path)
-            : assemblyName(assemblyName)
-            , path(path)
-            , lastEditTime(0)
-            , dependencies(4)
-        {}
-
-    };
 
     struct AssemblyInfo {
         FixedCharSpan assemblyName;
         FixedCharSpan path;
     };
 
+    struct PackageInfo {
+
+        FixedCharSpan packageName;
+        FixedCharSpan relativeDirectory;
+        FixedCharSpan absolutePath;
+
+    };
+
     struct Compiler {
 
         Diagnostics diagnostics;
+        VirtualFileSystem vfs;
         Alchemy::Jobs::JobSystem jobSystem;
         MSIDictionary<FixedCharSpan, TypeInfo*> resolveMap;
-        MSIDictionary<FixedCharSpan, FileInfo*> fileInfoByAbsolutePath;
-        Alchemy::PoolAllocator<FileInfo> fileAllocator;
+        Alchemy::PoolAllocator<SourceFileInfo> fileAllocator;
 
         static CheckedArray<TypeInfo*> s_BuiltInTypeInfos;
 
-        PodList<FileInfo*> fileInfos;
+        PodList<SourceFileInfo*> fileInfos;
+        PodList<VirtualFileInfo> sourceFileBuffer;
+        PodList<PackageInfo> packages;
 
-        void SetupCompilationRun(TempAllocator * tempAllocator);
+        void SetupCompilationRun(TempAllocator * tempAllocator, CheckedArray<VirtualFileInfo> files);
 
+        void LoadDependencies();
+
+        void Compile();
     };
 
 

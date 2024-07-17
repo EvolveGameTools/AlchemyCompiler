@@ -832,7 +832,7 @@ namespace Alchemy {
         }
 
         static uint8* Allocate(size_t size) {
-            return (uint8*) MallocByteArray(size, k_Alignment);
+            return (uint8*) Mallocate(size); //, k_Alignment);
         }
 
         template<typename TKey, typename TValue>
@@ -887,8 +887,8 @@ namespace Alchemy {
 
         }
 
-        static void Free(void* memory) {
-            FreeByteArray(memory, 16);
+        static void Free(void* memory, size_t size) {
+            Mfree(memory, size);
         }
 
         // todo -- thread_local temp buffer to store hash codes then this doesn't need to be a templated method
@@ -929,7 +929,7 @@ namespace Alchemy {
 
             }
 
-            Free(*pMap);
+            Free(*pMapd);
 
             *pMap = pNewMap;
             *pKeys = pNewKeys;

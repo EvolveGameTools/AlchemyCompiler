@@ -12,32 +12,39 @@ errno_t fopen_s(FILE** f, const char* name, const char* mode) {
 }
 
 #endif
-
-char* ReadFileIntoCString(const char* filename, int32* length) {
+FixedCharSpan ReadFile(FixedCharSpan filePath, Allocator allocator) {
     FILE* file;
-    fopen_s(&file, filename, "rb");
+    char fileName[512];
+
+    if(filePath.size > 511) {
+        return FixedCharSpan();
+    }
+
+    memcpy(fileName, filePath.ptr, filePath.size);
+    fileName[filePath.size] = 0;
+
+    fopen_s(&file, fileName, "rb");
     if (file == nullptr) {
         perror("Failed to open file");
-        return nullptr;
+        return FixedCharSpan();
     }
 
     fseek(file, 0, SEEK_END);
     long fileSize = ftell(file);
     rewind(file);
 
-    char* buffer = (char*) malloc(fileSize + 1);
+    char* buffer = allocator.AllocateUncleared<char>(fileSize + 1);
 
     size_t bytesRead = fread(buffer, 1, fileSize, file);
     if (bytesRead != fileSize) {
         fclose(file);
         free(buffer);
         perror("Failed to read file");
-        return nullptr;
+        return FixedCharSpan();
     }
 
     buffer[fileSize] = '\0';
 
     fclose(file);
-    *length = (int32) fileSize;
-    return buffer;
+    return FixedCharSpan(buffer, fileSize);
 }
