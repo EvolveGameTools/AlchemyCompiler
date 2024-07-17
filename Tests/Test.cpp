@@ -11,10 +11,6 @@
 
 using namespace Alchemy::Compilation;
 
-TextWindow MakeTextWindow(const char* src) {
-    return TextWindow((char*) src, strlen(src));
-}
-
 #define INITIALIZE_PARSER_TEST \
     const char * file;         \
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \

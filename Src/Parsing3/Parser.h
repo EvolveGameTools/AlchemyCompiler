@@ -5,18 +5,13 @@
 #include "./Diagnostics.h"
 #include "./Precidence.h"
 #include "./TerminatorState.h"
-#include "SyntaxBase.h"
+#include "./SyntaxBase.h"
+#include "./Tokenizer.h"
 
 namespace Alchemy::Compilation {
 
     SyntaxToken GetFirstToken(SyntaxBase * syntaxBase);
     SyntaxToken GetLastToken(SyntaxBase * syntaxBase);
-
-    struct ParserInput {
-        Diagnostics * diagnostics {};
-        CheckedArray<SyntaxToken> tokens;
-        CheckedArray<char*> texts;
-    };
 
     struct Parser  {
 
@@ -27,9 +22,12 @@ namespace Alchemy::Compilation {
         TempAllocator * tempAllocator;
         Diagnostics* diagnostics;
         CheckedArray<SyntaxToken> tokens;
+        CheckedArray<char*> tokenTexts;
         bool forceConditionalAccessExpression;
 
-        Parser(LinearAllocator * allocator, TempAllocator * tempAllocator, Diagnostics * diagnostics, CheckedArray<SyntaxToken> tokens);
+        Parser() = default;
+
+        Parser(TokenizerResult result, Diagnostics * diagnostics, LinearAllocator * allocator, TempAllocator * tempAllocator = nullptr);
 
         SyntaxToken EatToken(TokenKind kind);
         SyntaxToken EatToken();

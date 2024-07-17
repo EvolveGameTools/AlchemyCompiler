@@ -496,17 +496,6 @@ namespace Alchemy::Compilation {
 
     };
 
-    struct OmittedArraySizeExpressionSyntax : ExpressionSyntax {
-
-        SyntaxToken token;
-
-        explicit OmittedArraySizeExpressionSyntax(SyntaxToken token)
-            : ExpressionSyntax(SyntaxKind::OmittedArraySizeExpression)
-            , token(token) {}
-
-    };
-
-
     struct NullableTypeSyntax : TypeSyntax {
 
         TypeSyntax* elementType;
@@ -584,6 +573,35 @@ namespace Alchemy::Compilation {
             , closeBraceToken(closeBraceToken) {
             ASSERT_VALID_SYNTAX_KIND(kind);
         }
+
+    };
+
+    struct StackAllocArrayCreationExpressionSyntax : ExpressionSyntax {
+
+        SyntaxToken stackallocKeyword;
+        TypeSyntax* type;
+        InitializerExpressionSyntax* initializer;
+
+        StackAllocArrayCreationExpressionSyntax(SyntaxToken stackallocKeyword, TypeSyntax* type, InitializerExpressionSyntax* initializer)
+            : ExpressionSyntax(SyntaxKind::StackAllocArrayCreationExpression)
+            , stackallocKeyword(stackallocKeyword)
+            , type(type)
+            , initializer(initializer) {}
+
+    };
+
+    struct ImplicitStackAllocArrayCreationExpressionSyntax : ExpressionSyntax {
+        SyntaxToken stackallocKeyword;
+        SyntaxToken openBracket;
+        SyntaxToken closeBracket;
+        InitializerExpressionSyntax* initializer;
+
+        ImplicitStackAllocArrayCreationExpressionSyntax(SyntaxToken stackallocKeyword, SyntaxToken openBracket, SyntaxToken closeBracket, InitializerExpressionSyntax* initializer)
+            : ExpressionSyntax(SyntaxKind::ImplicitStackAllocArrayCreationExpression)
+            , stackallocKeyword(stackallocKeyword)
+            , openBracket(openBracket)
+            , closeBracket(closeBracket)
+            , initializer(initializer) {}
 
     };
 
@@ -853,21 +871,6 @@ namespace Alchemy::Compilation {
 
     };
 
-    struct SizeOfExpressionSyntax : ExpressionSyntax {
-        SyntaxToken keyword;
-        SyntaxToken openParenToken;
-        TypeSyntax* type;
-        SyntaxToken closeParenToken;
-
-        SizeOfExpressionSyntax(SyntaxToken keyword, SyntaxToken openParenToken, TypeSyntax* type, SyntaxToken closeParenToken)
-            : ExpressionSyntax(SyntaxKind::SizeOfExpression)
-            , keyword(keyword)
-            , openParenToken(openParenToken)
-            , type(type)
-            , closeParenToken(closeParenToken) {}
-
-    };
-
     struct TypeOfExpressionSyntax : ExpressionSyntax {
         SyntaxToken keyword;
         SyntaxToken openParenToken;
@@ -1058,8 +1061,6 @@ namespace Alchemy::Compilation {
             SyntaxKind::LogicalNotExpression,
             SyntaxKind::PreIncrementExpression,
             SyntaxKind::PreDecrementExpression,
-            SyntaxKind::AddressOfExpression,
-            SyntaxKind::PointerIndirectionExpression,
             SyntaxKind::IndexExpression,
         };
 
@@ -1860,17 +1861,17 @@ namespace Alchemy::Compilation {
         SyntaxToken semicolonToken;
 
         StructDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes,
-            TokenList* modifiers,
-            SyntaxToken keyword,
-            SyntaxToken identifier,
-            TypeParameterListSyntax* typeParameterList,
-            ParameterListSyntax* parameterList,
-            BaseListSyntax* baseList,
-            SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
-            SyntaxToken openBraceToken,
-            SyntaxList<MemberDeclarationSyntax>* members,
-            SyntaxToken closeBraceToken,
-            SyntaxToken semicolonToken
+                                TokenList* modifiers,
+                                SyntaxToken keyword,
+                                SyntaxToken identifier,
+                                TypeParameterListSyntax* typeParameterList,
+                                ParameterListSyntax* parameterList,
+                                BaseListSyntax* baseList,
+                                SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
+                                SyntaxToken openBraceToken,
+                                SyntaxList<MemberDeclarationSyntax>* members,
+                                SyntaxToken closeBraceToken,
+                                SyntaxToken semicolonToken
         )
             : TypeDeclarationSyntax(SyntaxKind::StructDeclaration)
             , attributes(attributes)
@@ -1969,17 +1970,17 @@ namespace Alchemy::Compilation {
         SyntaxToken semicolonToken;
 
         ClassDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes,
-            TokenList* modifiers,
-            SyntaxToken keyword,
-            SyntaxToken identifier,
-            TypeParameterListSyntax* typeParameterList,
-            ParameterListSyntax* parameterList,
-            BaseListSyntax* baseList,
-            SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
-            SyntaxToken openBraceToken,
-            SyntaxList<MemberDeclarationSyntax>* members,
-            SyntaxToken closeBraceToken,
-            SyntaxToken semicolonToken
+                               TokenList* modifiers,
+                               SyntaxToken keyword,
+                               SyntaxToken identifier,
+                               TypeParameterListSyntax* typeParameterList,
+                               ParameterListSyntax* parameterList,
+                               BaseListSyntax* baseList,
+                               SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
+                               SyntaxToken openBraceToken,
+                               SyntaxList<MemberDeclarationSyntax>* members,
+                               SyntaxToken closeBraceToken,
+                               SyntaxToken semicolonToken
         )
             : TypeDeclarationSyntax(SyntaxKind::ClassDeclaration)
             , attributes(attributes)
@@ -2013,17 +2014,17 @@ namespace Alchemy::Compilation {
         SyntaxToken semicolonToken;
 
         InterfaceDeclarationSyntax(SyntaxList<AttributeListSyntax>* attributes,
-            TokenList* modifiers,
-            SyntaxToken keyword,
-            SyntaxToken identifier,
-            TypeParameterListSyntax* typeParameterList,
-            ParameterListSyntax* parameterList,
-            BaseListSyntax* baseList,
-            SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
-            SyntaxToken openBraceToken,
-            SyntaxList<MemberDeclarationSyntax>* members,
-            SyntaxToken closeBraceToken,
-            SyntaxToken semicolonToken
+                                   TokenList* modifiers,
+                                   SyntaxToken keyword,
+                                   SyntaxToken identifier,
+                                   TypeParameterListSyntax* typeParameterList,
+                                   ParameterListSyntax* parameterList,
+                                   BaseListSyntax* baseList,
+                                   SyntaxList<TypeParameterConstraintClauseSyntax>* constraintClauses,
+                                   SyntaxToken openBraceToken,
+                                   SyntaxList<MemberDeclarationSyntax>* members,
+                                   SyntaxToken closeBraceToken,
+                                   SyntaxToken semicolonToken
         )
             : TypeDeclarationSyntax(SyntaxKind::InterfaceDeclaration)
             , attributes(attributes)
@@ -2342,7 +2343,7 @@ namespace Alchemy::Compilation {
             : SyntaxBase(SyntaxKind::CompilationUnit)
             , members(members)
             , eof(eof)
-            {}
+        {}
 
     };
 }

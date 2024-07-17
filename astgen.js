@@ -113,7 +113,7 @@ function findCppStructs(filename) {
 
 }
 
-const filename = './Src/Parsing2/SyntaxNodes.h';
+const filename = './Src/Parsing3/SyntaxNodes.h';
 
 const structs = findCppStructs(filename);
 
@@ -435,7 +435,7 @@ function createGetFirstTokens(structs) {
     }
 }
 
-const nodePrinterTemplate = `#include "./NodePrinter.h"
+const nodePrinterTemplate = `#include "../Src/Parsing3/NodePrinter.h"
 
 namespace Alchemy::Compilation {
 
@@ -456,8 +456,8 @@ __REPLACE__
     }
 }
 `
-const firstTokenTemplate = `#include "./SyntaxBase.h"
-#include "./SyntaxNodes.h"
+const firstTokenTemplate = `#include "../Src/Parsing3/SyntaxBase.h"
+#include "../Src/Parsing3/SyntaxNodes.h"
 
 namespace Alchemy::Compilation {
     
@@ -511,7 +511,7 @@ __REPLACE_BUILDER_API__
 }
 `;
 
-const touchTemplate = `#include "./FindSkippedTokens.h"
+const touchTemplate = `#include "../Src/Parsing3/FindSkippedTokens.h"
 
 namespace Alchemy::Compilation {
     

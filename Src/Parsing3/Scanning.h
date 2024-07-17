@@ -117,11 +117,11 @@ namespace Alchemy::Compilation {
 
     bool TryMatchKeyword_Generated(char* buffer, int32 length, TokenKind* keywordType);
 
-    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, SyntaxToken* info);
+    bool ScanNumericLiteral(TextWindow* textWindow, Diagnostics* diagnostics, PendingSyntaxToken* info);
 
-    void ScanSyntaxToken(TextWindow* textWindow, SyntaxToken* info, Diagnostics* diagnostics, int32* badTokenCount);
+    void ScanSyntaxToken(TextWindow* textWindow, PendingSyntaxToken* info, Diagnostics* diagnostics, int32* badTokenCount);
 
-    bool ScanIdentifierOrKeyword(TextWindow* textWindow, SyntaxToken* info);
+    bool ScanIdentifierOrKeyword(TextWindow* textWindow, PendingSyntaxToken* info);
 
     float GetFloatValue(char * str, int32 length);
     uint64 GetUInt64Value(char * str, int32 length);

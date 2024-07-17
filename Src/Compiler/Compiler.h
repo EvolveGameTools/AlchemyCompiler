@@ -170,6 +170,7 @@ namespace Alchemy::Compilation {
                     FixedCharSpan absolute((char*) absolutePathStr.c_str(), (int32) absolutePathStr.length());
 
                     FileInfo* fileInfo = nullptr;
+
                     if (fileInfoByAbsolutePath.TryGetValue(absolute, &fileInfo)) {
                         touchedFiles.Add(fileInfo);
                         uint64 lastEditTime = std::chrono::duration_cast<std::chrono::milliseconds>(fs::last_write_time(entry.path()).time_since_epoch()).count();
@@ -225,6 +226,7 @@ namespace Alchemy::Compilation {
         }
 
         void RunParseJobs(CheckedArray<FileInfo*> fileInfos) {
+
             TempAllocator::ScopedMarker marker(GetAllocator());
 
             CheckedArray<Parser*> perThreadParsers(GetAllocator()->Allocate<Parser*>(GetWorkerCount()), GetWorkerCount());

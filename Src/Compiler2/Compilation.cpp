@@ -13,8 +13,6 @@ namespace Alchemy::Compilation {
 
     };
 
-
-
     struct InputFile {
 
         FixedCharSpan src;
@@ -59,6 +57,14 @@ namespace Alchemy::Compilation {
 
     };
 
+    struct Assembly {
+        FixedCharSpan name;
+        FixedCharSpan path;
+        // ... options ...
+    };
+
+    struct CompilationUnit {};
+
     void ProcessCompilationUnit(CompilationFile * compilationFile, Diagnostics * diagnostics, CompilationUnitSyntax * compilationUnit) {
 
         // find our type signatures
@@ -66,6 +72,7 @@ namespace Alchemy::Compilation {
 
         TempAllocator * tempAllocator = GetThreadLocalAllocator();
         TempAllocator::ScopedMarker m(tempAllocator);
+
 
         // not sure if we care to multithread the symbol table updates
         // except for the first compile we only have a few files updating at once

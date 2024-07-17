@@ -1,15 +1,19 @@
 #pragma once
 
 #include <cstdio>
+#include "../Allocation/ThreadLocalTemp.h"
+#include "../Collections/PodList.h"
+
 #include "../PrimitiveTypes.h"
 #include "./SyntaxNodes.h"
 #include "./SyntaxKind.h"
-#include "../Collections/PodList.h"
-#include "Tokenizer.h"
-#include "../Allocation/ThreadLocalTemp.h"
-#include "FindSkippedTokens.h"
+#include "./Tokenizer.h"
+#include "./TokenKind.h"
+#include "./FindSkippedTokens.h"
 
 namespace Alchemy::Compilation {
+
+    void ComputeTokenLineColumns(CheckedArray<SyntaxToken> tokens, CheckedArray<char*> texts, CheckedArray<LineColumn> lineCols);
 
     DEFINE_ENUM_FLAGS(TreePrintOptions, uint32, {
         None = 0,
@@ -34,17 +38,20 @@ namespace Alchemy::Compilation {
         TreePrintOptions options;
         CheckedArray<LineColumn> lc;
 
-        explicit NodePrinter(CheckedArray<SyntaxToken> tokens, CheckedArray<char*> tokenTexts, TreePrintOptions options)
+        explicit NodePrinter(TokenizerResult result, TreePrintOptions options = TreePrintOptions::Default) : NodePrinter(result.tokens, result.texts, options) {};
+
+        NodePrinter(CheckedArray<SyntaxToken> tokens, CheckedArray<char*> tokenTexts, TreePrintOptions options)
             : tokens(tokens)
+            , tokenTexts(tokenTexts)
             , indent(0)
             , options(options)
             , printComments(true)
             , printWhitespace(true)
             , printTrivia(true)
             , printSkipped(true)
-            , buffer(2048) {
+            , buffer(4096) {
             lc = CheckedArray<LineColumn>(MallocateTyped(LineColumn, tokens.size), tokens.size);
-            ComputeTokenLineColumns(tokens, lc);
+            ComputeTokenLineColumns(tokens, tokenTexts, lc);
         }
 
         ~NodePrinter() {
@@ -154,6 +161,10 @@ namespace Alchemy::Compilation {
             PrintInline((char*) str, strlen(str));
         }
 
+        void PrintInline(FixedCharSpan span) {
+            PrintInline(span.ptr, span.size);
+        }
+
         void PrintTokenList(TokenList* tokenList) {
             if(tokenList == nullptr || tokenList->size == 0) {
                 PrintLine("<empty>");
@@ -227,7 +238,7 @@ namespace Alchemy::Compilation {
             }
 
             PrintInline("  ");
-            PrintInline(token.GetText(tokenTexts));, token.textSize);
+            PrintInline(token.GetText(tokenTexts));
             PrintInline(" ");
 
             buffer.EnsureAdditionalCapacity(64);

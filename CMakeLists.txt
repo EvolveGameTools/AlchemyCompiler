@@ -15,22 +15,25 @@ list(APPEND Sources
 
         Src/Panic.cpp
 
-        Src/Parsing2/TextWindow.cpp
-        Src/Parsing2/Scanning.cpp
-        Src/Parsing2/Diagnostics.cpp
-        Src/Parsing2/Parser.cpp
-        Src/Parsing2/Parsing.cpp
-        Src/Parsing2/SyntaxKind.cpp
-        Src/Parsing2/TokenKind.cpp
-        Src/Parsing2/FindSkippedTokens.cpp
-        Src/Parsing2/Tokenizer.cpp
-        Src/Parsing2/SyntaxFacts.cpp
-        Src/Parsing2/MatchKeyword.generated.cpp
-        Src/Parsing2/GetFirstToken.generated.cpp
-        Src/Parsing2/NodePrinter.generated.cpp
-        Src/Parsing2/FindSkippedTokens.generated.cpp
+        Src/Parsing3/TextWindow.cpp
+        Src/Parsing3/Scanning.cpp
+        Src/Parsing3/Diagnostics.cpp
+        Src/Parsing3/Tokenizer.cpp
+        Src/Parsing3/SyntaxFacts.cpp
+        Src/Parsing3/FindSkippedTokens.cpp
+        Src/Parsing3/Parser.cpp
+        Src/Parsing3/Parsing.cpp
 
-        Src/Compiler2/Compilation.cpp
+        Src/Compiler2/Compiler.cpp
+        
+        Src/Compiler2/Jobs/CompileRootJob.cpp
+
+        Generated/FindSkippedTokens.generated.cpp
+        Generated/GetFirstToken.generated.cpp
+        Generated/MatchKeyword.generated.cpp
+        Generated/NodePrinter.generated.cpp
+        Generated/SyntaxKind.generated.cpp
+        Generated/TokenKind.generated.cpp
 
 )
 
@@ -95,7 +98,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(tests
-    Tests/Test.cpp
+    Tests/Test2.cpp
     ${Sources}
 )
 

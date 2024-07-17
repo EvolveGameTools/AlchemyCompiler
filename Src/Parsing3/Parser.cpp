@@ -6,6 +6,7 @@
 #include "../Collections/PodList.h"
 #include "./Parser.h"
 #include "../Allocation/LinearAllocator.h"
+#include "../Allocation/ThreadLocalTemp.h"
 
 namespace Alchemy::Compilation {
 
@@ -31,12 +32,13 @@ namespace Alchemy::Compilation {
         return eof;
     }
 
-    Parser::Parser(LinearAllocator* allocator, TempAllocator* tempAllocator, Diagnostics* diagnostics, CheckedArray<SyntaxToken> tokens)
-        : tokens(tokens)
+    Parser::Parser(TokenizerResult result, Diagnostics * diagnostics, LinearAllocator* allocator, TempAllocator * tempAllocator)
+        : tokens(result.tokens)
+        , tokenTexts(result.texts)
+        , diagnostics(diagnostics)
         , ptr(0)
         , allocator(allocator)
-        , tempAllocator(tempAllocator)
-        , diagnostics(diagnostics)
+        , tempAllocator(tempAllocator == nullptr ? GetThreadLocalAllocator() : tempAllocator)
         , termState(TerminatorState::EndOfFile)
         , forceConditionalAccessExpression(false)
         , currentToken() {
@@ -97,7 +99,7 @@ namespace Alchemy::Compilation {
         SyntaxToken token = currentToken;
 
         if (token.kind != kind) {
-            FixedCharSpan span = token.GetText();
+            FixedCharSpan span = token.GetText(tokenTexts);
             AddError(token, Diagnostic(GetExpectedTokenErrorCode(kind, token.kind), span.ptr, span.ptr + span.size));
         }
 
@@ -109,7 +111,7 @@ namespace Alchemy::Compilation {
         SyntaxToken token = currentToken;
 
         if (token.kind != kind) {
-            FixedCharSpan span = token.GetText();
+            FixedCharSpan span = token.GetText(tokenTexts);
             AddError(token, Diagnostic(GetExpectedTokenErrorCode(kind, token.kind), span.ptr, span.ptr + span.size));
         }
 
@@ -166,7 +168,8 @@ namespace Alchemy::Compilation {
         SyntaxToken missing = CreateMissingToken(expected);
 
         if (reportError) {
-            AddError(actual, Diagnostic(GetExpectedTokenErrorCode(expected, actual.kind), actual.text, actual.text + actual.textSize));
+            FixedCharSpan text = actual.GetText(tokenTexts);
+            AddError(actual, Diagnostic(GetExpectedTokenErrorCode(expected, actual.kind), text.ptr, text.ptr + actual.textSize));
         }
 
         return missing;
@@ -195,7 +198,8 @@ namespace Alchemy::Compilation {
     }
 
     Diagnostic Parser::MakeDiagnostic(ErrorCode code, SyntaxToken token) {
-        return Diagnostic(code, token.text, token.text + token.textSize);
+        FixedCharSpan text = token.GetText(tokenTexts);
+        return Diagnostic(code, text.ptr, text.ptr + token.textSize);
     }
 
     void Parser::AddError(SyntaxBase* node, ErrorCode errorCode) {
@@ -214,7 +218,7 @@ namespace Alchemy::Compilation {
             tokens[start.GetId()].AddFlag(SyntaxTokenFlags::Error);
         }
 
-        diagnostics->AddError(Diagnostic(errorCode, start.text, end.text + end.textSize));
+        diagnostics->AddError(Diagnostic(errorCode, tokenTexts[start.GetId()], tokenTexts[end.GetId()] + end.textSize));
     }
 
     void Parser::AddError(SyntaxToken token, ErrorCode errorCode) {
@@ -226,7 +230,7 @@ namespace Alchemy::Compilation {
             tokens[token.GetId()].AddFlag(SyntaxTokenFlags::Error);
         }
 
-        diagnostics->AddError(Diagnostic(errorCode, token.text, token.text + token.textSize));
+        diagnostics->AddError(Diagnostic(errorCode, tokenTexts[token.GetId()], tokenTexts[token.GetId()] + token.textSize));
     }
 
     void Parser::AddError(SyntaxToken token, Diagnostic diagnostic) {

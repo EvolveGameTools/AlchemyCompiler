@@ -2,11 +2,42 @@
 #pragma once
 
 #include "../Src/Allocation/LinearAllocator.h"
-#include "../Src/Parsing2/Scanning.h"
+#include "../Src/Collections/PodList.h"
+#include "../Src/Parsing3/Scanning.h"
+#include "../Src/Parsing3/TextWindow.h"
+#include "../Src/Parsing3/NodePrinter.h"
+
 #include <iostream>
 #include <fstream>
 
 using namespace Alchemy;
+using namespace Alchemy::Compilation;
+
+
+#define INITIALIZE_PARSER(str) \
+    diagnostics.size = 0; \
+    textWindow = MakeTextWindow(str); \
+    tokenizerResult = Tokenize(textWindow, &diagnostics, &allocator); \
+    parser = Parser(tokenizerResult, &diagnostics, &allocator);     \
+
+#define TestFile(x) "../Tests/ParsingExpectations/" x ".output"
+
+#define FILE_TEST_SECTION(x) \
+file = TestFile(x);     \
+SECTION(x)
+
+#define INITIALIZE_PARSER_TEST \
+    const char * file;         \
+    Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \
+    Alchemy::TempAllocator::ScopedMarker marker(Alchemy::GetThreadLocalAllocator()); \
+    Diagnostics diagnostics(Alchemy::GetThreadLocalAllocator()); \
+    TokenizerResult tokenizerResult; \
+    Parser parser;  \
+    TextWindow textWindow;
+
+TextWindow MakeTextWindow(const char* src) {
+    return TextWindow((char*) src, strlen(src));
+}
 
 struct CheckedArray<FixedCharSpan> SplitIntoLines(char* str, int32 size, LinearAllocator* allocator) {
     // Count the number of lines
@@ -100,8 +131,8 @@ CheckedArray<FixedCharSpan> ReadLines(const char* filePath) {
     return SplitIntoLines(src, length, GetThreadLocalAllocator());
 }
 
-CheckedArray<FixedCharSpan> TreeToLine(PodList<Alchemy::Compilation::SyntaxToken> & tokens, Alchemy::Compilation::SyntaxBase * syntaxBase, Alchemy::Compilation::TreePrintOptions printOptions = Alchemy::Compilation::TreePrintOptions::None) {
-    Alchemy::Compilation::NodePrinter p(tokens.ToCheckedArray(), printOptions);
+CheckedArray<FixedCharSpan> TreeToLine(TokenizerResult tokenizerResult, SyntaxBase * syntaxBase, TreePrintOptions printOptions = TreePrintOptions::None) {
+    NodePrinter p(tokenizerResult.tokens, tokenizerResult.texts, printOptions);
     p.PrintTree(syntaxBase);
     char * pBuffer = GetThreadLocalAllocator()->AllocateUncleared<char>(p.buffer.size);
     memcpy(pBuffer, p.buffer.array, p.buffer.size);
@@ -151,8 +182,8 @@ bool WriteStringToFile(const char* fileName, char* content, size_t length) {
     return true;
 }
 
-void WriteTreeToFile(const char * file, PodList<Alchemy::Compilation::SyntaxToken> & tokens, Alchemy::Compilation::SyntaxBase * syntaxBase, Alchemy::Compilation::TreePrintOptions printOptions = Alchemy::Compilation::TreePrintOptions::None) {
-    Alchemy::Compilation::NodePrinter p(tokens.ToCheckedArray(), printOptions);
+void WriteTreeToFile(const char * file, TokenizerResult tokenizerResult, SyntaxBase * syntaxBase, TreePrintOptions printOptions = TreePrintOptions::None) {
+    NodePrinter p(tokenizerResult, printOptions);
     p.PrintTree(syntaxBase);
     WriteStringToFile(file, p.buffer.array, p.buffer.size);
 }

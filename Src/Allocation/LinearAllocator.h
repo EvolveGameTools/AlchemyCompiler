@@ -37,6 +37,11 @@ namespace Alchemy {
         }
 
         template<typename T>
+        T* AllocateUncleared(size_t count) {
+            return (T*) AllocateBytesUncleared(sizeof(T) * count, alignof(T));
+        }
+
+        template<typename T>
         Alchemy::CheckedArray<T> Copy(Alchemy::CheckedArray<T> other) {
             size_t bytes = other.size * sizeof(T);
             void* retn = AllocateBytesUncleared(bytes, alignof(T));
@@ -50,11 +55,6 @@ namespace Alchemy {
             T* retn = (T*) AllocateBytesUncleared(bytes, alignof(T));
             new(retn) T(std::forward<Args>(args)...);
             return retn;
-        }
-
-        template<typename T>
-        T* AllocateUncleared(size_t count) {
-            return (T*) AllocateBytesUncleared(sizeof(T) * count, alignof(T));
         }
 
         template<typename T>

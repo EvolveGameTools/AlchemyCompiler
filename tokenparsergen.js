@@ -394,7 +394,7 @@ function generateSyntaxKindKeywordMatchingCode(inputFile, outputFile, start, end
 
         const generatedFunction = generateKeywordMatch(data, start, end);
 
-        var output = '#include "../PrimitiveTypes.h"\n#include "./SyntaxKind.h"\n\n' + 'namespace Alchemy::Compilation {\n' + generatedFunction + '\n}';
+        var output = '#include "../Src/PrimitiveTypes.h"\n#include "../Src/Parsing3/TokenKind.h"\n\n' + 'namespace Alchemy::Compilation {\n' + generatedFunction + '\n}';
 
         fs.writeFile(outputFile, output, (err) => {
             if (err) {
@@ -589,7 +589,7 @@ function enumToStringFn2(src, dst, enumName, signature, valuesToIgnore = []) {
     });
 }
 
-function enumToStringFn(src, dst, enumName, valuesToIgnore = []) {
+function enumToStringFn(src, dst, enumName, valuesToIgnore, namespace, includes) {
     fs.readFile(src, 'utf8', (err, fileContent) => {
         if (err) {
             console.error("Error reading the file:", err);
@@ -609,23 +609,29 @@ function enumToStringFn(src, dst, enumName, valuesToIgnore = []) {
             output += "        }\n";
             output += "    }\n";
 
-            const startMarker = `// --- Generate ${enumName}ToString Start`;
-            const endMarker = `// --- Generate ${enumName}ToString End`;
+            // const startMarker = `// --- Generate ${enumName}ToString Start`;
+            // const endMarker = `// --- Generate ${enumName}ToString End`;
 
-            var startIdx = dstContent.indexOf(startMarker);
-            var endIdx = dstContent.indexOf(endMarker);
-
-            if (startIdx < 0 || endIdx < 0) {
-                console.log(`nowhere to output ${enumName}ToString function, missing marker comments`);
-                return;
-            }
-
-            // Extract the content before and after the markers
-            const beforeContent = dstContent.substring(0, startIdx);
-            const afterContent = dstContent.substring(endIdx + endMarker.length);
+            // var startIdx = dstContent.indexOf(startMarker);
+            // var endIdx = dstContent.indexOf(endMarker);
+            //
+            // if (startIdx < 0 || endIdx < 0) {
+            //     console.log(`nowhere to output ${enumName}ToString function, missing marker comments`);
+            //     return;
+            // }
+            //
+            // // Extract the content before and after the markers
+            // const beforeContent = dstContent.substring(0, startIdx);
+            // const afterContent = dstContent.substring(endIdx + endMarker.length);
 
             // Concatenate the new content with the content before and after the markers
-            output = beforeContent + startMarker + '\n' + output + '\n' + endMarker + afterContent;
+
+            var incs = "";
+            for(var i = 0; i < includes.length; i++) {
+                incs += "#include \""+ includes[i] + "\"\n";
+            }
+
+            output = incs + "namespace " + namespace +  ' {\n' + output + '\n' + "}";
 
             fs.writeFile(dst, output, (err) => {
                 if (err) {
@@ -723,19 +729,6 @@ namespace Alchemy::Parsing {
     });
 }
 
-generateKeywordMatchingCode('Src/Parsing/Keyword.h', 'Src/Parsing/private/MatchKeyword.generated.inc');
-generateSyntaxKindKeywordMatchingCode('Src/Parsing2/SyntaxKind.h', 'Src/Parsing2/MatchKeyword.generated.cpp', '__FirstKeyword__', '__LastContextualKeyword__');
-
-generateKeywordToString('Src/Parsing/Keyword.h', 'Src/Parsing/impl/Keyword.cpp');
-
-generateNodeType('Src/Parsing/Nodes.h', 'Src/Parsing/private/Nodes.generated.h')
-
-generateIsDeclarationNode("Src/Parsing/NodeType.h");
-
-// enumToStringFn("Src/Parsing/NodeType.h", "Src/Parsing/impl/NodeType.cpp", "NodeType", ["None"]);
-// enumToStringFn("Src/Parsing/TokenType.h", "Src/Parsing/impl/TokenType.cpp", "TokenType", ["Invalid"]);
-enumToStringFn("Src/Parsing2/SyntaxKind.h", "Src/Parsing2/SyntaxKind.cpp", "SyntaxKind");
-enumToStringFn("Src/Parsing2/SyntaxKind.h", "Src/Parsing2/TokenKind.cpp", "TokenKind");
 
 const astgen = require("./astgen");
 
@@ -749,8 +742,15 @@ function report(str) {
     }
 }
 
-fs.writeFile("Src/Parsing2/GetFirstToken.generated.cpp", astgen.makeFirstTokenSource(), report("GenFirstToken"));
-fs.writeFile("Src/Parsing2/NodePrinter.generated.cpp", astgen.makeNodePrinter(), report("NodePrinter"));
-fs.writeFile("Src/Parsing2/FindSkippedTokens.generated.cpp", astgen.makeTouches(), report("FindSkippedTokens"));
-// fs.writeFile("Src/Parsing2/Builders.generated.h", astgen.makeBuilders(), report("Builders"));
-// fs.writeFile("Src/Parsing2/NodeEquality.generated.cpp", astgen.makeEqualityComparisons(), report("Node Equality"));
+// generateKeywordMatchingCode('Src/Parsing/Keyword.h', 'Src/Parsing/private/MatchKeyword.generated.inc');
+// generateKeywordToString('Src/Parsing/Keyword.h', 'Src/Parsing/impl/Keyword.cpp');
+// generateNodeType('Src/Parsing/Nodes.h', 'Src/Parsing/private/Nodes.generated.h')
+// generateIsDeclarationNode("Src/Parsing/NodeType.h");
+generateSyntaxKindKeywordMatchingCode('Src/Parsing3/TokenKind.h', 'Generated/MatchKeyword.generated.cpp', '__FirstKeyword__', '__LastContextualKeyword__');
+
+enumToStringFn("Src/Parsing3/SyntaxKind.h", "Generated/SyntaxKind.generated.cpp", "SyntaxKind", [], "Alchemy::Compilation", ["../Src/Parsing3/SyntaxKind.h"]);
+enumToStringFn("Src/Parsing3/TokenKind.h", "Generated/TokenKind.generated.cpp", "TokenKind", [], "Alchemy::Compilation", ["../Src/Parsing3/TokenKind.h"]);
+
+fs.writeFile("Generated/GetFirstToken.generated.cpp", astgen.makeFirstTokenSource(), report("GenFirstToken"));
+fs.writeFile("Generated/NodePrinter.generated.cpp", astgen.makeNodePrinter(), report("NodePrinter"));
+fs.writeFile("Generated/FindSkippedTokens.generated.cpp", astgen.makeTouches(), report("FindSkippedTokens"));
