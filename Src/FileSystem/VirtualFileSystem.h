@@ -10,33 +10,10 @@
 
 namespace Alchemy {
 
-    struct VirtualFileContents {
-
-        uint8* content;
-        size_t contentSize;
-
-        // todo -- more shit around nuking/caching file contents
-
+    enum class FileSystemType {
+        Real,
+        Virtual
     };
-
-    FixedCharSpan FindFileExtension(char* str, size_t size) {
-
-        const char* dot = NULL;
-
-        for (size_t i = size; i > 0; --i) {
-            if (str[i - 1] == '.') {
-                dot = &str[i - 1];
-                break;
-            }
-        }
-
-        // If no dot is found or it's the first character, there is no extension
-        if (!dot || dot == str) {
-            return FixedCharSpan();
-        }
-
-        return FixedCharSpan(dot + 1, (dot + 1) - str);
-    }
 
     struct VirtualFileInfo {
 
@@ -60,16 +37,28 @@ namespace Alchemy {
 
     struct VirtualFileSystem {
 
+        struct FileData {
+            VirtualFileInfo info;
+            FixedCharSpan content;
+        };
+
+        LinearAllocator internAllocator;
         StringTable internTable;
-        bool usingRealFileSystem;
+        FileSystemType fileSystemType;
+
+        PodList<FileData> vFileInfos;
+
+        explicit VirtualFileSystem(FileSystemType fileSystemType);
 
         FixedCharSpan ReadFileText(FixedCharSpan absolutePath, Allocator allocator);
 
         int32 LoadSourcesFromRealFileSystem(FixedCharSpan location, FixedCharSpan packageName, CheckedArray<FixedCharSpan> extensions, PodList<VirtualFileInfo>* output);
 
-        int32 LoadFileInfos(FixedCharSpan location, FixedCharSpan packageName, CheckedArray<FixedCharSpan> extensions, PodList<VirtualFileInfo>* output);
+        int32 LoadFileInfos(FixedCharSpan & packageName, FixedCharSpan & location, CheckedArray<FixedCharSpan> extensions, PodList<VirtualFileInfo>* output);
 
         FixedCharSpan InternPath(std::filesystem::path& path);
+
+        void AddFile(VirtualFileInfo info, FixedCharSpan contents);
 
     };
 

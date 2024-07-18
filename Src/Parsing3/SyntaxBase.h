@@ -2,6 +2,7 @@
 
 #include "./SyntaxKind.h"
 #include "./Scanning.h"
+#include "./Tokenizer.h"
 
 namespace Alchemy::Compilation {
 
@@ -22,6 +23,15 @@ namespace Alchemy::Compilation {
             : startId_kind_combined(0)
             , endId_flags_combined(0) {
             SetKind(kind);
+        }
+
+        inline FixedCharSpan GetText(TokenizerResult result) {
+            SyntaxToken start = result.tokens[GetStartTokenId()];
+            SyntaxToken end = result.tokens[GetEndTokenId()];
+            FixedCharSpan startText = start.GetText(result.texts);
+            FixedCharSpan endText = end.GetText(result.texts);
+            char * pEnd = endText.ptr + endText.size;
+            return FixedCharSpan(startText.ptr, pEnd - startText.ptr);
         }
 
         inline void SetKind(SyntaxKind kind) {
@@ -172,9 +182,9 @@ namespace Alchemy::Compilation {
 
     };
 
-    struct SimpleNameSyntax : NameSyntax {
+    struct SimpleNameSyntax_Abstract : NameSyntax {
 
-        explicit SimpleNameSyntax(SyntaxKind kind) : NameSyntax(kind) {}
+        explicit SimpleNameSyntax_Abstract(SyntaxKind kind) : NameSyntax(kind) {}
 
     };
 
@@ -192,6 +202,7 @@ namespace Alchemy::Compilation {
 
         explicit MemberDeclarationSyntax(SyntaxKind kind)
             : SyntaxBase(kind) {}
+
     };
 
     struct ConstructorInitializerSyntax : SyntaxBase {
@@ -217,15 +228,10 @@ namespace Alchemy::Compilation {
         explicit CommonForEachStatementSyntax(SyntaxKind kind) : StatementSyntax(kind) {}
 
     };
+
     struct SwitchLabelSyntax : SyntaxBase {
 
         explicit SwitchLabelSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
-
-    };
-
-    struct BaseTypeSyntax : SyntaxBase {
-
-        explicit BaseTypeSyntax(SyntaxKind kind) : SyntaxBase(kind) {}
 
     };
 

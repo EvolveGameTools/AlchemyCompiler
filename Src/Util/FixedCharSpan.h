@@ -47,6 +47,10 @@ namespace Alchemy {
             return std::memcmp(ptr, other.ptr, size) != 0;
         }
 
+        inline bool StartsWith(FixedCharSpan prefix) {
+            return prefix.size <= size && strncmp(ptr, prefix.ptr, prefix.size) == 0;
+        }
+
         int32 GetHashCode() const {
 
             // FNV-1a

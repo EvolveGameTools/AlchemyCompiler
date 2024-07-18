@@ -252,16 +252,16 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
-            case SyntaxKind::PredefinedType: {
-                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
-                if(p->typeToken.IsValid()) return p->typeToken;
-                return SyntaxToken();
-            }
-
             case SyntaxKind::TupleElement: {
                 TupleElementSyntax* p = (TupleElementSyntax*)syntaxBase;
                 if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
                 if(p->identifier.IsValid()) return p->identifier;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::PredefinedType: {
+                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
+                if(p->typeToken.IsValid()) return p->typeToken;
                 return SyntaxToken();
             }
 
@@ -281,18 +281,18 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::NullableType: {
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
+                if(p->elementType != nullptr) return GetFirstToken((SyntaxBase*)p->elementType);
+                if(p->questionMark.IsValid()) return p->questionMark;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::LabeledStatement: {
                 LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
                 if(p->identifier.IsValid()) return p->identifier;
                 if(p->colon.IsValid()) return p->colon;
                 if(p->statement != nullptr) return GetFirstToken((SyntaxBase*)p->statement);
-                return SyntaxToken();
-            }
-
-            case SyntaxKind::NullableType: {
-                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
-                if(p->elementType != nullptr) return GetFirstToken((SyntaxBase*)p->elementType);
-                if(p->questionMark.IsValid()) return p->questionMark;
                 return SyntaxToken();
             }
 
@@ -1433,6 +1433,14 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::NamespaceDeclaration: {
+                NamespaceDeclarationSyntax* p = (NamespaceDeclarationSyntax*)syntaxBase;
+                if(p->keyword.IsValid()) return p->keyword;
+                if(p->names != nullptr && p->names->itemCount != 0) return GetFirstToken(p->names->items[0]);
+                if(p->semicolon.IsValid()) return p->semicolon;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::InterfaceDeclaration: {
                 InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
                 if(p->attributes != nullptr && p->attributes->size != 0) return GetFirstToken(p->attributes->array[0]);
@@ -1463,14 +1471,8 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
-            case SyntaxKind::SimpleBaseType: {
-                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
-                if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
-                return SyntaxToken();
-            }
-
-            case SyntaxKind::PrimaryConstructorBaseType: {
-                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+            case SyntaxKind::BaseType: {
+                BaseTypeSyntax* p = (BaseTypeSyntax*)syntaxBase;
                 if(p->type != nullptr) return GetFirstToken((SyntaxBase*)p->type);
                 if(p->argumentList != nullptr) return GetFirstToken((SyntaxBase*)p->argumentList);
                 return SyntaxToken();
@@ -1602,6 +1604,14 @@ namespace Alchemy::Compilation {
                 if(p->body != nullptr) return GetFirstToken((SyntaxBase*)p->body);
                 if(p->expressionBody != nullptr) return GetFirstToken((SyntaxBase*)p->expressionBody);
                 if(p->semicolonToken.IsValid()) return p->semicolonToken;
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::UsingNamespaceDeclaration: {
+                UsingNamespaceDeclarationSyntax* p = (UsingNamespaceDeclarationSyntax*)syntaxBase;
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
+                if(p->namePath != nullptr && p->namePath->itemCount != 0) return GetFirstToken(p->namePath->items[0]);
+                if(p->semicolon.IsValid()) return p->semicolon;
                 return SyntaxToken();
             }
 
@@ -1906,16 +1916,16 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
-            case SyntaxKind::PredefinedType: {
-                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
-                if(p->typeToken.IsValid()) return p->typeToken;
-                return SyntaxToken();
-            }
-
             case SyntaxKind::TupleElement: {
                 TupleElementSyntax* p = (TupleElementSyntax*)syntaxBase;
                 if(p->identifier.IsValid()) return p->identifier;
                 if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::PredefinedType: {
+                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
+                if(p->typeToken.IsValid()) return p->typeToken;
                 return SyntaxToken();
             }
 
@@ -1939,18 +1949,18 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::NullableType: {
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
+                if(p->questionMark.IsValid()) return p->questionMark;
+                if(p->elementType != nullptr) return GetLastToken((SyntaxBase*)p->elementType);
+                return SyntaxToken();
+            }
+
             case SyntaxKind::LabeledStatement: {
                 LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
                 if(p->statement != nullptr) return GetLastToken((SyntaxBase*)p->statement);
                 if(p->colon.IsValid()) return p->colon;
                 if(p->identifier.IsValid()) return p->identifier;
-                return SyntaxToken();
-            }
-
-            case SyntaxKind::NullableType: {
-                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
-                if(p->questionMark.IsValid()) return p->questionMark;
-                if(p->elementType != nullptr) return GetLastToken((SyntaxBase*)p->elementType);
                 return SyntaxToken();
             }
 
@@ -3183,6 +3193,18 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
+            case SyntaxKind::NamespaceDeclaration: {
+                NamespaceDeclarationSyntax* p = (NamespaceDeclarationSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->names != nullptr && p->names->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->names->items[p->names->itemCount - 1]);
+                    SyntaxToken b = p->names->separatorCount == 0 ? SyntaxToken() : p->names->separators[p->names->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->keyword.IsValid()) return p->keyword;
+                return SyntaxToken();
+            }
+
             case SyntaxKind::InterfaceDeclaration: {
                 InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
                 if(p->semicolonToken.IsValid()) return p->semicolonToken;
@@ -3213,14 +3235,8 @@ namespace Alchemy::Compilation {
                 return SyntaxToken();
             }
 
-            case SyntaxKind::SimpleBaseType: {
-                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
-                if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
-                return SyntaxToken();
-            }
-
-            case SyntaxKind::PrimaryConstructorBaseType: {
-                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+            case SyntaxKind::BaseType: {
+                BaseTypeSyntax* p = (BaseTypeSyntax*)syntaxBase;
                 if(p->argumentList != nullptr) return GetLastToken((SyntaxBase*)p->argumentList);
                 if(p->type != nullptr) return GetLastToken((SyntaxBase*)p->type);
                 return SyntaxToken();
@@ -3352,6 +3368,18 @@ namespace Alchemy::Compilation {
                 if(p->returnType != nullptr) return GetLastToken((SyntaxBase*)p->returnType);
                 if(p->modifiers != nullptr && p->modifiers->size != 0) return p->modifiers->array[p->modifiers->size - 1];
                 if(p->attributes != nullptr && p->attributes->size != 0) return GetLastToken(p->attributes->array[p->attributes->size - 1]);
+                return SyntaxToken();
+            }
+
+            case SyntaxKind::UsingNamespaceDeclaration: {
+                UsingNamespaceDeclarationSyntax* p = (UsingNamespaceDeclarationSyntax*)syntaxBase;
+                if(p->semicolon.IsValid()) return p->semicolon;
+                if(p->namePath != nullptr && p->namePath->itemCount != 0) {
+                    SyntaxToken a = GetLastToken(p->namePath->items[p->namePath->itemCount - 1]);
+                    SyntaxToken b = p->namePath->separatorCount == 0 ? SyntaxToken() : p->namePath->separators[p->namePath->separatorCount - 1];
+                    return a.GetId() > b.GetId() ? a : b;
+                }
+                if(p->usingKeyword.IsValid()) return p->usingKeyword;
                 return SyntaxToken();
             }
 

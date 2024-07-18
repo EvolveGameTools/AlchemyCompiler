@@ -3,7 +3,7 @@
 
 namespace Alchemy::Compilation {
 
-    enum class Precedence : uint8_t {
+    enum class Precedence : uint8 {
         Expression = 0, // Loosest possible precedence, used to accept all expressions
         Assignment = Expression,
         Lambda = Assignment, // "The => operator has the same precedence as assignment (=) and is right-associative."

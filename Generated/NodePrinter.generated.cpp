@@ -437,16 +437,6 @@ namespace Alchemy::Compilation {
                 break;
             }
 
-            case SyntaxKind::PredefinedType: {
-                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
-                PrintNodeHeader("PredefinedTypeSyntax", syntaxBase);
-                indent++;
-                PrintFieldName("typeToken");
-                PrintToken(p->typeToken);
-                indent--;
-                break;
-            }
-
             case SyntaxKind::TupleElement: {
                 TupleElementSyntax* p = (TupleElementSyntax*)syntaxBase;
                 PrintNodeHeader("TupleElementSyntax", syntaxBase);
@@ -455,6 +445,16 @@ namespace Alchemy::Compilation {
                 PrintNode(p->type);
                 PrintFieldName("identifier");
                 PrintToken(p->identifier);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::PredefinedType: {
+                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
+                PrintNodeHeader("PredefinedTypeSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("typeToken");
+                PrintToken(p->typeToken);
                 indent--;
                 break;
             }
@@ -487,6 +487,18 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::NullableType: {
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
+                PrintNodeHeader("NullableTypeSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("elementType");
+                PrintNode(p->elementType);
+                PrintFieldName("questionMark");
+                PrintToken(p->questionMark);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::LabeledStatement: {
                 LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
                 PrintNodeHeader("LabeledStatementSyntax", syntaxBase);
@@ -497,18 +509,6 @@ namespace Alchemy::Compilation {
                 PrintToken(p->colon);
                 PrintFieldName("statement");
                 PrintNode(p->statement);
-                indent--;
-                break;
-            }
-
-            case SyntaxKind::NullableType: {
-                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
-                PrintNodeHeader("NullableTypeSyntax", syntaxBase);
-                indent++;
-                PrintFieldName("elementType");
-                PrintNode(p->elementType);
-                PrintFieldName("questionMark");
-                PrintToken(p->questionMark);
                 indent--;
                 break;
             }
@@ -2544,6 +2544,20 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::NamespaceDeclaration: {
+                NamespaceDeclarationSyntax* p = (NamespaceDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("NamespaceDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("keyword");
+                PrintToken(p->keyword);
+                PrintFieldName("names");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->names);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
+                indent--;
+                break;
+            }
+
             case SyntaxKind::InterfaceDeclaration: {
                 InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
                 PrintNodeHeader("InterfaceDeclarationSyntax", syntaxBase);
@@ -2600,19 +2614,9 @@ namespace Alchemy::Compilation {
                 break;
             }
 
-            case SyntaxKind::SimpleBaseType: {
-                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
-                PrintNodeHeader("SimpleBaseTypeSyntax", syntaxBase);
-                indent++;
-                PrintFieldName("type");
-                PrintNode(p->type);
-                indent--;
-                break;
-            }
-
-            case SyntaxKind::PrimaryConstructorBaseType: {
-                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
-                PrintNodeHeader("PrimaryConstructorBaseTypeSyntax", syntaxBase);
+            case SyntaxKind::BaseType: {
+                BaseTypeSyntax* p = (BaseTypeSyntax*)syntaxBase;
+                PrintNodeHeader("BaseTypeSyntax", syntaxBase);
                 indent++;
                 PrintFieldName("type");
                 PrintNode(p->type);
@@ -2850,6 +2854,20 @@ namespace Alchemy::Compilation {
                 PrintNode(p->expressionBody);
                 PrintFieldName("semicolonToken");
                 PrintToken(p->semicolonToken);
+                indent--;
+                break;
+            }
+
+            case SyntaxKind::UsingNamespaceDeclaration: {
+                UsingNamespaceDeclarationSyntax* p = (UsingNamespaceDeclarationSyntax*)syntaxBase;
+                PrintNodeHeader("UsingNamespaceDeclarationSyntax", syntaxBase);
+                indent++;
+                PrintFieldName("usingKeyword");
+                PrintToken(p->usingKeyword);
+                PrintFieldName("namePath");
+                PrintSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->namePath);
+                PrintFieldName("semicolon");
+                PrintToken(p->semicolon);
                 indent--;
                 break;
             }

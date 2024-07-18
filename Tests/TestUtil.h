@@ -30,7 +30,7 @@ SECTION(x)
     const char * file;         \
     Alchemy::LinearAllocator allocator(MEGABYTES(64), KILOBYTES(32)); \
     Alchemy::TempAllocator::ScopedMarker marker(Alchemy::GetThreadLocalAllocator()); \
-    Diagnostics diagnostics(Alchemy::GetThreadLocalAllocator()); \
+    Diagnostics diagnostics(Alchemy::GetThreadLocalAllocator()->MakeAllocator()); \
     TokenizerResult tokenizerResult; \
     Parser parser;  \
     TextWindow textWindow;
@@ -157,7 +157,7 @@ bool CompareLines(CheckedArray<FixedCharSpan> expectedLines, CheckedArray<FixedC
             int32 y = actualLines.size;
             char * c = actual.ptr;
             char * c2 = expected.ptr;
-            printf("Error comparing line %d:\n Expected: %.*s\n Actual  : %.*s", i, expected.size, expected.ptr, actual.size, actual.ptr);
+            printf("Error comparing line %d:\n Expected: %.*s\n Actual  : %.*s", i, (int32)expected.size, expected.ptr, (int32)actual.size, actual.ptr);
             return false;
         }
     }

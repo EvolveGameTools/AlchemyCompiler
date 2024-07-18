@@ -94,6 +94,7 @@ namespace Alchemy::Compilation {
         ClassDeclaration,
         InterfaceDeclaration,
         DelegateDeclaration,
+        WidgetDeclaration,
         GlobalStatement,
         IncompleteMember,
         CompilationUnit,
@@ -217,8 +218,6 @@ namespace Alchemy::Compilation {
         UsingStatement,
         LabeledStatement,
         BaseList,
-        SimpleBaseType,
-        PrimaryConstructorBaseType,
         Attribute,
         AttributeList,
         EnumMemberDeclaration,
@@ -239,6 +238,9 @@ namespace Alchemy::Compilation {
         MethodDeclaration,
         UsingDeclaration,
         ExternDeclaration,
+
+        UsingNamespaceDeclaration,
+        BaseType,
     };
 
     const char* SyntaxKindToString(SyntaxKind kind);

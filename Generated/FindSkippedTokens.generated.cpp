@@ -251,16 +251,16 @@ namespace Alchemy::Compilation {
                 break;
             }
 
-            case SyntaxKind::PredefinedType: {
-                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
-                TouchToken(p->typeToken);
-                break;
-            }
-
             case SyntaxKind::TupleElement: {
                 TupleElementSyntax* p = (TupleElementSyntax*)syntaxBase;
                 TouchNode(p->type);
                 TouchToken(p->identifier);
+                break;
+            }
+
+            case SyntaxKind::PredefinedType: {
+                PredefinedTypeSyntax* p = (PredefinedTypeSyntax*)syntaxBase;
+                TouchToken(p->typeToken);
                 break;
             }
 
@@ -280,18 +280,18 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::NullableType: {
+                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
+                TouchNode(p->elementType);
+                TouchToken(p->questionMark);
+                break;
+            }
+
             case SyntaxKind::LabeledStatement: {
                 LabeledStatementSyntax* p = (LabeledStatementSyntax*)syntaxBase;
                 TouchToken(p->identifier);
                 TouchToken(p->colon);
                 TouchNode(p->statement);
-                break;
-            }
-
-            case SyntaxKind::NullableType: {
-                NullableTypeSyntax* p = (NullableTypeSyntax*)syntaxBase;
-                TouchNode(p->elementType);
-                TouchToken(p->questionMark);
                 break;
             }
 
@@ -1432,6 +1432,14 @@ namespace Alchemy::Compilation {
                 break;
             }
 
+            case SyntaxKind::NamespaceDeclaration: {
+                NamespaceDeclarationSyntax* p = (NamespaceDeclarationSyntax*)syntaxBase;
+                TouchToken(p->keyword);
+                TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->names);
+                TouchToken(p->semicolon);
+                break;
+            }
+
             case SyntaxKind::InterfaceDeclaration: {
                 InterfaceDeclarationSyntax* p = (InterfaceDeclarationSyntax*)syntaxBase;
                 TouchSyntaxList((SyntaxListUntyped*)p->attributes);
@@ -1462,14 +1470,8 @@ namespace Alchemy::Compilation {
                 break;
             }
 
-            case SyntaxKind::SimpleBaseType: {
-                SimpleBaseTypeSyntax* p = (SimpleBaseTypeSyntax*)syntaxBase;
-                TouchNode(p->type);
-                break;
-            }
-
-            case SyntaxKind::PrimaryConstructorBaseType: {
-                PrimaryConstructorBaseTypeSyntax* p = (PrimaryConstructorBaseTypeSyntax*)syntaxBase;
+            case SyntaxKind::BaseType: {
+                BaseTypeSyntax* p = (BaseTypeSyntax*)syntaxBase;
                 TouchNode(p->type);
                 TouchNode(p->argumentList);
                 break;
@@ -1601,6 +1603,14 @@ namespace Alchemy::Compilation {
                 TouchNode(p->body);
                 TouchNode(p->expressionBody);
                 TouchToken(p->semicolonToken);
+                break;
+            }
+
+            case SyntaxKind::UsingNamespaceDeclaration: {
+                UsingNamespaceDeclarationSyntax* p = (UsingNamespaceDeclarationSyntax*)syntaxBase;
+                TouchToken(p->usingKeyword);
+                TouchSeparatedSyntaxList((SeparatedSyntaxListUntyped*)p->namePath);
+                TouchToken(p->semicolon);
                 break;
             }
 

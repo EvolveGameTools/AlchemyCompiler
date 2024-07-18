@@ -305,11 +305,31 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, TokenKind * keywordT
                     }
                     return false;
         case 26997:
+            switch(length) {
+                case 4: {
                     if(Matches2("nt", truncatedBuffer)) { // UIntKeyword
                         *keywordType = TokenKind::UIntKeyword;
                         return true;
                     }
                     return false;
+                }
+                case 5: {
+                    if(Matches3("nt2", truncatedBuffer)) { // Uint2Keyword
+                        *keywordType = TokenKind::Uint2Keyword;
+                        return true;
+                    }
+                    if(Matches3("nt3", truncatedBuffer)) { // Uint3Keyword
+                        *keywordType = TokenKind::Uint3Keyword;
+                        return true;
+                    }
+                    if(Matches3("nt4", truncatedBuffer)) { // Uint4Keyword
+                        *keywordType = TokenKind::Uint4Keyword;
+                        return true;
+                    }
+                    return false;
+                }
+                default: return false;
+            }
         case 26998:
                     if(Matches5("rtual", truncatedBuffer)) { // VirtualKeyword
                         *keywordType = TokenKind::VirtualKeyword;
@@ -345,11 +365,31 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, TokenKind * keywordT
                     }
                     return false;
         case 27750:
+            switch(length) {
+                case 5: {
                     if(Matches3("oat", truncatedBuffer)) { // FloatKeyword
                         *keywordType = TokenKind::FloatKeyword;
                         return true;
                     }
                     return false;
+                }
+                case 6: {
+                    if(Matches4("oat2", truncatedBuffer)) { // Float2Keyword
+                        *keywordType = TokenKind::Float2Keyword;
+                        return true;
+                    }
+                    if(Matches4("oat3", truncatedBuffer)) { // Float3Keyword
+                        *keywordType = TokenKind::Float3Keyword;
+                        return true;
+                    }
+                    if(Matches4("oat4", truncatedBuffer)) { // Float4Keyword
+                        *keywordType = TokenKind::Float4Keyword;
+                        return true;
+                    }
+                    return false;
+                }
+                default: return false;
+            }
         case 27765:
                     if(Matches3("ong", truncatedBuffer)) { // ULongKeyword
                         *keywordType = TokenKind::ULongKeyword;
@@ -400,6 +440,18 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, TokenKind * keywordT
                     return false;
                 }
                 case 4: {
+                    if(Matches2("t2", truncatedBuffer)) { // Int2Keyword
+                        *keywordType = TokenKind::Int2Keyword;
+                        return true;
+                    }
+                    if(Matches2("t3", truncatedBuffer)) { // Int3Keyword
+                        *keywordType = TokenKind::Int3Keyword;
+                        return true;
+                    }
+                    if(Matches2("t4", truncatedBuffer)) { // Int4Keyword
+                        *keywordType = TokenKind::Int4Keyword;
+                        return true;
+                    }
                     if(Matches2("it", truncatedBuffer)) { // InitKeyword
                         *keywordType = TokenKind::InitKeyword;
                         return true;
@@ -433,6 +485,24 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, TokenKind * keywordT
                 case 5: {
                     if(Matches3("nst", truncatedBuffer)) { // ConstKeyword
                         *keywordType = TokenKind::ConstKeyword;
+                        return true;
+                    }
+                    return false;
+                }
+                case 6: {
+                    if(Matches4("lor8", truncatedBuffer)) { // Color8Keyword
+                        *keywordType = TokenKind::Color8Keyword;
+                        return true;
+                    }
+                    return false;
+                }
+                case 7: {
+                    if(Matches5("lor16", truncatedBuffer)) { // Color16Keyword
+                        *keywordType = TokenKind::Color16Keyword;
+                        return true;
+                    }
+                    if(Matches5("lor32", truncatedBuffer)) { // Color32Keyword
+                        *keywordType = TokenKind::Color32Keyword;
                         return true;
                     }
                     return false;
@@ -658,6 +728,12 @@ bool TryMatchKeyword_Generated(char * buffer, int32 length, TokenKind * keywordT
         case 31074:
                     if(Matches2("te", truncatedBuffer)) { // ByteKeyword
                         *keywordType = TokenKind::ByteKeyword;
+                        return true;
+                    }
+                    return false;
+        case 31076:
+                    if(Matches5("namic", truncatedBuffer)) { // DynamicKeyword
+                        *keywordType = TokenKind::DynamicKeyword;
                         return true;
                     }
                     return false;

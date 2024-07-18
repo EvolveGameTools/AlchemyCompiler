@@ -43,6 +43,7 @@ namespace Alchemy::Compilation {
         ERR_InvalidArray,
         ERR_InvalidStackAllocArray,
         ERR_UnexpectedToken,
+        ERR_UnexpectedKeyword,
         WRN_PrecedenceInversion,
         ERR_MissingPattern,
         ERR_UnexpectedDoubleColon,
@@ -68,6 +69,19 @@ namespace Alchemy::Compilation {
         ERR_StringLiteralTooLong,
         ERR_EmptyCharLiteral,
         ERR_GetOrSetExpected,
+        ERR_MulitpleVisibiltyDeclarations,
+        ERR_OptionalParameterOrder,
+        ERR_SealedOrAbstract,
+        ERR_TypeCannotBeProtected,
+        ERR_TypeCannotBeRef,
+        ERR_MulitpleNamespaces,
+        ERR_DuplicateUsingDirective,
+        ERR_NamespaceMustComeBeforeUsingsAndDeclarations,
+        ERR_UsingsMustComeBeforeDeclarations,
+        ERR_DuplicateDeclaration,
+        ERR_AmbiguousTypeMatch,
+        ERR_UnresolvedType,
+        ERR_TypeArgumentShouldNotBeAnExistingTypeName,
     };
 
 }

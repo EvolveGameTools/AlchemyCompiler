@@ -83,6 +83,7 @@ namespace Alchemy::Compilation {
             case SyntaxKind::ClassDeclaration: return "ClassDeclaration";
             case SyntaxKind::InterfaceDeclaration: return "InterfaceDeclaration";
             case SyntaxKind::DelegateDeclaration: return "DelegateDeclaration";
+            case SyntaxKind::WidgetDeclaration: return "WidgetDeclaration";
             case SyntaxKind::GlobalStatement: return "GlobalStatement";
             case SyntaxKind::IncompleteMember: return "IncompleteMember";
             case SyntaxKind::CompilationUnit: return "CompilationUnit";
@@ -202,8 +203,6 @@ namespace Alchemy::Compilation {
             case SyntaxKind::UsingStatement: return "UsingStatement";
             case SyntaxKind::LabeledStatement: return "LabeledStatement";
             case SyntaxKind::BaseList: return "BaseList";
-            case SyntaxKind::SimpleBaseType: return "SimpleBaseType";
-            case SyntaxKind::PrimaryConstructorBaseType: return "PrimaryConstructorBaseType";
             case SyntaxKind::Attribute: return "Attribute";
             case SyntaxKind::AttributeList: return "AttributeList";
             case SyntaxKind::EnumMemberDeclaration: return "EnumMemberDeclaration";
@@ -224,6 +223,8 @@ namespace Alchemy::Compilation {
             case SyntaxKind::MethodDeclaration: return "MethodDeclaration";
             case SyntaxKind::UsingDeclaration: return "UsingDeclaration";
             case SyntaxKind::ExternDeclaration: return "ExternDeclaration";
+            case SyntaxKind::UsingNamespaceDeclaration: return "UsingNamespaceDeclaration";
+            case SyntaxKind::BaseType: return "BaseType";
             default: return "";
         }
     }

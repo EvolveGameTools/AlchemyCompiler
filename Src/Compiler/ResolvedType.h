@@ -4,17 +4,16 @@ namespace Alchemy::Compilation {
 
     TypeInfo* GetBuiltInTypeInfo(BuiltInTypeName typeName);
 
-    enum class ResolvedTypeFlags : uint16 {
+    enum class ResolvedTypeFlags : uint8 {
         None = 0,
         IsVoid = 1 << 0,
         IsNullable = 1 << 1,
         IsArray = 1 << 2,
-        IsNullableArray = 1 << 3,
-        IsEnum = 1 << 5,
-        IsVector = 1 << 6,
-        IsNullOrDefault = 1 << 7,
-        IsMethodGroup = 1 << 8,
-        IsVar = 1 << 9
+        IsEnum = 1 << 3,
+        IsVector = 1 << 4,
+        IsNullOrDefault = 1 << 5,
+        IsMethodGroup = 1 << 6,
+        IsVar = 1 << 7
     };
 
     IMPL_ENUM_FLAGS_OPERATORS(ResolvedTypeFlags);

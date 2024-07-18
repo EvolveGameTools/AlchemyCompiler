@@ -17,6 +17,10 @@ namespace Alchemy::MsiHash {
         return static_cast<int32>(hash);
     }
 
+    inline int32 FNV1a(FixedCharSpan span) {
+        return FNV1a(span.ptr, span.size);
+    }
+
     inline int32 Lookup32(int32 hash, int32 exponent, int32 idx) {
         uint32 mask = ((uint32) 1 << exponent) - 1;
         uint32 step = (hash >> (32 - exponent)) | 1;

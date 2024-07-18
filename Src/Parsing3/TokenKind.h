@@ -18,8 +18,22 @@ namespace Alchemy::Compilation {
 
         // --- Reserved Keyword
         __FirstKeyword__,
-//        FixedKeyword,
-        // todo -- int32 etc
+        Int2Keyword,
+        Int3Keyword,
+        Int4Keyword,
+
+        Uint2Keyword,
+        Uint3Keyword,
+        Uint4Keyword,
+
+        Float2Keyword,
+        Float3Keyword,
+        Float4Keyword,
+
+        Color8Keyword,
+        Color16Keyword,
+        Color32Keyword,
+
         BoolKeyword,
         ByteKeyword,
         SByteKeyword,
@@ -37,6 +51,7 @@ namespace Alchemy::Compilation {
         ObjectKeyword,
         NullKeyword,
         TupleKeyword,
+        DynamicKeyword,
 
         // list,
         // list2D

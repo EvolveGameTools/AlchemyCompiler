@@ -1,8 +1,11 @@
 #pragma once
 
 #include "./SyntaxNodes.h"
+#include "./Precidence.h"
 
 namespace Alchemy::Compilation {
+
+    struct Parser;
 
     enum class PostSkipAction {
         Continue,
@@ -283,7 +286,7 @@ namespace Alchemy::Compilation {
 
     ArgumentListSyntax* ParseParenthesizedArgumentList(Parser* parser);
 
-    SimpleNameSyntax* ParseSimpleName(Parser* parser, NameOptions options = NameOptions::None);
+    SimpleNameSyntax_Abstract* ParseSimpleName(Parser* parser, NameOptions options = NameOptions::None);
 
     MemberDeclarationSyntax* ParseMemberDeclaration(Parser* parser, SyntaxKind parentKind);
 

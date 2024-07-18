@@ -88,7 +88,7 @@ namespace Alchemy {
                 }
 
                 MfreeTyped(table, previousTotalSize);
-
+                exponent = newExponent;
                 table = newList;
 
             }

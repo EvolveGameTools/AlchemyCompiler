@@ -24,6 +24,7 @@ namespace Alchemy::Compilation {
 
         Parser parser(result, &fileInfo->diagnostics, &fileInfo->allocator);
 
+        fileInfo->tokenizerResult = result;
         fileInfo->syntaxTree = ParseCompilationUnit(&parser);
 
     }

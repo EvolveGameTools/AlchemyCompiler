@@ -1,6 +1,5 @@
 #include <cstring>
 #include "./Diagnostics.h"
-#include "../Allocation/BytePoolAllocator.h"
 
 namespace Alchemy::Compilation {
 
@@ -18,21 +17,21 @@ namespace Alchemy::Compilation {
         , messageLength(0)
         , message(nullptr) {}
 
-    Diagnostics::Diagnostics(Alchemy::LinearAllocator* allocator)
+    Diagnostics::Diagnostics(Alchemy::Allocator allocator)
         : allocator(allocator)
-        , capacity(128)
+        , capacity(16)
         , size(0)
-        , array(allocator->AllocateUncleared<Diagnostic*>(capacity)) {}
-
+        , array(allocator.AllocateUncleared<Diagnostic*>(capacity)) {}
 
     void Diagnostics::AddError(Diagnostic error) {
         if (size + 1 > capacity) {
-            Diagnostic** newList = allocator->AllocateUncleared<Diagnostic*>(capacity * 2);
+            Diagnostic** newList = allocator.AllocateUncleared<Diagnostic*>(capacity * 2);
             memcpy(newList, array, sizeof(Diagnostic*) * size);
+            allocator.Free(array, capacity);
             array = newList;
             capacity *= 2;
         }
-        Diagnostic* ptr = allocator->AllocateUncleared<Diagnostic>(1);
+        Diagnostic* ptr = allocator.AllocateUncleared<Diagnostic>(1);
         memcpy(ptr, &error, sizeof(Diagnostic));
         array[size++] = ptr;
     }

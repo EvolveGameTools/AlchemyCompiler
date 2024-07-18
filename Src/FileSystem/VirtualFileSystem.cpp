@@ -3,6 +3,30 @@
 
 namespace Alchemy {
 
+    FixedCharSpan FindFileExtension(char* str, size_t size) {
+
+        const char* dot = NULL;
+
+        for (size_t i = size; i > 0; --i) {
+            if (str[i - 1] == '.') {
+                dot = &str[i - 1];
+                break;
+            }
+        }
+
+        // If no dot is found or it's the first character, there is no extension
+        if (!dot || dot == str) {
+            return FixedCharSpan();
+        }
+        size_t x = size - ((dot + 1) - str);
+        return FixedCharSpan(dot + 1, x);
+    }
+
+    VirtualFileSystem::VirtualFileSystem(FileSystemType fileSystemType)
+        : internAllocator(MEGABYTES(512), KILOBYTES(32))
+        , fileSystemType(fileSystemType)
+        , internTable(internAllocator.MakeAllocator(), 512) {}
+
     FixedCharSpan VirtualFileSystem::InternPath(std::filesystem::path& path) {
         std::string str = path.string();
         return internTable.Intern(FixedCharSpan((char*) str.c_str(), (int32) str.size()));
@@ -63,21 +87,61 @@ namespace Alchemy {
 
     FixedCharSpan VirtualFileSystem::ReadFileText(FixedCharSpan absolutePath, Allocator allocator) {
 
-        if(usingRealFileSystem) {
+        if (fileSystemType == FileSystemType::Real) {
             return ReadFile(absolutePath, allocator);
         }
 
-        NOT_IMPLEMENTED("ReadFileText with a virtual fs");
+        // todo -- don't loop stupidly
+        for (int32 i = 0; i < vFileInfos.size; i++) {
+            if (vFileInfos[i].info.GetAbsolutePath() == absolutePath) {
+                return vFileInfos[i].content;
+            }
+        }
 
         return FixedCharSpan();
     }
 
-    int32 VirtualFileSystem::LoadFileInfos(FixedCharSpan location, FixedCharSpan packageName, CheckedArray<FixedCharSpan> extensions, PodList<VirtualFileInfo>* output) {
-        if(usingRealFileSystem) {
+    int32 VirtualFileSystem::LoadFileInfos(FixedCharSpan & packageName, FixedCharSpan & location, CheckedArray<FixedCharSpan> extensions, PodList<VirtualFileInfo>* output) {
+
+        if (fileSystemType == FileSystemType::Real) {
             return LoadSourcesFromRealFileSystem(location, packageName, extensions, output);
         }
-        NOT_IMPLEMENTED("LoadFileInfos with a virtual fs");
-        return 0;
+
+        int32 start = output->size;
+        for (int32 i = 0; i < vFileInfos.size; i++) {
+            VirtualFileInfo& info = vFileInfos[i].info;
+
+            if (info.GetPackageName() != packageName) {
+                continue;
+            }
+
+            if(!info.GetAbsolutePath().StartsWith(location)) {
+                continue;
+            }
+
+            FixedCharSpan ext = FindFileExtension(info.absolutePath, info.absolutePathSize);
+
+            for (int32 e = 0; e < extensions.size; e++) {
+                if (extensions[e] == ext) {
+                    output->Add(info);
+                    break;
+                }
+            }
+
+        }
+        return output->size - start;
+    }
+
+    void VirtualFileSystem::AddFile(VirtualFileInfo info, FixedCharSpan contents) {
+        // todo -- don't loop stupidly
+        for (int32 i = 0; i < vFileInfos.size; i++) {
+            if (vFileInfos[i].info.GetAbsolutePath() == info.GetAbsolutePath()) {
+                vFileInfos[i].info = info;
+                vFileInfos[i].content = contents;
+                return;
+            }
+        }
+        vFileInfos.Add(FileData {info, contents});
     }
 
     VirtualFileInfo::VirtualFileInfo(FixedCharSpan packageName, FixedCharSpan absolutePath, uint64 lastEditTime)

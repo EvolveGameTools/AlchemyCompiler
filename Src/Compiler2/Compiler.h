@@ -1,25 +1,20 @@
 #pragma once
 
 #include "../Parsing3/Diagnostics.h"
-#include "./TypeInfo.h"
 #include "../Collections/MSIHashmap.h"
 #include "../Collections/PagedList.h"
 #include "../Allocation/PoolAllocator.h"
 #include "../FileSystem/VirtualFileSystem.h"
 #include "../JobSystem/JobSystem.h"
-#include "SourceFileInfo.h"
+#include "./TypeInfo.h"
+#include "./SourceFileInfo.h"
+#include "./TypeResolutionMap.h"
 
 namespace Alchemy::Compilation {
-
-    struct AssemblyInfo {
-        FixedCharSpan assemblyName;
-        FixedCharSpan path;
-    };
 
     struct PackageInfo {
 
         FixedCharSpan packageName;
-        FixedCharSpan relativeDirectory;
         FixedCharSpan absolutePath;
 
     };
@@ -29,20 +24,20 @@ namespace Alchemy::Compilation {
         Diagnostics diagnostics;
         VirtualFileSystem vfs;
         Alchemy::Jobs::JobSystem jobSystem;
-        MSIDictionary<FixedCharSpan, TypeInfo*> resolveMap;
+        TypeResolutionMap resolveMap;
         Alchemy::PoolAllocator<SourceFileInfo> fileAllocator;
-
-        static CheckedArray<TypeInfo*> s_BuiltInTypeInfos;
 
         PodList<SourceFileInfo*> fileInfos;
         PodList<VirtualFileInfo> sourceFileBuffer;
-        PodList<PackageInfo> packages;
 
-        void SetupCompilationRun(TempAllocator * tempAllocator, CheckedArray<VirtualFileInfo> files);
+        Compiler(int32 workerCount, FileSystemType fileSystemType);
+
+        void SetupCompilationRun(TempAllocator * tempAllocator, CheckedArray<VirtualFileInfo> includedSourceFiles);
 
         void LoadDependencies();
 
-        void Compile();
+        void Compile(CheckedArray<PackageInfo> compiledPackages);
+
     };
 
 

@@ -93,8 +93,8 @@ namespace Alchemy::Compilation {
         cnt = 0;
         while(pagePtr != nullptr) {
             for(int32 i = 0; i < pagePtr->size; i++) {
-                result.tokens[cnt] = *(SyntaxToken*)&pagePtr->ptr[i];
-                result.texts[cnt] = pagePtr->ptr[i].text;
+                result.tokens[cnt] = *(SyntaxToken*)&pagePtr->data[i];
+                result.texts[cnt] = pagePtr->data[i].text;
                 result.tokens[cnt].SetId(cnt);
                 cnt++;
             }

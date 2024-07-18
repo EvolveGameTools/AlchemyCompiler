@@ -23,7 +23,7 @@ namespace Alchemy::Compilation {
 
         inline FixedCharSpan GetText(CheckedArray<char*> texts) {
             if (IsMissing() || !IsValid()) {
-                return FixedCharSpan(nullptr, 0);
+                return FixedCharSpan();
             }
             char* text = texts[GetId()];
             return FixedCharSpan(text, textSize);

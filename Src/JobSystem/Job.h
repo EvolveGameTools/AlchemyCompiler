@@ -31,7 +31,7 @@ namespace Alchemy::Jobs {
 
     struct Parallel {
 
-        static ParallelParams Foreach(int32 size, int32 batchSize);
+        static ParallelParams Foreach(int32 size, int32 batchSize = 1);
 
         static ParallelParams Single();
 

@@ -13,6 +13,18 @@ namespace Alchemy::Compilation {
             case TokenKind::UInt64Literal: return "UInt64Literal";
             case TokenKind::__LastLiteral__: return "__LastLiteral__";
             case TokenKind::__FirstKeyword__: return "__FirstKeyword__";
+            case TokenKind::Int2Keyword: return "Int2Keyword";
+            case TokenKind::Int3Keyword: return "Int3Keyword";
+            case TokenKind::Int4Keyword: return "Int4Keyword";
+            case TokenKind::Uint2Keyword: return "Uint2Keyword";
+            case TokenKind::Uint3Keyword: return "Uint3Keyword";
+            case TokenKind::Uint4Keyword: return "Uint4Keyword";
+            case TokenKind::Float2Keyword: return "Float2Keyword";
+            case TokenKind::Float3Keyword: return "Float3Keyword";
+            case TokenKind::Float4Keyword: return "Float4Keyword";
+            case TokenKind::Color8Keyword: return "Color8Keyword";
+            case TokenKind::Color16Keyword: return "Color16Keyword";
+            case TokenKind::Color32Keyword: return "Color32Keyword";
             case TokenKind::BoolKeyword: return "BoolKeyword";
             case TokenKind::ByteKeyword: return "ByteKeyword";
             case TokenKind::SByteKeyword: return "SByteKeyword";
@@ -30,6 +42,7 @@ namespace Alchemy::Compilation {
             case TokenKind::ObjectKeyword: return "ObjectKeyword";
             case TokenKind::NullKeyword: return "NullKeyword";
             case TokenKind::TupleKeyword: return "TupleKeyword";
+            case TokenKind::DynamicKeyword: return "DynamicKeyword";
             case TokenKind::TrueKeyword: return "TrueKeyword";
             case TokenKind::FalseKeyword: return "FalseKeyword";
             case TokenKind::TypeofKeyword: return "TypeofKeyword";

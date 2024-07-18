@@ -30,13 +30,13 @@ namespace Alchemy::Compilation {
 
     struct Diagnostics {
 
-        LinearAllocator* allocator;
+        Allocator allocator;
 
         int32 size;
         int32 capacity;
         Diagnostic** array;
 
-        explicit Diagnostics(LinearAllocator* allocator);
+        explicit Diagnostics(Allocator allocator);
 
         void AddError(Diagnostic error);
 

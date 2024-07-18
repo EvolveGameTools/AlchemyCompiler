@@ -12,13 +12,13 @@ namespace Alchemy {
 
     uint8* LinearAlloc(void* cookie, size_t size, size_t alignment);
 
-    void LinearFree(void* cookie, void * ptr, size_t size) {
+    inline void LinearFree(void* cookie, void * ptr, size_t size) {
         void(0); // no op
     }
 
     uint8* MallocAlloc(void* cookie, size_t size, size_t alignment);
 
-    void MallocFree(void* cookie, void * ptr, size_t size) {
+    inline void MallocFree(void* cookie, void * ptr, size_t size) {
         Mfree(ptr, size);
     }
 
@@ -34,7 +34,7 @@ namespace Alchemy {
             return Allocator(nullptr, MallocAlloc, MallocFree);
         }
 
-        explicit Allocator(void* cookie, AllocatorFn allocUncleared, FreeFn freeFn)
+        explicit Allocator(void* cookie, AllocatorFn allocUncleared, FreeFn freeFn = nullptr)
             : cookie(cookie)
             , allocFn(allocUncleared)
             , freeFn(freeFn)
