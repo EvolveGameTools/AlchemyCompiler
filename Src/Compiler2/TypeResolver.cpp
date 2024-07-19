@@ -35,6 +35,12 @@ namespace Alchemy::Compilation {
 
         }
 
+        if(!found) {
+            FixedCharSpan gbl("global");
+            FixedCharSpan x = MakeFullyQualifiedName(gbl, name, genericCount, buffer);
+            resolutionMap->TryResolve(x, &value);
+        }
+
         if (value == nullptr) {
             // unresolved, we could maybe try some other generic counts as a test (1 more or 1 less)
             if (!supressDiagnostics) {
@@ -99,6 +105,10 @@ namespace Alchemy::Compilation {
                 found = true;
             }
 
+        }
+
+        if(!found) {
+            resolutionMap->TryResolve(MakeFullyQualifiedName(FixedCharSpan("global"), identifierName, 0, buffer), &value);
         }
 
         if (value == nullptr) {
@@ -200,6 +210,10 @@ namespace Alchemy::Compilation {
             return true;
         }
         return false;
+    }
+
+    ResolvedType TypeResolver::Unresolved() {
+        return ResolvedType(resolutionMap->unresolvedType);
     }
 
 

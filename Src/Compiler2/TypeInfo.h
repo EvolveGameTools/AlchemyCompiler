@@ -3,6 +3,7 @@
 #include "../PrimitiveTypes.h"
 #include "../Util/FixedCharSpan.h"
 #include "../Collections/CheckedArray.h"
+#include "../Collections/FixedPodList.h"
 
 namespace Alchemy::Compilation {
 
@@ -51,7 +52,7 @@ namespace Alchemy::Compilation {
 
     inline size_t CountAndMaybeWrite(const char* str, char** buffer) {
         size_t len = strlen(str);
-        if (buffer != nullptr) {
+        if (*buffer != nullptr) {
             memcpy(*buffer, str, len);
         }
         return len;
@@ -95,33 +96,33 @@ namespace Alchemy::Compilation {
 
     struct TypeInfo {
 
-        SourceFileInfo* declaringFile{};
-        SyntaxBase* syntaxNode{};
-        char* typeName{};
-        char* fullyQualifiedName{};
-        ResolvedType* baseTypes{};
-        FieldInfo* fields{};
-        MethodInfo* methods{};
-        IndexerInfo* indexers{};
-        PropertyInfo* properties{};
-        ConstructorInfo* constructors{};
-        ResolvedType* genericArguments{};
-        GenericConstraint* constraints{};
+        SourceFileInfo* declaringFile {};
+        SyntaxBase* syntaxNode {};
+        char* typeName {};
+        char* fullyQualifiedName {};
+        ResolvedType* baseTypes {};
+        FieldInfo* fields {};
+        MethodInfo* methods {};
+        IndexerInfo* indexers {};
+        PropertyInfo* properties {};
+        ConstructorInfo* constructors {};
+        ResolvedType* genericArguments {};
+        GenericConstraint* constraints {};
 
-        TypeClass typeClass{};
-        TypeInfoFlags flags{};
-        TypeVisibility visibility{};
+        TypeClass typeClass {};
+        TypeInfoFlags flags {};
+        TypeVisibility visibility {};
 
-        uint16 fieldCount{};
-        uint16 methodCount{};
-        uint16 indexerCount{};
-        uint16 propertyCount{};
-        uint16 baseTypeCount{}; // this includes interfaces right now, base class will always be at index 0 if it exists
-        uint16 constructorCount{};
-        uint16 genericArgumentCount{};
-        uint16 constraintCount{};
-        uint16 typeNameLength{};
-        uint16 fullyQualifiedNameLength{};
+        uint16 fieldCount {};
+        uint16 methodCount {};
+        uint16 indexerCount {};
+        uint16 propertyCount {};
+        uint16 baseTypeCount {}; // this includes interfaces right now, base class will always be at index 0 if it exists
+        uint16 constructorCount {};
+        uint16 genericArgumentCount {};
+        uint16 constraintCount {};
+        uint16 typeNameLength {};
+        uint16 fullyQualifiedNameLength {};
 
         FixedCharSpan GetTypeName() {
             return FixedCharSpan(typeName, typeNameLength);
@@ -157,6 +158,10 @@ namespace Alchemy::Compilation {
             return (flags & TypeInfoFlags::IsGenericTypeDefinition) != 0;
         }
 
+        bool DetectClassCycle(CheckedArray<TypeInfo*> visited, FixedPodList<FixedCharSpan>* path = nullptr);
+
+        bool DetectClassCycle(TypeInfo* type, CheckedArray<TypeInfo*> visited, int32 depth, FixedPodList<FixedCharSpan>* path = nullptr);
+
         CheckedArray<ResolvedType> GetGenericArguments();
 
         CheckedArray<FieldInfo> GetFields();
@@ -167,6 +172,7 @@ namespace Alchemy::Compilation {
 
         CheckedArray<ConstructorInfo> GetConstructors();
 
+        FixedCharSpan GetNamespaceName();
     };
 
 

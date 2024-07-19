@@ -29,6 +29,47 @@ namespace Alchemy::Compilation {
         return declaringFile->path;
     }
 
+    bool TypeInfo::DetectClassCycle(TypeInfo* type, CheckedArray<TypeInfo*> visited, int32 depth, FixedPodList<FixedCharSpan>* path) {
+        for (int32 i = 0; i < depth; i++) {
+            if (visited[i] == type) {
+                if (path != nullptr) {
+                    path->Push(type->GetFullyQualifiedTypeName());
+                }
+                return true;
+            }
+        }
+
+        // If the type has no baseType, there's no cycle from this node
+        if (type->baseTypeCount == 0 || !type->baseTypes[0].IsClass()) {
+            return false;
+        }
+
+        visited[depth] = type;
+        if (path != nullptr) {
+            path->Push(type->GetFullyQualifiedTypeName());
+        }
+
+        if (DetectClassCycle(type->baseTypes[0].typeInfo, visited, depth + 1, path)) {
+            return true;
+        }
+
+        if (path != nullptr) {
+            path->Pop();
+        }
+
+        return false;
+    }
+
+    bool TypeInfo::DetectClassCycle(CheckedArray<TypeInfo*> visited, FixedPodList<FixedCharSpan>* path) {
+        return DetectClassCycle(this, visited, 0, path);
+    }
+
+    FixedCharSpan TypeInfo::GetNamespaceName() {
+        return declaringFile->namespaceName.size == 0
+            ? FixedCharSpan("global")
+            : declaringFile->namespaceName;
+    }
+
     const char* TypeClassToString(TypeClass typeClass) {
         switch (typeClass) {
             case TypeClass::GenericArgument: {

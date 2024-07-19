@@ -1,0 +1,15 @@
+namespace BuiltIn;
+
+public struct Double {
+
+    private double value;
+
+    public override int GetHashCode() {
+        return value;
+    }
+
+    public override string ToString() {
+        return "";
+    }
+
+}

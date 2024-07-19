@@ -1,0 +1,11 @@
+namespace BuiltIn;
+
+public struct String {
+
+    private string value;
+
+    string ToString() {
+        return "0";
+    }
+
+}

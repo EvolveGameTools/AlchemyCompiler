@@ -4,9 +4,15 @@
 
 namespace Alchemy::Compilation {
 
+    struct VariableDeclaratorSyntax;
+
     struct FieldInfo {
-        TypeInfo* declaringType {};
+
         ResolvedType type;
+        FixedCharSpan identifier;
+        TypeInfo* declaringType {};
+        VariableDeclaratorSyntax* syntaxNode {};
+
     };
 
     struct PropertyInfo {

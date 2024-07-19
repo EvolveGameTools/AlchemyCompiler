@@ -741,13 +741,11 @@ namespace Alchemy::Compilation {
     struct VariableDeclaratorSyntax : SyntaxBase {
 
         SyntaxToken identifier;
-        BracketedArgumentListSyntax* argumentList;
         EqualsValueClauseSyntax* initializer;
 
-        explicit VariableDeclaratorSyntax(SyntaxToken identifier, BracketedArgumentListSyntax* argumentList, EqualsValueClauseSyntax* initializer)
+        explicit VariableDeclaratorSyntax(SyntaxToken identifier, EqualsValueClauseSyntax* initializer)
             : SyntaxBase(SyntaxKind::VariableDeclarator)
             , identifier(identifier)
-            , argumentList(argumentList)
             , initializer(initializer) {}
 
     };
@@ -756,7 +754,10 @@ namespace Alchemy::Compilation {
 
         SyntaxToken identifier;
 
-        explicit TypeParameterSyntax(SyntaxToken identifier) : SyntaxBase(SyntaxKind::TypeParameter) {}
+        explicit TypeParameterSyntax(SyntaxToken identifier)
+            : SyntaxBase(SyntaxKind::TypeParameter)
+            , identifier(identifier)
+        {}
 
     };
 

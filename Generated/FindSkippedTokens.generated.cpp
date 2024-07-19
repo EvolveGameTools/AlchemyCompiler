@@ -455,7 +455,6 @@ namespace Alchemy::Compilation {
             case SyntaxKind::VariableDeclarator: {
                 VariableDeclaratorSyntax* p = (VariableDeclaratorSyntax*)syntaxBase;
                 TouchToken(p->identifier);
-                TouchNode(p->argumentList);
                 TouchNode(p->initializer);
                 break;
             }

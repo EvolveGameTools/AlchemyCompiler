@@ -85,6 +85,10 @@ namespace Alchemy {
 
     }
 
+    FixedCharSpan VirtualFileSystem::ReadFileText(const char * absolutePath, Allocator allocator) {
+        return ReadFileText(FixedCharSpan(absolutePath), allocator);
+    }
+
     FixedCharSpan VirtualFileSystem::ReadFileText(FixedCharSpan absolutePath, Allocator allocator) {
 
         if (fileSystemType == FileSystemType::Real) {

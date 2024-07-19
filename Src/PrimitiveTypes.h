@@ -86,3 +86,4 @@ typedef x___ size_t;
 
 #define NOT_IMPLEMENTED(x) Panic(PanicType::NotImplemented, (void*)(x))
 #define UNREACHABLE(x) Panic(PanicType::Unreachable, (void*)(x))
+#define RETURN_ARRAY_ACCESS(array, idx, size) if(index < 0 || index >= size) { Panic(PanicType::IndexOutOfBounds, nullptr); return array[0]; } else { return array[index]; }

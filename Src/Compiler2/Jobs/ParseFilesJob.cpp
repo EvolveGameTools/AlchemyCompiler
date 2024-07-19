@@ -16,9 +16,9 @@ namespace Alchemy::Compilation {
 
         SourceFileInfo * fileInfo = files[idx];
 
-        FixedCharSpan source = vfs->ReadFileText(fileInfo->path, fileInfo->allocator.MakeAllocator());
+        fileInfo->contents = fileInfo->isBuiltIn ? fileInfo->contents : vfs->ReadFileText(fileInfo->path, fileInfo->allocator.MakeAllocator());
 
-        TextWindow window(source.ptr, source.size);
+        TextWindow window(fileInfo->contents.ptr, fileInfo->contents.size);
 
         TokenizerResult result = Tokenize(window, &fileInfo->diagnostics, &fileInfo->allocator);
 

@@ -82,6 +82,16 @@ namespace Alchemy::Compilation {
         ERR_AmbiguousTypeMatch,
         ERR_UnresolvedType,
         ERR_TypeArgumentShouldNotBeAnExistingTypeName,
+        ERR_OnlyFirstBaseTypeCanBeClass,
+        ERR_CannotInheritASealedType,
+        ERR_CannotInheritRecursively,
+        ERR_StructsCanOnlyInheritInterfaces,
+        ERR_BaseTypeInNonZeroPositionMustBeAnInterface,
+        ERR_BaseTypeCannotBeRef,
+        ERR_BaseTypeCannotBeNullable,
+        ERR_BaseTypeCannotBeTuple,
+        ERR_CycleDetectedInClassHierarchy,
+        ERR_BaseTypeAppearsMultipleTimes,
     };
 
 }

@@ -1,0 +1,15 @@
+namespace BuiltIn;
+
+public class Object {
+
+    private object value;
+
+    public override int GetHashCode() {
+        return value;
+    }
+
+    public override string ToString() {
+        return "";
+    }
+
+}

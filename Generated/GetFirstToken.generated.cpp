@@ -456,7 +456,6 @@ namespace Alchemy::Compilation {
             case SyntaxKind::VariableDeclarator: {
                 VariableDeclaratorSyntax* p = (VariableDeclaratorSyntax*)syntaxBase;
                 if(p->identifier.IsValid()) return p->identifier;
-                if(p->argumentList != nullptr) return GetFirstToken((SyntaxBase*)p->argumentList);
                 if(p->initializer != nullptr) return GetFirstToken((SyntaxBase*)p->initializer);
                 return SyntaxToken();
             }
@@ -2160,7 +2159,6 @@ namespace Alchemy::Compilation {
             case SyntaxKind::VariableDeclarator: {
                 VariableDeclaratorSyntax* p = (VariableDeclaratorSyntax*)syntaxBase;
                 if(p->initializer != nullptr) return GetLastToken((SyntaxBase*)p->initializer);
-                if(p->argumentList != nullptr) return GetLastToken((SyntaxBase*)p->argumentList);
                 if(p->identifier.IsValid()) return p->identifier;
                 return SyntaxToken();
             }

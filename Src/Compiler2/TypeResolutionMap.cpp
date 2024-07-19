@@ -3,6 +3,8 @@
 #include "../Allocation/ThreadLocalTemp.h"
 #include "./FieldInfo.h"
 #include "../Collections/PodList.h"
+#include "../Collections/Sort.h"
+#include "./SourceFileInfo.h"
 
 namespace Alchemy::Compilation {
 
@@ -170,7 +172,7 @@ namespace Alchemy::Compilation {
 
     }
 
-    ResolvedType TypeResolutionMap::RecursiveResolveGenerics(ResolvedType input, CheckedArray<GenericReplacement> replacements, Allocator &alloc) {
+    ResolvedType TypeResolutionMap::RecursiveResolveGenerics(ResolvedType input, CheckedArray<GenericReplacement> replacements, Allocator& alloc) {
 
         // simple type name reference, no work to do
         if (input.typeInfo == nullptr) {
@@ -262,23 +264,16 @@ namespace Alchemy::Compilation {
             }
         }
 
-        // if base type is generic we'll need to make a generic base type
-        // same w/ interfaces
-        // same w/ constraints too
-        // if base type are not generic we can just handle the input type
-
-        // todo -- make sure type inheritance isn't recursive!
-
         size_t totalSize = sizeof(TypeInfo) +
-                           openType->baseTypeCount * sizeof(TypeInfo*) +
-                           openType->fieldCount * sizeof(FieldInfo) +
-                           openType->propertyCount * sizeof(PropertyInfo) +
-                           openType->methodCount * sizeof(MethodInfo) +
-                           openType->indexerCount * sizeof(IndexerInfo) +
-                           openType->constructorCount * sizeof(ConstructorInfo) +
-                           openType->constraintCount * sizeof(GenericConstraint) +
-                           openType->genericArgumentCount * sizeof(ResolvedType) +
-                           (nameSize + 1) * sizeof(char);
+            openType->baseTypeCount * sizeof(TypeInfo*) +
+            openType->fieldCount * sizeof(FieldInfo) +
+            openType->propertyCount * sizeof(PropertyInfo) +
+            openType->methodCount * sizeof(MethodInfo) +
+            openType->indexerCount * sizeof(IndexerInfo) +
+            openType->constructorCount * sizeof(ConstructorInfo) +
+            openType->constraintCount * sizeof(GenericConstraint) +
+            openType->genericArgumentCount * sizeof(ResolvedType) +
+            (nameSize + 1) * sizeof(char);
 
         uint8* memoryBlock = typeAllocator.Allocate<uint8>(totalSize);
 
@@ -290,6 +285,8 @@ namespace Alchemy::Compilation {
         newType->fullyQualifiedNameLength = nameSize;
 
         memcpy(newType->fullyQualifiedName, tempNameLookup, nameSize + 1); // + 1 copies terminator
+        newType->typeName = newType->fullyQualifiedName + openType->GetNamespaceName().size + 2;
+        newType->typeNameLength = newType->fullyQualifiedNameLength - openType->GetNamespaceName().size - 2;
 
         CheckedArray<ResolvedType> openGenerics = openType->GetGenericArguments();
         CheckedArray<GenericReplacement> replacements(tempAllocator->AllocateUncleared<GenericReplacement>(typeArguments.size), typeArguments.size);
@@ -332,6 +329,7 @@ namespace Alchemy::Compilation {
 
         }
 
+        // todo -- not sure this is true, we may need to check that all of our type args are actually concrete now
         newType->flags &= ~TypeInfoFlags::IsGenericTypeDefinition;
         newType->flags |= TypeInfoFlags::InstantiatedGeneric;
 
@@ -345,7 +343,7 @@ namespace Alchemy::Compilation {
             }
 
             AddUnlocked(newType);
-
+            openType->declaringFile->genericInstances.Add(newType);
             return ResolvedType(newType);
 
         }
@@ -391,6 +389,35 @@ namespace Alchemy::Compilation {
             buffer.Add('\n');
         }
 
+        void PrintTypes(TypeInfo * typeInfo, int32 cnt, ResolvedType * array) {
+            PrintInline("[");
+            PrintLine();
+            indent++;
+            for (int32 i = 0; i < cnt; i++) {
+                ResolvedType resolvedType = array[i];
+                PrintIndent();
+                if (resolvedType.builtInTypeName != BuiltInTypeName::Invalid) {
+                    PrintInline(BuiltInTypeNameToString(resolvedType.builtInTypeName));
+                }
+                if (resolvedType.IsUnresolved()) {
+                    PrintInline("UNRESOLVED");
+                }
+                else if (resolvedType.IsVoid()) {
+                    PrintInline("void");
+                }
+                else if (resolvedType.typeInfo != nullptr) {
+                    PrintInline(resolvedType.typeInfo->GetFullyQualifiedTypeName());
+                }
+                else {
+                    PrintInline("UNRESOLVED");
+                }
+                PrintLine();
+            }
+            indent--;
+            PrintIndent();
+            PrintInline("]");
+        }
+
         void Print(TypeInfo* typeInfo) {
             buffer.AddRange(typeInfo->fullyQualifiedName, typeInfo->fullyQualifiedNameLength);
             buffer.Add('\n');
@@ -402,14 +429,21 @@ namespace Alchemy::Compilation {
             PrintLine();
 
             PrintIndent();
+            PrintInline("visibility = ");
+            PrintInline(TypeVisibilityToString(typeInfo->visibility));
+            PrintLine();
+
+            PrintIndent();
             PrintInline("typeName = ");
             PrintInline(typeInfo->GetTypeName());
             PrintLine();
 
-            PrintIndent();
-            PrintInline("visibility = ");
-            PrintInline(TypeVisibilityToString(typeInfo->visibility));
-            PrintLine();
+            if(typeInfo->genericArgumentCount != 0) {
+                PrintIndent();
+                PrintInline("generics = ");
+                PrintTypes(typeInfo, typeInfo->genericArgumentCount, typeInfo->genericArguments);
+                PrintLine();
+            }
 
             PrintIndent();
             PrintInline("baseTypes = ");
@@ -417,39 +451,20 @@ namespace Alchemy::Compilation {
                 PrintInline("[]");
             }
             else {
-                indent++;
-                for (int32 i = 0; i < typeInfo->baseTypeCount; i++) {
-                    ResolvedType resolvedType = typeInfo->baseTypes[i];
-                    PrintIndent();
-                    if(resolvedType.builtInTypeName != BuiltInTypeName::Invalid) {
-                        PrintInline(BuiltInTypeNameToString(resolvedType.builtInTypeName));
-                    }
-                    if (resolvedType.IsUnresolved()) {
-                        PrintInline("UNRESOLVED");
-                    }
-                    else if (resolvedType.IsVoid()) {
-                        PrintInline("void");
-                    }
-                    else if (resolvedType.typeInfo != nullptr) {
-                        PrintInline(resolvedType.typeInfo->GetFullyQualifiedTypeName());
-                    }
-                    else {
-                        PrintInline("UNRESOLVED");
-                    }
-                    PrintLine();
-                }
-                indent--;
+                PrintTypes(typeInfo, typeInfo->baseTypeCount, typeInfo->baseTypes);
             }
             PrintLine();
 
             PrintIndent();
             PrintInline("flags = ");
             size_t cnt = TypeInfoFlagsToString(typeInfo->flags, nullptr);
-            char * c = buffer.Reserve((int32)cnt);
-            PrintInline(c, cnt);
+            char* c = buffer.Reserve((int32) cnt);
+            TypeInfoFlagsToString(typeInfo->flags, c);
             PrintLine();
 
             indent--;
+            PrintLine();
+
         }
 
     };
@@ -457,6 +472,22 @@ namespace Alchemy::Compilation {
     FixedCharSpan TypeResolutionMap::DumpTypeTable(Allocator dumpAllocator) {
         Allocator temp = GetThreadLocalAllocator()->MakeAllocator();
         CheckedArray<TypeInfo*> typeInfos = GetValues(temp);
+
+        IntrospectionSort(typeInfos.array, typeInfos.size, [](const TypeInfo* a, const TypeInfo* b) {
+            FixedCharSpan aName = FixedCharSpan(a->fullyQualifiedName, a->fullyQualifiedNameLength);
+            FixedCharSpan bName = FixedCharSpan(b->fullyQualifiedName, b->fullyQualifiedNameLength);
+
+            size_t minSize = (aName.size < bName.size) ? aName.size : bName.size;
+            int32 cmp = memcmp(aName.ptr, bName.ptr, minSize);
+
+            if (cmp == 0) {
+                if (aName.size < bName.size) return -1;
+                if (aName.size > bName.size) return 1;
+            }
+
+            return cmp;
+
+        });
 
         TypeInfoPrinter printer;
 

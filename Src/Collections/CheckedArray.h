@@ -5,6 +5,7 @@
 #include <cstring>
 #include "../Allocation/PodAllocation.h"
 
+
 namespace Alchemy {
 
     template<class T>
@@ -39,8 +40,7 @@ namespace Alchemy {
         }
 
         T& operator[](int32 index) {
-            assert(index >= 0 && index < size && "out of bounds");
-            return array[index];
+            RETURN_ARRAY_ACCESS(array, index, size);
         }
 
         void CopyFrom(CheckedArray<T> other) {

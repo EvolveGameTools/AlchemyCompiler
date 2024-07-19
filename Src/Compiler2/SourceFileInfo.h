@@ -18,18 +18,23 @@ namespace Alchemy::Compilation {
         uint64 lastEditTime {};
         PodList<SourceFileInfo*> dependencies;
         PodList<SourceFileInfo*> dependants;
-        LinearAllocator allocator; // might want a mutex for this eventually
+        PodList<TypeInfo*> genericInstances;
+        CheckedArray<TypeInfo*> declaredTypes;
+        CheckedArray<FixedCharSpan> usingDirectives;
+        LinearAllocator allocator;
         Diagnostics diagnostics;
         CompilationUnitSyntax * syntaxTree {};
 
         FixedCharSpan namespaceName;
         TokenizerResult tokenizerResult;
-        CheckedArray<TypeInfo*> declaredTypes;
-        CheckedArray<FixedCharSpan> usingDirectives;
+
+        FixedCharSpan contents;
 
         bool wasTouched {};
         bool wasChanged {};
         bool dependantsVisited {};
+        bool isBuiltIn {};
+
         std::mutex mutex;
 
         SourceFileInfo()
@@ -42,6 +47,7 @@ namespace Alchemy::Compilation {
 
         Allocator GetLockedAllocator();
 
+        FixedCharSpan GetText(SyntaxToken token);
     };
 
 

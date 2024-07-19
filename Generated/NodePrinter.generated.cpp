@@ -797,8 +797,6 @@ namespace Alchemy::Compilation {
                 indent++;
                 PrintFieldName("identifier");
                 PrintToken(p->identifier);
-                PrintFieldName("argumentList");
-                PrintNode(p->argumentList);
                 PrintFieldName("initializer");
                 PrintNode(p->initializer);
                 indent--;

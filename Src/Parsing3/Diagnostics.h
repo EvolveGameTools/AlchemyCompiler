@@ -22,7 +22,9 @@ namespace Alchemy::Compilation {
             , messageLength(0)
             , errorCode(ErrorCode::None) {}
 
-        Diagnostic(ErrorCode code, Alchemy::FixedCharSpan span);
+        Diagnostic(ErrorCode code, FixedCharSpan span);
+
+        Diagnostic(ErrorCode code, FixedCharSpan span, FixedCharSpan message);
 
         Diagnostic(ErrorCode errorCode, char* start, char* end);
 

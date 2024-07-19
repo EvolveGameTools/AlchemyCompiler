@@ -27,6 +27,7 @@ namespace Alchemy::Compilation {
 
         bool TryResolveType(FixedCharSpan identifierName, ResolvedType* resolvedType);
 
+        ResolvedType Unresolved();
     };
 
 }

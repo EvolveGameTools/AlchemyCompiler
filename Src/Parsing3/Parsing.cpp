@@ -3061,11 +3061,10 @@ namespace Alchemy::Compilation {
                 // Including 'else' keyword to handle 'else without if' error cases
                 return ParseMisplacedElse(parser);
             case TokenKind::ReturnKeyword: {
-                return parser->CreateNode<ReturnStatementSyntax>(
-                    parser->EatToken(TokenKind::ReturnKeyword),
-                    parser->currentToken.kind != TokenKind::SemicolonToken ? ParsePossibleRefExpression(parser) : nullptr,
-                    parser->EatToken(TokenKind::SemicolonToken)
-                );
+                SyntaxToken returnKeyword = parser->EatToken(TokenKind::ReturnKeyword);
+                ExpressionSyntax * expression = parser->currentToken.kind != TokenKind::SemicolonToken ? ParsePossibleRefExpression(parser) : nullptr;
+                SyntaxToken semicolon = parser->EatToken(TokenKind::SemicolonToken);
+                return parser->CreateNode<ReturnStatementSyntax>(returnKeyword, expression, semicolon);
             }
             case TokenKind::SwitchKeyword:
             case TokenKind::CaseKeyword: // error recovery case.
@@ -5473,7 +5472,7 @@ namespace Alchemy::Compilation {
             return parser->CreateNode<TypeParameterSyntax>(missing);
         }
 
-        // SyntaxListBuilder<sAttributeListSyntax> attrList(parser->tempAllocator);
+        // SyntaxListBuilder<AttributeListSyntax> attrList(parser->tempAllocator);
         // if (parser->currentToken.kind == TokenKind::OpenBracketToken && parser->PeekToken(1).kind != TokenKind::CloseBracketToken) {
         //     TerminatorState saveTerm = parser->_termState;
         //     parser->_termState = TerminatorState::IsEndOfTypeArgumentList;
@@ -5514,7 +5513,12 @@ namespace Alchemy::Compilation {
             false
         );
 
-        return nullptr;
+        parser->termState = saveTerm;
+
+        SyntaxToken close = parser->EatToken(TokenKind::GreaterThanToken);
+
+        return parser->CreateNode<TypeParameterListSyntax>(open, parameters, close);
+
     }
 
     void ParseParameterModifiers(Parser* parser, TokenListBuffer* modifiers, bool isFunctionPointerParameter) {
@@ -5785,7 +5789,7 @@ namespace Alchemy::Compilation {
                             parser->AddError(missingIdentifier, ErrorCode::ERR_IdentifierExpected);
 
                             *localFunction = nullptr;
-                            return parser->CreateNode<VariableDeclaratorSyntax>(missingIdentifier, nullptr, nullptr);
+                            return parser->CreateNode<VariableDeclaratorSyntax>(missingIdentifier, nullptr);
                         }
                     }
                 }
@@ -5793,7 +5797,7 @@ namespace Alchemy::Compilation {
         }
 
         SyntaxToken name = ParseIdentifierToken(parser);
-        BracketedArgumentListSyntax* argumentList = nullptr;
+//        BracketedArgumentListSyntax* argumentList = nullptr;
         EqualsValueClauseSyntax* initializer = nullptr;
         TerminatorState saveTerm = parser->termState;
 //        bool isFixed = (flags & VariableFlags::Fixed) != 0;
@@ -5840,13 +5844,13 @@ namespace Alchemy::Compilation {
                         return nullptr;
                     }
                 }
-                // Special case for accidental use of C-style constructors
-                // Fake up something to hold the arguments.
-                parser->termState |= TerminatorState::IsPossibleEndOfVariableDeclaration;
-                argumentList = ParseBracketedArgumentList(parser);
-                parser->termState = saveTerm;
-                parser->AddError(argumentList, ErrorCode::ERR_BadVarDecl);
-                break;
+                return nullptr;
+//                // Special case for accidental use of C-style constructors
+//                // Fake up something to hold the arguments.
+//                parser->termState |= TerminatorState::IsPossibleEndOfVariableDeclaration;
+//                argumentList = ParseBracketedArgumentList(parser);
+//                parser->termState = saveTerm;
+//                parser->AddError(argumentList, ErrorCode::ERR_BadVarDecl);
             }
                 // we don't support arrays directly (only lists, and list2d)
                 // maybe we parse this anyway and warn about it?
@@ -5911,7 +5915,7 @@ namespace Alchemy::Compilation {
             }
         }
         *localFunction = nullptr;
-        return parser->CreateNode<VariableDeclaratorSyntax>(name, argumentList, initializer);
+        return parser->CreateNode<VariableDeclaratorSyntax>(name, initializer);
     }
 
     void ParseVariableDeclarators(Parser* parser, TypeSyntax* type, VariableFlags flags, SeparatedSyntaxListBuilder<VariableDeclaratorSyntax>* variables, bool variableDeclarationsExpected, bool allowLocalFunctions, bool stopOnCloseParen, TokenListBuffer* mods, LocalFunctionStatementSyntax** localFunction) {

@@ -4,7 +4,8 @@
 #include "../Collections/FixedPodList.h"
 #include "./Jobs/ParseFilesJob.h"
 #include "./Jobs/GatherTypeInfoJob.h"
-#include "../Util/File.h"
+#include "./Jobs/ResolveBaseTypesJob.h"
+#include "./LoadBuiltIns.h"
 
 namespace Alchemy::Compilation {
 
@@ -26,7 +27,7 @@ namespace Alchemy::Compilation {
     void Compiler::AssignPrimitiveType(const char* name, BuiltInTypeName builtInTypeName) {
         TypeInfo* primitive = nullptr;
         assert(resolveMap.TryResolve(FixedCharSpan(name), &primitive));
-        builtInTypes[(int32) builtInTypeName] = primitive;
+        resolveMap.builtInTypeInfos[(int32) builtInTypeName] = primitive;
         primitive->flags |= TypeInfoFlags::IsPrimitive;
     }
 
@@ -38,31 +39,32 @@ namespace Alchemy::Compilation {
         , fileInfos()
         , sourceFileBuffer()
         , fileAllocator()
-        , typeBuffer()
-        {}
+        , typeBuffer() {}
 
     void Compiler::LoadDependencies() {}
 
     void Compiler::Compile(CheckedArray<PackageInfo> compiledPackages) {
 
-        if(resolveMap.unresolvedType == nullptr) {
+        if (resolveMap.unresolvedType == nullptr) {
 
             // todo -- delete these eventually
 
             resolveMap.unresolvedType = new(MallocateTyped(TypeInfo, 1)) TypeInfo();
             resolveMap.voidType = new(MallocateTyped(TypeInfo, 1)) TypeInfo();
 
-            resolveMap.unresolvedType->fullyQualifiedName = (char*)"__UNRESOLVED__";
+            resolveMap.unresolvedType->fullyQualifiedName = (char*) "__UNRESOLVED__";
             resolveMap.unresolvedType->fullyQualifiedNameLength = strlen(resolveMap.unresolvedType->fullyQualifiedName);
             resolveMap.unresolvedType->typeName = resolveMap.unresolvedType->fullyQualifiedName;
             resolveMap.unresolvedType->typeNameLength = resolveMap.unresolvedType->fullyQualifiedNameLength;
             resolveMap.unresolvedType->typeClass = TypeClass::Unresolved;
 
-            resolveMap.voidType->fullyQualifiedName = (char*)"__VOID__";
+            resolveMap.voidType->fullyQualifiedName = (char*) "__VOID__";
             resolveMap.voidType->fullyQualifiedNameLength = strlen(resolveMap.voidType->fullyQualifiedName);
             resolveMap.voidType->typeName = resolveMap.voidType->fullyQualifiedName;
             resolveMap.voidType->typeNameLength = resolveMap.voidType->fullyQualifiedNameLength;
             resolveMap.voidType->typeClass = TypeClass::Void;
+
+            LoadBuiltIns(&fileInfos, &fileAllocator);
 
         }
 
@@ -76,17 +78,6 @@ namespace Alchemy::Compilation {
 
         CheckedArray<FixedCharSpan> extensions(&ext, 1);
 
-        FixedCharSpan builtinPackage = FixedCharSpan("BuiltIn");
-        FixedCharSpan builtinPath = FixedCharSpan("System/");
-
-        if(vfs.fileSystemType == FileSystemType::Virtual) {
-            VirtualFileInfo vinfo(FixedCharSpan("BuiltIn"), FixedCharSpan("System/"));
-            FixedCharSpan contents = ReadFile(FixedCharSpan("../System/Float.wyx"), Allocator::MakeMallocator());
-            vfs.AddFile(vinfo, contents);
-        }
-
-        vfs.LoadFileInfos(builtinPackage, builtinPath, extensions, &sourceFileBuffer);
-
         for (int32 i = 0; i < compiledPackages.size; i++) {
             FixedCharSpan packageName = compiledPackages.Get(i).packageName;
             FixedCharSpan pathName = compiledPackages.Get(i).absolutePath;
@@ -97,7 +88,7 @@ namespace Alchemy::Compilation {
 
         int32 changeCount = 0;
 
-        for (int32 i = 0; i < sourceFileBuffer.size; i++) {
+        for (int32 i = 0; i < fileInfos.size; i++) {
             if (fileInfos[i]->wasChanged) {
                 changeCount++;
             }
@@ -128,29 +119,35 @@ namespace Alchemy::Compilation {
             }
         }
 
+        // should only need to do this once I think
         resolveMap.builtInTypeInfos = CheckedArray<TypeInfo*>(typeBuffer, kBuiltInTypeCount);
 
-        AssignPrimitiveType("BuiltIn::Float", BuiltInTypeName::Float);
 //        AssignPrimitiveType("BuiltIn::Float2", BuiltInTypeName::Float2);
 //        AssignPrimitiveType("BuiltIn::Float3", BuiltInTypeName::Float3);
 //        AssignPrimitiveType("BuiltIn::Float4", BuiltInTypeName::Float4);
-//
-//        AssignPrimitiveType("BuiltIn::Int64", BuiltInTypeName::Int64);
-//        AssignPrimitiveType("BuiltIn::Int32", BuiltInTypeName::Int32);
-//        AssignPrimitiveType("BuiltIn::Int16", BuiltInTypeName::Int16);
-//        AssignPrimitiveType("BuiltIn::Int8", BuiltInTypeName::Int8);
-//
-//        AssignPrimitiveType("BuiltIn::UInt64", BuiltInTypeName::UInt64);
-//        AssignPrimitiveType("BuiltIn::UInt32", BuiltInTypeName::UInt32);
-//        AssignPrimitiveType("BuiltIn::UInt16", BuiltInTypeName::UInt16);
-//        AssignPrimitiveType("BuiltIn::UInt8", BuiltInTypeName::UInt8);
-//
-//        AssignPrimitiveType("BuiltIn::Double", BuiltInTypeName::Double);
-//        AssignPrimitiveType("BuiltIn::Bool", BuiltInTypeName::Bool);
+
+        AssignPrimitiveType("BuiltIn::Int64", BuiltInTypeName::Int64);
+        AssignPrimitiveType("BuiltIn::Int32", BuiltInTypeName::Int32);
+        AssignPrimitiveType("BuiltIn::Int16", BuiltInTypeName::Int16);
+        AssignPrimitiveType("BuiltIn::Int8", BuiltInTypeName::Int8);
+
+        AssignPrimitiveType("BuiltIn::UInt64", BuiltInTypeName::UInt64);
+        AssignPrimitiveType("BuiltIn::UInt32", BuiltInTypeName::UInt32);
+        AssignPrimitiveType("BuiltIn::UInt16", BuiltInTypeName::UInt16);
+        AssignPrimitiveType("BuiltIn::UInt8", BuiltInTypeName::UInt8);
+
+        AssignPrimitiveType("BuiltIn::Double", BuiltInTypeName::Double);
+        AssignPrimitiveType("BuiltIn::Float", BuiltInTypeName::Float);
+        AssignPrimitiveType("BuiltIn::Bool", BuiltInTypeName::Bool);
+        AssignPrimitiveType("BuiltIn::Char", BuiltInTypeName::Char);
+        AssignPrimitiveType("BuiltIn::String", BuiltInTypeName::String);
+        AssignPrimitiveType("BuiltIn::Object", BuiltInTypeName::Object);
 
         // we've got an initial symbol table now
         // we can go ahead and try to resolve base types now
         // we should only need to do this for changed files
+
+        jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), ResolveBaseTypesJob(changedFiles, &resolveMap));
 
     }
 
@@ -182,7 +179,7 @@ namespace Alchemy::Compilation {
         // build a lookup table for our files to see if they were created this run or not
         int32 max = fileInfos.size > includedSourceFiles.size ? fileInfos.size : includedSourceFiles.size;
         int32 pow2Size = MathUtil::CeilPow2(max * 2); // *2 for a 50% threshold, it's all temp memory anyway
-        if(pow2Size < 16) pow2Size = 16;
+        if (pow2Size < 16) pow2Size = 16;
         int32 exponent = MathUtil::LogPow2(pow2Size);
 
         SourceFileInfo** table = tempAllocator->Allocate<SourceFileInfo*>(pow2Size);
@@ -282,6 +279,10 @@ namespace Alchemy::Compilation {
 
             SourceFileInfo* fileInfo = fileInfos.Get(i);
 
+            if(fileInfo->isBuiltIn) {
+                continue;
+            }
+
             if (!fileInfo->wasTouched) {
                 fileAllocator.Free(fileInfo);
                 fileInfo->~SourceFileInfo();
@@ -294,7 +295,6 @@ namespace Alchemy::Compilation {
 
         }
     }
-
 
 
 }

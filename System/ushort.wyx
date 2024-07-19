@@ -1,0 +1,15 @@
+namespace BuiltIn;
+
+public struct UInt16 {
+
+    private uint16 value;
+
+    public override int GetHashCode() {
+        return value;
+    }
+
+    public override string ToString() {
+        return "";
+    }
+
+}

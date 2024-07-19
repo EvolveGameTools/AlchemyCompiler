@@ -20,6 +20,7 @@ namespace Alchemy::Compilation {
         char* c = fileInfo->allocator.AllocateUncleared<char>(size + (2 * separatorCount) + 1);
         char* ptr = c;
 
+        size = 0;
         for (int32 n = 0; n < itemCount; n++) {
             SyntaxToken token = items[n]->identifier;
             FixedCharSpan name = token.GetText(fileInfo->tokenizerResult.texts);
@@ -34,7 +35,7 @@ namespace Alchemy::Compilation {
 
         *ptr = '\0';
 
-        return FixedCharSpan(c, size);
+        return FixedCharSpan(c, ptr - c);
 
     }
 
@@ -83,6 +84,7 @@ namespace Alchemy::Compilation {
                         declarationCount += structDeclarationSyntax->typeParameterList->parameters->itemCount;
                     }
                     declarationCount++;
+                    break;
                 }
                 case SyntaxKind::ClassDeclaration: {
                     ClassDeclarationSyntax* classDeclarationSyntax = (ClassDeclarationSyntax*) member;
@@ -305,7 +307,8 @@ namespace Alchemy::Compilation {
 
             switch (member->GetKind()) {
                 case SyntaxKind::FieldDeclaration: {
-                    fieldCount++;
+                    FieldDeclarationSyntax * fieldDeclarationSyntax = (FieldDeclarationSyntax*)member;
+                    fieldCount += fieldDeclarationSyntax->declaration->variables->itemCount;
                     break;
                 }
                 case SyntaxKind::PropertyDeclaration: {
@@ -383,7 +386,6 @@ namespace Alchemy::Compilation {
 
         *typeInfoIndex = *typeInfoIndex + 1;
 
-
         FixedCharSpan typeName = pSyntax->identifier.GetText(fileInfo->tokenizerResult.texts);
 
         int32 genericCount = 0;
@@ -400,9 +402,9 @@ namespace Alchemy::Compilation {
         FixedCharSpan fqn = MakeFullyQualifiedName(namespaceName, typeName, genericCount, fileInfo->allocator.MakeAllocator());
         pInfo->fullyQualifiedName = fqn.ptr;
         pInfo->fullyQualifiedNameLength = fqn.size;
+        pInfo->typeName = pInfo->fullyQualifiedName + namespaceName.size + 2;
+        pInfo->typeNameLength = pInfo->fullyQualifiedNameLength - namespaceName.size - 2;
         pInfo->declaringFile = fileInfo;
-        pInfo->typeName = fqn.ptr + fileInfo->namespaceName.size; // substring from the fqn
-        pInfo->typeNameLength = typeName.size;
         pInfo->typeClass = TypeClass::Struct;
         pInfo->syntaxNode = pSyntax;
 
@@ -443,10 +445,10 @@ namespace Alchemy::Compilation {
         FixedCharSpan fqn = MakeFullyQualifiedName(namespaceName, typeName, genericCount, fileInfo->allocator.MakeAllocator());
         pInfo->fullyQualifiedName = fqn.ptr;
         pInfo->fullyQualifiedNameLength = fqn.size;
+        pInfo->typeName = pInfo->fullyQualifiedName + namespaceName.size + 2;
+        pInfo->typeNameLength = pInfo->fullyQualifiedNameLength - namespaceName.size - 2;
         pInfo->typeClass = TypeClass::Class;
         pInfo->syntaxNode = pSyntax;
-        pInfo->typeName = fqn.ptr + fileInfo->namespaceName.size; // substring from the fqn
-        pInfo->typeNameLength = typeName.size;
         pInfo->declaringFile = fileInfo;
         HandleModifiers(pInfo, pSyntax->modifiers);
 
@@ -476,8 +478,15 @@ namespace Alchemy::Compilation {
     void GatherTypeInfoJob::MakeGenericArgumentTypes(TypeInfo* pInfo, CheckedArray<TypeInfo*> typeInfos, int32* typeInfoIndex, TypeParameterListSyntax* typeParameterList) {
 
         if (typeParameterList == nullptr || typeParameterList->parameters == nullptr) {
+            pInfo->genericArguments = nullptr;
+            pInfo->genericArgumentCount = 0;
             return;
         }
+
+        pInfo->genericArguments = pInfo->declaringFile->allocator.Allocate<ResolvedType>(typeParameterList->parameters->itemCount);
+        pInfo->genericArgumentCount = typeParameterList->parameters->itemCount;
+
+        FixedCharSpan namespaceName = pInfo->GetNamespaceName();
 
         for (int32 i = 0; i < typeParameterList->parameters->itemCount; i++) {
             TypeParameterSyntax* typeParameterSyntax = typeParameterList->parameters->items[i];
@@ -490,13 +499,15 @@ namespace Alchemy::Compilation {
 
             genericArg->fullyQualifiedName = argName.ptr;
             genericArg->fullyQualifiedNameLength = argName.size;
+            genericArg->typeName = genericArg->fullyQualifiedName + namespaceName.size + 2;
+            genericArg->typeNameLength = genericArg->fullyQualifiedNameLength - namespaceName.size - 2;
             genericArg->flags |= TypeInfoFlags::IsGenericArgumentDefinition;
             genericArg->syntaxNode = typeParameterSyntax;
             genericArg->declaringFile = fileInfo;
             genericArg->typeClass = TypeClass::GenericArgument;
-            genericArg->typeName = identifier.ptr;
-            genericArg->typeNameLength = identifier.size;
             genericArg->visibility = pInfo->visibility;
+
+            pInfo->genericArguments[i] = ResolvedType(genericArg);
 
         }
 

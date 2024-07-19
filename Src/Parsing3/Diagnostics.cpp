@@ -17,6 +17,13 @@ namespace Alchemy::Compilation {
         , messageLength(0)
         , message(nullptr) {}
 
+    Diagnostic::Diagnostic(ErrorCode errorCode, FixedCharSpan span, FixedCharSpan message)
+        : errorCode(errorCode)
+        , start(span.ptr)
+        , end(span.ptr + span.size)
+        , messageLength(message.size)
+        , message(message.ptr) {}
+
     Diagnostics::Diagnostics(Alchemy::Allocator allocator)
         : allocator(allocator)
         , capacity(16)

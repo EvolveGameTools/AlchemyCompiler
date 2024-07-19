@@ -15,7 +15,8 @@ namespace Alchemy::Compilation {
         declaredTypes = CheckedArray<TypeInfo*>();
         usingDirectives = CheckedArray<FixedCharSpan>();
         tokenizerResult = TokenizerResult();
-
+        genericInstances.size = 0;
+        contents = FixedCharSpan();
     }
 
     uint8* SourceFileInfo::AllocateLocked(void* cookie, size_t size, size_t alignment) {
@@ -26,6 +27,10 @@ namespace Alchemy::Compilation {
 
     Allocator SourceFileInfo::GetLockedAllocator() {
         return Allocator(this, AllocateLocked);
+    }
+
+    FixedCharSpan SourceFileInfo::GetText(SyntaxToken token) {
+        return token.GetText(tokenizerResult.texts);
     }
 
 }

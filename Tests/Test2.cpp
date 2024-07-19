@@ -26,6 +26,8 @@ TEST_CASE("MakeGenericArgumentName", "[parser]") {
     }
 }
 
+#define TestTypeFile(x) "../Tests/TypeResolutionExpectations/" x ".output"
+
 TEST_CASE("xyz") {
 
     FixedCharSpan package("Package");
@@ -37,17 +39,12 @@ TEST_CASE("xyz") {
 
     compiler.vfs.AddFile(f1, FixedCharSpan(R"(
 
-        public class Thing {}
+        public class Thing<T> {}
 
-        public class OtherThing {}
+        public struct OtherThing : Thing<float> {}
 
-    )"));
+        public struct OtherThing2 : Thing<string> {}
 
-    compiler.vfs.AddFile(f2, FixedCharSpan(R"(
-
-        public class Thing2 {}
-
-        public class OtherThing2 {}
 
     )"));
 
@@ -60,7 +57,7 @@ TEST_CASE("xyz") {
 
     FixedCharSpan table = compiler.resolveMap.DumpTypeTable(GetThreadLocalAllocator()->MakeAllocator());
 
-    printf("%.*s", (int32)table.size, table.ptr);
+    WriteStringToFile(TestTypeFile("types"), table.ptr, table.size);
 
 }
 

@@ -3,6 +3,39 @@ project(AlchemyCompiler)
 
 set(CMAKE_CXX_STANDARD 17)
 
+function(include_builtin_sources input_dir output_file)
+
+    # Get the list of files in the directory
+    file(GLOB files "${input_dir}/*")
+
+    # Initialize an empty string to accumulate the contents
+    set(all_contents "#include \"../Src/Compiler2/LoadBuiltIns.h\"\n\nnamespace Alchemy::Compilation {\n\nvoid LoadBuiltIns(PodList<SourceFileInfo*> * files, PoolAllocator<SourceFileInfo>* fileAllocator) {\n")
+
+    # Loop through each file in the directory
+    foreach(file ${files})
+
+        # Get the file name without the directory
+        get_filename_component(filename ${file} NAME)
+        # Get the file name without the extension
+        get_filename_component(name ${filename} NAME_WE)
+        # Read the file content
+        file(READ ${file} content)
+        # Set the delimiter
+        set(delim "xyz")
+
+        # Create the C string
+        set(file_content "files->Add(MakeBuiltInFile(fileAllocator, \"${name}\", R\"${delim}(\n${content})${delim}\"));\n")
+        # Append to the accumulated content
+        set(all_contents "${all_contents}${file_content}")
+
+    endforeach()
+
+    # Write the accumulated content to the output file
+    file(WRITE ${output_file} "${all_contents} \n}\n}")
+endfunction(include_builtin_sources)
+
+include_builtin_sources(System/ Generated/LoadBuiltIns.generated.cpp)
+
 list(APPEND Sources
         Src/Unicode/Unicode.cpp
         Src/Collections/LongBoolMap.cpp
@@ -31,6 +64,8 @@ list(APPEND Sources
         Src/Compiler2/TypeResolutionMap.cpp
         Src/Compiler2/FullyQualifiedName.cpp
         Src/Compiler2/SourceFileInfo.cpp
+        Src/Compiler2/LoadBuiltIns.cpp
+
         Src/Compiler2/Jobs/ParseFilesJob.cpp
         Src/Compiler2/Jobs/GatherTypeInfo.cpp
 
@@ -45,13 +80,14 @@ list(APPEND Sources
         Generated/NodePrinter.generated.cpp
         Generated/SyntaxKind.generated.cpp
         Generated/TokenKind.generated.cpp
-
+        Generated/LoadBuiltIns.generated.cpp
 )
 
 add_executable(AlchemyCompiler
 #        main.cpp
         ${Sources}
 )
+
 
 include(FetchContent)
 FetchContent_Declare(
@@ -69,10 +105,11 @@ if(WIN32)
         $<TARGET_FILE:cpptrace::cpptrace>
         $<TARGET_FILE_DIR:AlchemyCompiler>
     )
+
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(AlchemyCompiler PUBLIC ALCHEMY_DEBUG=1 ALCHEMY_MALLOC_DEBUG=1)
+    target_compile_definitions(AlchemyCompiler PUBLIC ALCHEMY_DEBUG=1 ALCHEMY_MALLOC_DEBUG=1 USE_STACKTRACE=1)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -113,6 +150,13 @@ add_executable(tests
     ${Sources}
 )
 
-target_compile_definitions(tests PRIVATE ALCHEMY_DEBUG=1)
+add_custom_command(
+    TARGET tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:cpptrace::cpptrace>
+    $<TARGET_FILE_DIR:tests>
+)
 
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+target_compile_definitions(tests PRIVATE ALCHEMY_DEBUG=1 USE_STACKTRACE)
+
+target_link_libraries(tests PRIVATE cpptrace::cpptrace Catch2::Catch2WithMain)

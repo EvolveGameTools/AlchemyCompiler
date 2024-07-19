@@ -1,0 +1,153 @@
+BuiltIn::Bool
+    declaringFile = bool
+    visibility = public
+    typeName = Bool
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Char
+    declaringFile = char
+    visibility = public
+    typeName = Char
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Double
+    declaringFile = double
+    visibility = public
+    typeName = Double
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Float
+    declaringFile = float
+    visibility = public
+    typeName = Float
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Int16
+    declaringFile = short
+    visibility = public
+    typeName = Int16
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Int32
+    declaringFile = int
+    visibility = public
+    typeName = Int32
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Int64
+    declaringFile = long
+    visibility = public
+    typeName = Int64
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Int8
+    declaringFile = sbyte
+    visibility = public
+    typeName = Int8
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::Object
+    declaringFile = object
+    visibility = public
+    typeName = Object
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::String
+    declaringFile = string
+    visibility = public
+    typeName = String
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::UInt16
+    declaringFile = ushort
+    visibility = public
+    typeName = UInt16
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::UInt32
+    declaringFile = uint
+    visibility = public
+    typeName = UInt32
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::UInt64
+    declaringFile = ulong
+    visibility = public
+    typeName = UInt64
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+BuiltIn::UInt8
+    declaringFile = byte
+    visibility = public
+    typeName = UInt8
+    baseTypes = []
+    flags = "IsPrimitive" 
+
+global::OtherThing
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = OtherThing
+    baseTypes = [
+        global::Thing$1<BuiltIn::Float>
+    ]
+    flags = None
+
+global::OtherThing2
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = OtherThing2
+    baseTypes = [
+        global::Thing$1<BuiltIn::String>
+    ]
+    flags = None
+
+global::Thing$1
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = Thing$1
+    generics = [
+        BuiltIn::String
+    ]
+    baseTypes = []
+    flags = "IsGenericTypeDefinition" 
+
+global::Thing$1<BuiltIn::Float>
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = Thing$1<BuiltIn::Float>
+    generics = [
+        BuiltIn::String
+    ]
+    baseTypes = []
+    flags = "InstantiatedGeneric" 
+
+global::Thing$1<BuiltIn::String>
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = Thing$1<BuiltIn::String>
+    generics = [
+        BuiltIn::String
+    ]
+    baseTypes = []
+    flags = "InstantiatedGeneric" 
+
+global::Thing$1_T[0]
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = Thing$1_T[0]
+    baseTypes = []
+    flags = "IsGenericArgumentDefinition" 
+

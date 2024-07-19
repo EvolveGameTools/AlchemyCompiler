@@ -138,7 +138,8 @@ namespace Alchemy {
                 break;
             }
             case PanicType::IndexOutOfBounds: {
-                Message("Index out of bounds");
+                snprintf(messageBuffer, sizeof(messageBuffer) - 1, "Index out of bounds\n%s", stackTrace);
+                Message(messageBuffer);
                 break;
             }
 

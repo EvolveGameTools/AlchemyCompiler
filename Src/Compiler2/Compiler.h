@@ -22,14 +22,13 @@ namespace Alchemy::Compilation {
 
         Diagnostics diagnostics;
         VirtualFileSystem vfs;
-        Alchemy::Jobs::JobSystem jobSystem;
+        Jobs::JobSystem jobSystem;
         TypeResolutionMap resolveMap;
-        Alchemy::PoolAllocator<SourceFileInfo> fileAllocator;
+        PoolAllocator<SourceFileInfo> fileAllocator;
 
         PodList<SourceFileInfo*> fileInfos;
+        PodList<SourceFileInfo*> builtInFiles;
         PodList<VirtualFileInfo> sourceFileBuffer;
-
-        CheckedArray<TypeInfo*> builtInTypes;
 
         TypeInfo* typeBuffer[kBuiltInTypeCount];
 

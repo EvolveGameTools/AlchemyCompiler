@@ -60,6 +60,7 @@ namespace Alchemy {
 
         void AddFile(VirtualFileInfo info, FixedCharSpan contents);
 
+        FixedCharSpan ReadFileText(const char* absolutePath, Allocator allocator);
     };
 
 }

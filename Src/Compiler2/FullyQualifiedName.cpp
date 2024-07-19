@@ -39,7 +39,7 @@ namespace Alchemy::Compilation {
         if (genericCount > 0) {
             ptr[0] = '$';
             ptr++;
-            IntToAscii(genericCount, ptr);
+            ptr += IntToAscii(genericCount, ptr);
         }
 
         *ptr = '\0';
