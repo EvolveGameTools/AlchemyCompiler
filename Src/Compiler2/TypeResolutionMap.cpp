@@ -1,9 +1,7 @@
 #include "./TypeResolutionMap.h"
 # include "../Util/MathUtil.h"
-#include "./ResolvedType.h"
 #include "../Allocation/ThreadLocalTemp.h"
 #include "./FieldInfo.h"
-#include "../Collections/FixedPodList.h"
 #include "../Collections/PodList.h"
 
 namespace Alchemy::Compilation {
@@ -13,8 +11,10 @@ namespace Alchemy::Compilation {
         , mutex()
         , size(0)
         , values()
+        , unresolvedType(nullptr)
+        , voidType(nullptr)
         , longestEntrySize(0)
-        , exponent(MathUtil::LogPow2(1024)) {
+        , exponent(MathUtil::LogPow2(16)) {
 
         values = CheckedArray<TypeInfo*>(allocator.Allocate<TypeInfo*>(1 << exponent), 1 << exponent);
 
@@ -421,18 +421,33 @@ namespace Alchemy::Compilation {
                 for (int32 i = 0; i < typeInfo->baseTypeCount; i++) {
                     ResolvedType resolvedType = typeInfo->baseTypes[i];
                     PrintIndent();
-                    if(resolvedType.typeInfo != nullptr) {
-
+                    if(resolvedType.builtInTypeName != BuiltInTypeName::Invalid) {
+                        PrintInline(BuiltInTypeNameToString(resolvedType.builtInTypeName));
                     }
-                    else if(resolvedType.IsUnresolved()) {
-
+                    if (resolvedType.IsUnresolved()) {
+                        PrintInline("UNRESOLVED");
                     }
+                    else if (resolvedType.IsVoid()) {
+                        PrintInline("void");
+                    }
+                    else if (resolvedType.typeInfo != nullptr) {
+                        PrintInline(resolvedType.typeInfo->GetFullyQualifiedTypeName());
+                    }
+                    else {
+                        PrintInline("UNRESOLVED");
+                    }
+                    PrintLine();
                 }
                 indent--;
             }
-
             PrintLine();
 
+            PrintIndent();
+            PrintInline("flags = ");
+            size_t cnt = TypeInfoFlagsToString(typeInfo->flags, nullptr);
+            char * c = buffer.Reserve((int32)cnt);
+            PrintInline(c, cnt);
+            PrintLine();
 
             indent--;
         }

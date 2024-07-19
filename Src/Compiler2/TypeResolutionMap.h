@@ -35,6 +35,9 @@ namespace Alchemy::Compilation {
         TypeInfo * unresolvedType;
         TypeInfo * voidType;
 
+        FixedCharSpan DumpTypeTable(Allocator dumpAllocator);
+
+
     private:
 
         Allocator allocator;
@@ -51,7 +54,6 @@ namespace Alchemy::Compilation {
 
         ResolvedType RecursiveResolveGenerics(ResolvedType input, CheckedArray<GenericReplacement> replacements, Allocator & alloc);
 
-        FixedCharSpan DumpTypeTable(Allocator dumpAllocator);
     };
 
 

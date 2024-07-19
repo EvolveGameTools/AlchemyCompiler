@@ -4,6 +4,7 @@
 #include "../Collections/FixedPodList.h"
 #include "./Jobs/ParseFilesJob.h"
 #include "./Jobs/GatherTypeInfoJob.h"
+#include "../Util/File.h"
 
 namespace Alchemy::Compilation {
 
@@ -37,6 +38,7 @@ namespace Alchemy::Compilation {
         , fileInfos()
         , sourceFileBuffer()
         , fileAllocator()
+        , typeBuffer()
         {}
 
     void Compiler::LoadDependencies() {}
@@ -77,6 +79,12 @@ namespace Alchemy::Compilation {
         FixedCharSpan builtinPackage = FixedCharSpan("BuiltIn");
         FixedCharSpan builtinPath = FixedCharSpan("System/");
 
+        if(vfs.fileSystemType == FileSystemType::Virtual) {
+            VirtualFileInfo vinfo(FixedCharSpan("BuiltIn"), FixedCharSpan("System/"));
+            FixedCharSpan contents = ReadFile(FixedCharSpan("../System/Float.wyx"), Allocator::MakeMallocator());
+            vfs.AddFile(vinfo, contents);
+        }
+
         vfs.LoadFileInfos(builtinPackage, builtinPath, extensions, &sourceFileBuffer);
 
         for (int32 i = 0; i < compiledPackages.size; i++) {
@@ -109,6 +117,17 @@ namespace Alchemy::Compilation {
 
         jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), GatherTypeInfoJob(changedFiles));
 
+        for (int32 i = 0; i < changedFiles.size; i++) {
+            SourceFileInfo* file = changedFiles[i];
+            for (int32 d = 0; d < file->declaredTypes.size; d++) {
+
+                if (!resolveMap.AddUnlocked(file->declaredTypes[d])) {
+                    diagnostics.AddError(Diagnostic(ErrorCode::ERR_DuplicateDeclaration, file->declaredTypes[d]->GetFullyQualifiedTypeName()));
+                }
+
+            }
+        }
+
         resolveMap.builtInTypeInfos = CheckedArray<TypeInfo*>(typeBuffer, kBuiltInTypeCount);
 
         AssignPrimitiveType("BuiltIn::Float", BuiltInTypeName::Float);
@@ -128,17 +147,6 @@ namespace Alchemy::Compilation {
 //
 //        AssignPrimitiveType("BuiltIn::Double", BuiltInTypeName::Double);
 //        AssignPrimitiveType("BuiltIn::Bool", BuiltInTypeName::Bool);
-
-        for (int32 i = 0; i < changedFiles.size; i++) {
-            SourceFileInfo* file = changedFiles[i];
-            for (int32 d = 0; d < file->declaredTypes.size; d++) {
-
-                if (!resolveMap.AddUnlocked(file->declaredTypes[d])) {
-                    diagnostics.AddError(Diagnostic(ErrorCode::ERR_DuplicateDeclaration, file->declaredTypes[d]->GetFullyQualifiedTypeName()));
-                }
-
-            }
-        }
 
         // we've got an initial symbol table now
         // we can go ahead and try to resolve base types now

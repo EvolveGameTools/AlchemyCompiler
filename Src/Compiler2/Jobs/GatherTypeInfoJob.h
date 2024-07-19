@@ -19,10 +19,10 @@ namespace Alchemy::Compilation {
     private:
         SourceFileInfo * fileInfo {};
 
-        void CreateTypeInfo(CheckedArray<TypeInfo> typeInfos, int32 * typeInfoIndex, MemberDeclarationSyntax* pSyntax);
+        void CreateTypeInfo(CheckedArray<TypeInfo*> typeInfos, int32 * typeInfoIndex, MemberDeclarationSyntax* pSyntax);
 
-        void CreateClassDeclaration(CheckedArray<TypeInfo> typeInfos, int32 * typeInfoIndex, ClassDeclarationSyntax* pSyntax);
-        void CreateStructDeclaration(CheckedArray<TypeInfo> typeInfos, int32 * typeInfoIndex, StructDeclarationSyntax* pSyntax);
+        void CreateClassDeclaration(CheckedArray<TypeInfo*> typeInfos, int32 * typeInfoIndex, ClassDeclarationSyntax* pSyntax);
+        void CreateStructDeclaration(CheckedArray<TypeInfo*> typeInfos, int32 * typeInfoIndex, StructDeclarationSyntax* pSyntax);
 
         void HandleModifiers(TypeInfo* pTypeInfo, TokenList* modifiers);
 
@@ -32,7 +32,7 @@ namespace Alchemy::Compilation {
 
         void HandleBaseTypes(TypeInfo* pInfo, BaseListSyntax* pSyntax);
 
-        void MakeGenericArgumentTypes(TypeInfo * pInfo, CheckedArray<TypeInfo> typeInfos, int32 * typeInfoIndex, TypeParameterListSyntax* typeParameterList);
+        void MakeGenericArgumentTypes(TypeInfo * pInfo, CheckedArray<TypeInfo*> typeInfos, int32 * typeInfoIndex, TypeParameterListSyntax* typeParameterList);
     };
 
 }

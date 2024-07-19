@@ -118,7 +118,7 @@ namespace Alchemy::Compilation {
         }
 
         CheckedArray<FixedCharSpan> usingDeclarations(fileInfo->allocator.AllocateUncleared<FixedCharSpan>(usingCount), usingCount);
-        CheckedArray<TypeInfo> typeDeclarations(fileInfo->allocator.Allocate<TypeInfo>(declarationCount), declarationCount);
+        CheckedArray<TypeInfo*> typeDeclarations(fileInfo->allocator.Allocate<TypeInfo*>(declarationCount), declarationCount);
 
         usingCount = 0; // namespace is the first using
         declarationCount = 0;
@@ -174,11 +174,11 @@ namespace Alchemy::Compilation {
             }
         }
 
-        fileInfo->usingDirectives.size = usingCount;
-
+        fileInfo->usingDirectives = usingDeclarations;
+        fileInfo->declaredTypes = typeDeclarations;
     }
 
-    void GatherTypeInfoJob::CreateTypeInfo(CheckedArray<TypeInfo> typeInfos, int32* typeInfoIndex, MemberDeclarationSyntax* pSyntax) {
+    void GatherTypeInfoJob::CreateTypeInfo(CheckedArray<TypeInfo*> typeInfos, int32* typeInfoIndex, MemberDeclarationSyntax* pSyntax) {
         switch (pSyntax->GetKind()) {
             case SyntaxKind::StructDeclaration: {
                 CreateStructDeclaration(typeInfos, typeInfoIndex, (StructDeclarationSyntax*) pSyntax);
@@ -376,10 +376,13 @@ namespace Alchemy::Compilation {
 
     }
 
-    void GatherTypeInfoJob::CreateStructDeclaration(CheckedArray<TypeInfo> typeInfos, int32* typeInfoIndex, StructDeclarationSyntax* pSyntax) {
+    void GatherTypeInfoJob::CreateStructDeclaration(CheckedArray<TypeInfo*> typeInfos, int32* typeInfoIndex, StructDeclarationSyntax* pSyntax) {
 
-        TypeInfo* pInfo = typeInfos.GetPointer(*typeInfoIndex);
+        TypeInfo* pInfo = fileInfo->allocator.Allocate<TypeInfo>(1);
+        typeInfos[*typeInfoIndex] = pInfo;
+
         *typeInfoIndex = *typeInfoIndex + 1;
+
 
         FixedCharSpan typeName = pSyntax->identifier.GetText(fileInfo->tokenizerResult.texts);
 
@@ -390,9 +393,16 @@ namespace Alchemy::Compilation {
             pInfo->flags |= TypeInfoFlags::IsGenericTypeDefinition;
         }
 
-        FixedCharSpan fqn = MakeFullyQualifiedName(fileInfo->namespaceName, typeName, genericCount, fileInfo->allocator.MakeAllocator());
+        FixedCharSpan namespaceName = fileInfo->namespaceName;
+        if(namespaceName.size == 0) {
+            namespaceName = FixedCharSpan("global");
+        }
+        FixedCharSpan fqn = MakeFullyQualifiedName(namespaceName, typeName, genericCount, fileInfo->allocator.MakeAllocator());
         pInfo->fullyQualifiedName = fqn.ptr;
         pInfo->fullyQualifiedNameLength = fqn.size;
+        pInfo->declaringFile = fileInfo;
+        pInfo->typeName = fqn.ptr + fileInfo->namespaceName.size; // substring from the fqn
+        pInfo->typeNameLength = typeName.size;
         pInfo->typeClass = TypeClass::Struct;
         pInfo->syntaxNode = pSyntax;
 
@@ -410,11 +420,12 @@ namespace Alchemy::Compilation {
 
     }
 
-    void GatherTypeInfoJob::CreateClassDeclaration(CheckedArray<TypeInfo> typeInfos, int32* typeInfoIndex, ClassDeclarationSyntax* pSyntax) {
+    void GatherTypeInfoJob::CreateClassDeclaration(CheckedArray<TypeInfo*> typeInfos, int32* typeInfoIndex, ClassDeclarationSyntax* pSyntax) {
 
         FixedCharSpan typeName = pSyntax->identifier.GetText(fileInfo->tokenizerResult.texts);
 
-        TypeInfo* pInfo = typeInfos.GetPointer(*typeInfoIndex);
+        TypeInfo* pInfo = fileInfo->allocator.Allocate<TypeInfo>(1);
+        typeInfos[*typeInfoIndex] = pInfo;
         *typeInfoIndex = *typeInfoIndex + 1;
 
         int32 genericCount = 0;
@@ -424,12 +435,19 @@ namespace Alchemy::Compilation {
             pInfo->flags |= TypeInfoFlags::IsGenericTypeDefinition;
         }
 
-        FixedCharSpan fqn = MakeFullyQualifiedName(fileInfo->namespaceName, typeName, genericCount, fileInfo->allocator.MakeAllocator());
+        FixedCharSpan namespaceName = fileInfo->namespaceName;
+        if(namespaceName.size == 0) {
+            namespaceName = FixedCharSpan("global");
+        }
+
+        FixedCharSpan fqn = MakeFullyQualifiedName(namespaceName, typeName, genericCount, fileInfo->allocator.MakeAllocator());
         pInfo->fullyQualifiedName = fqn.ptr;
         pInfo->fullyQualifiedNameLength = fqn.size;
         pInfo->typeClass = TypeClass::Class;
         pInfo->syntaxNode = pSyntax;
-
+        pInfo->typeName = fqn.ptr + fileInfo->namespaceName.size; // substring from the fqn
+        pInfo->typeNameLength = typeName.size;
+        pInfo->declaringFile = fileInfo;
         HandleModifiers(pInfo, pSyntax->modifiers);
 
         MakeGenericArgumentTypes(pInfo, typeInfos, typeInfoIndex, pSyntax->typeParameterList);
@@ -455,7 +473,7 @@ namespace Alchemy::Compilation {
         }
     }
 
-    void GatherTypeInfoJob::MakeGenericArgumentTypes(TypeInfo* pInfo, CheckedArray<TypeInfo> typeInfos, int32* typeInfoIndex, TypeParameterListSyntax* typeParameterList) {
+    void GatherTypeInfoJob::MakeGenericArgumentTypes(TypeInfo* pInfo, CheckedArray<TypeInfo*> typeInfos, int32* typeInfoIndex, TypeParameterListSyntax* typeParameterList) {
 
         if (typeParameterList == nullptr || typeParameterList->parameters == nullptr) {
             return;
@@ -466,7 +484,8 @@ namespace Alchemy::Compilation {
             FixedCharSpan identifier = typeParameterSyntax->identifier.GetText(pInfo->declaringFile->tokenizerResult.texts);
             FixedCharSpan argName = MakeFullyQualifiedGenericArgName(pInfo->GetFullyQualifiedTypeName(), identifier, i, fileInfo->allocator.MakeAllocator());
 
-            TypeInfo* genericArg = typeInfos.GetPointer(*typeInfoIndex);
+            TypeInfo* genericArg = fileInfo->allocator.Allocate<TypeInfo>(1);
+            typeInfos[*typeInfoIndex] = genericArg;
             *typeInfoIndex = *typeInfoIndex + 1;
 
             genericArg->fullyQualifiedName = argName.ptr;

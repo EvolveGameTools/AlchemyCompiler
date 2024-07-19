@@ -48,7 +48,7 @@ namespace Alchemy {
         }
 
         inline bool StartsWith(FixedCharSpan prefix) {
-            return prefix.size <= size && strncmp(ptr, prefix.ptr, prefix.size) == 0;
+            return prefix.size <= size && strncmp(ptr, prefix.ptr, prefix.size) == 0 || prefix.size == size && *this == prefix;
         }
 
         int32 GetHashCode() const {

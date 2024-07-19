@@ -58,6 +58,10 @@ TEST_CASE("xyz") {
 
     compiler.Compile(CheckedArray<PackageInfo>(&info, 1));
 
+    FixedCharSpan table = compiler.resolveMap.DumpTypeTable(GetThreadLocalAllocator()->MakeAllocator());
+
+    printf("%.*s", (int32)table.size, table.ptr);
+
 }
 
 TEST_CASE("compilation unit", "[parser]") {
