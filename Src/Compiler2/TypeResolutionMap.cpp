@@ -3,6 +3,9 @@
 #include "./ResolvedType.h"
 #include "../Allocation/ThreadLocalTemp.h"
 #include "./FieldInfo.h"
+#include "../Collections/FixedPodList.h"
+#include "../Collections/PodList.h"
+
 namespace Alchemy::Compilation {
 
     TypeResolutionMap::TypeResolutionMap(Allocator allocator)
@@ -167,7 +170,7 @@ namespace Alchemy::Compilation {
 
     }
 
-    ResolvedType TypeResolutionMap::RecursiveResolveGenerics(ResolvedType input, CheckedArray<GenericReplacement> replacements, Allocator & alloc) {
+    ResolvedType TypeResolutionMap::RecursiveResolveGenerics(ResolvedType input, CheckedArray<GenericReplacement> replacements, Allocator &alloc) {
 
         // simple type name reference, no work to do
         if (input.typeInfo == nullptr) {
@@ -267,23 +270,23 @@ namespace Alchemy::Compilation {
         // todo -- make sure type inheritance isn't recursive!
 
         size_t totalSize = sizeof(TypeInfo) +
-            openType->baseTypeCount * sizeof(TypeInfo*) +
-            openType->fieldCount * sizeof(FieldInfo) +
-            openType->propertyCount * sizeof(PropertyInfo) +
-            openType->methodCount * sizeof(MethodInfo) +
-            openType->indexerCount * sizeof(IndexerInfo) +
-            openType->constructorCount * sizeof(ConstructorInfo) +
-            openType->constraintCount * sizeof(GenericConstraint) +
-            openType->genericArgumentCount * sizeof(ResolvedType) +
-            (nameSize + 1) * sizeof(char);
+                           openType->baseTypeCount * sizeof(TypeInfo*) +
+                           openType->fieldCount * sizeof(FieldInfo) +
+                           openType->propertyCount * sizeof(PropertyInfo) +
+                           openType->methodCount * sizeof(MethodInfo) +
+                           openType->indexerCount * sizeof(IndexerInfo) +
+                           openType->constructorCount * sizeof(ConstructorInfo) +
+                           openType->constraintCount * sizeof(GenericConstraint) +
+                           openType->genericArgumentCount * sizeof(ResolvedType) +
+                           (nameSize + 1) * sizeof(char);
 
-        uint8 * memoryBlock = typeAllocator.Allocate<uint8>(totalSize);
+        uint8* memoryBlock = typeAllocator.Allocate<uint8>(totalSize);
 
-        TypeInfo* newType = (TypeInfo*)(memoryBlock + nameSize + 1);
+        TypeInfo* newType = (TypeInfo*) (memoryBlock + nameSize + 1);
 
         *newType = *openType;
 
-        newType->fullyQualifiedName = (char*)memoryBlock;
+        newType->fullyQualifiedName = (char*) memoryBlock;
         newType->fullyQualifiedNameLength = nameSize;
 
         memcpy(newType->fullyQualifiedName, tempNameLookup, nameSize + 1); // + 1 copies terminator
@@ -291,12 +294,12 @@ namespace Alchemy::Compilation {
         CheckedArray<ResolvedType> openGenerics = openType->GetGenericArguments();
         CheckedArray<GenericReplacement> replacements(tempAllocator->AllocateUncleared<GenericReplacement>(typeArguments.size), typeArguments.size);
 
-        for(int32 i = 0; i < typeArguments.size; i++) {
+        for (int32 i = 0; i < typeArguments.size; i++) {
             replacements[i].genericName = openGenerics[i].typeInfo->GetTypeName();
             replacements[i].resolvedGeneric = typeArguments[i];
         }
 
-        for(int32 i = 0; i < newType->genericArgumentCount; i++) {
+        for (int32 i = 0; i < newType->genericArgumentCount; i++) {
             newType->genericArguments[i] = typeArguments[i];
         }
 
@@ -304,25 +307,25 @@ namespace Alchemy::Compilation {
             newType->baseTypes[i] = RecursiveResolveGenerics(ResolvedType(openType->baseTypes[i]), replacements, typeAllocator);
         }
 
-        for(int32 i = 0; i < openType->fieldCount; i++) {
+        for (int32 i = 0; i < openType->fieldCount; i++) {
             newType->fields[i] = openType->fields[i];
             newType->fields[i].declaringType = newType;
             newType->fields[i].type = RecursiveResolveGenerics(newType->fields[i].type, replacements, typeAllocator);
         }
 
-        for(int32 i = 0; i < openType->propertyCount; i++) {
+        for (int32 i = 0; i < openType->propertyCount; i++) {
             newType->properties[i] = openType->properties[i];
             newType->properties[i].declaringType = newType;
             newType->properties[i].type = RecursiveResolveGenerics(newType->properties[i].type, replacements, typeAllocator);
         }
 
-        for(int32 i = 0; i < openType->methodCount; i++) {
+        for (int32 i = 0; i < openType->methodCount; i++) {
             newType->methods[i] = openType->methods[i];
-            MethodInfo * methodInfo = &newType->methods[i];
+            MethodInfo* methodInfo = &newType->methods[i];
             methodInfo->declaringType = newType;
             methodInfo->returnType = RecursiveResolveGenerics(openType->methods[i].returnType, replacements, typeAllocator);
 
-            for(int32 paramIndex = 0; paramIndex < methodInfo->parameterCount; paramIndex++) {
+            for (int32 paramIndex = 0; paramIndex < methodInfo->parameterCount; paramIndex++) {
                 methodInfo->parameters[paramIndex] = openType->methods[i].parameters[paramIndex];
                 methodInfo->parameters[paramIndex].type = RecursiveResolveGenerics(methodInfo->parameters[paramIndex].type, replacements, typeAllocator);
             }
@@ -334,9 +337,9 @@ namespace Alchemy::Compilation {
 
         {
             std::unique_lock lock(mutex);
-            TypeInfo *retn = nullptr;
+            TypeInfo* retn = nullptr;
             // in the time we took to create the type data, its possible another thread already created the type and registered it
-            if(TryResolve(lookup, &retn)) {
+            if (TryResolve(lookup, &retn)) {
                 typeAllocator.Free(newType);
                 return ResolvedType(retn);
             }
@@ -347,7 +350,109 @@ namespace Alchemy::Compilation {
 
         }
 
-        return ResolvedType();
+    }
+
+    struct TypeInfoPrinter {
+
+        int32 indent;
+        PodList<char> buffer;
+
+        TypeInfoPrinter()
+            : indent(0), buffer(MEGABYTES(1)) {}
+
+        void PrintLine(const char* str) {
+            PrintInline(str);
+            buffer.Add('\n');
+        }
+
+        void PrintInline(char* str, int32 length) {
+            if (length == 0) return;
+
+            for (int32 i = 0; i < length; i++) {
+                buffer.Add(str[i]);
+            }
+        }
+
+        void PrintInline(const char* str) {
+            PrintInline((char*) str, strlen(str));
+        }
+
+        void PrintInline(FixedCharSpan span) {
+            PrintInline(span.ptr, span.size);
+        }
+
+        void PrintIndent() {
+            for (int32 i = 0; i < 4 * indent; i++) {
+                buffer.Add(' ');
+            }
+        }
+
+        void PrintLine() {
+            buffer.Add('\n');
+        }
+
+        void Print(TypeInfo* typeInfo) {
+            buffer.AddRange(typeInfo->fullyQualifiedName, typeInfo->fullyQualifiedNameLength);
+            buffer.Add('\n');
+            indent++;
+
+            PrintIndent();
+            PrintInline("declaringFile = ");
+            PrintInline(typeInfo->DeclaringFileName());
+            PrintLine();
+
+            PrintIndent();
+            PrintInline("typeName = ");
+            PrintInline(typeInfo->GetTypeName());
+            PrintLine();
+
+            PrintIndent();
+            PrintInline("visibility = ");
+            PrintInline(TypeVisibilityToString(typeInfo->visibility));
+            PrintLine();
+
+            PrintIndent();
+            PrintInline("baseTypes = ");
+            if (typeInfo->baseTypeCount == 0) {
+                PrintInline("[]");
+            }
+            else {
+                indent++;
+                for (int32 i = 0; i < typeInfo->baseTypeCount; i++) {
+                    ResolvedType resolvedType = typeInfo->baseTypes[i];
+                    PrintIndent();
+                    if(resolvedType.typeInfo != nullptr) {
+
+                    }
+                    else if(resolvedType.IsUnresolved()) {
+
+                    }
+                }
+                indent--;
+            }
+
+            PrintLine();
+
+
+            indent--;
+        }
+
+    };
+
+    FixedCharSpan TypeResolutionMap::DumpTypeTable(Allocator dumpAllocator) {
+        Allocator temp = GetThreadLocalAllocator()->MakeAllocator();
+        CheckedArray<TypeInfo*> typeInfos = GetValues(temp);
+
+        TypeInfoPrinter printer;
+
+        for (int32 i = 0; i < typeInfos.size; i++) {
+            printer.Print(typeInfos[i]);
+        }
+
+        char* output = dumpAllocator.AllocateUncleared<char>(printer.buffer.size);
+        memcpy(output, printer.buffer.array, printer.buffer.size);
+        return FixedCharSpan(output, printer.buffer.size);
+
     }
 
 }

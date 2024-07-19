@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../Parsing3/Diagnostics.h"
-#include "../Collections/MSIHashmap.h"
 #include "../Collections/PagedList.h"
 #include "../Allocation/PoolAllocator.h"
 #include "../FileSystem/VirtualFileSystem.h"
@@ -30,6 +29,10 @@ namespace Alchemy::Compilation {
         PodList<SourceFileInfo*> fileInfos;
         PodList<VirtualFileInfo> sourceFileBuffer;
 
+        CheckedArray<TypeInfo*> builtInTypes;
+
+        TypeInfo* typeBuffer[kBuiltInTypeCount];
+
         Compiler(int32 workerCount, FileSystemType fileSystemType);
 
         void SetupCompilationRun(TempAllocator * tempAllocator, CheckedArray<VirtualFileInfo> includedSourceFiles);
@@ -38,6 +41,7 @@ namespace Alchemy::Compilation {
 
         void Compile(CheckedArray<PackageInfo> compiledPackages);
 
+        void AssignPrimitiveType(const char* name, BuiltInTypeName builtInTypeName);
     };
 
 

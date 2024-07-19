@@ -51,6 +51,7 @@ namespace Alchemy::Compilation {
 
         ResolvedType RecursiveResolveGenerics(ResolvedType input, CheckedArray<GenericReplacement> replacements, Allocator & alloc);
 
+        FixedCharSpan DumpTypeTable(Allocator dumpAllocator);
     };
 
 

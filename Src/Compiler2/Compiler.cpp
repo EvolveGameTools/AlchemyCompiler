@@ -22,6 +22,13 @@ namespace Alchemy::Compilation {
 
     }
 
+    void Compiler::AssignPrimitiveType(const char* name, BuiltInTypeName builtInTypeName) {
+        TypeInfo* primitive = nullptr;
+        assert(resolveMap.TryResolve(FixedCharSpan(name), &primitive));
+        builtInTypes[(int32) builtInTypeName] = primitive;
+        primitive->flags |= TypeInfoFlags::IsPrimitive;
+    }
+
     Compiler::Compiler(int32 workerCount, FileSystemType fileSystemType)
         : diagnostics(Allocator::MakeMallocator())
         , jobSystem(workerCount)
@@ -67,6 +74,11 @@ namespace Alchemy::Compilation {
 
         CheckedArray<FixedCharSpan> extensions(&ext, 1);
 
+        FixedCharSpan builtinPackage = FixedCharSpan("BuiltIn");
+        FixedCharSpan builtinPath = FixedCharSpan("System/");
+
+        vfs.LoadFileInfos(builtinPackage, builtinPath, extensions, &sourceFileBuffer);
+
         for (int32 i = 0; i < compiledPackages.size; i++) {
             FixedCharSpan packageName = compiledPackages.Get(i).packageName;
             FixedCharSpan pathName = compiledPackages.Get(i).absolutePath;
@@ -93,12 +105,29 @@ namespace Alchemy::Compilation {
             }
         }
 
-        if(changedFiles.size > 0) {
-            jobSystem.Execute(ParseFilesJobRoot(&vfs, changedFiles));
-            jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), GatherTypeInfoJob(changedFiles));
-        }
+        jobSystem.Execute(ParseFilesJobRoot(&vfs, changedFiles));
 
-        resolveMap.builtInTypeInfos = CheckedArray<TypeInfo*>(); // todo
+        jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), GatherTypeInfoJob(changedFiles));
+
+        resolveMap.builtInTypeInfos = CheckedArray<TypeInfo*>(typeBuffer, kBuiltInTypeCount);
+
+        AssignPrimitiveType("BuiltIn::Float", BuiltInTypeName::Float);
+//        AssignPrimitiveType("BuiltIn::Float2", BuiltInTypeName::Float2);
+//        AssignPrimitiveType("BuiltIn::Float3", BuiltInTypeName::Float3);
+//        AssignPrimitiveType("BuiltIn::Float4", BuiltInTypeName::Float4);
+//
+//        AssignPrimitiveType("BuiltIn::Int64", BuiltInTypeName::Int64);
+//        AssignPrimitiveType("BuiltIn::Int32", BuiltInTypeName::Int32);
+//        AssignPrimitiveType("BuiltIn::Int16", BuiltInTypeName::Int16);
+//        AssignPrimitiveType("BuiltIn::Int8", BuiltInTypeName::Int8);
+//
+//        AssignPrimitiveType("BuiltIn::UInt64", BuiltInTypeName::UInt64);
+//        AssignPrimitiveType("BuiltIn::UInt32", BuiltInTypeName::UInt32);
+//        AssignPrimitiveType("BuiltIn::UInt16", BuiltInTypeName::UInt16);
+//        AssignPrimitiveType("BuiltIn::UInt8", BuiltInTypeName::UInt8);
+//
+//        AssignPrimitiveType("BuiltIn::Double", BuiltInTypeName::Double);
+//        AssignPrimitiveType("BuiltIn::Bool", BuiltInTypeName::Bool);
 
         for (int32 i = 0; i < changedFiles.size; i++) {
             SourceFileInfo* file = changedFiles[i];

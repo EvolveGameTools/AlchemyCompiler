@@ -55,6 +55,8 @@ namespace Alchemy::Compilation {
         Export
     };
 
+    FixedCharSpan TypeVisibilityToString(TypeVisibility visibility);
+
     struct TypeInfo {
 
         SourceFileInfo* declaringFile {};
@@ -92,6 +94,8 @@ namespace Alchemy::Compilation {
         FixedCharSpan GetFullyQualifiedTypeName() {
             return FixedCharSpan(fullyQualifiedName, fullyQualifiedNameLength);
         }
+
+        FixedCharSpan DeclaringFileName();
 
         bool IsExported() {
             return typeClass == TypeClass::Class && (visibility == TypeVisibility::Export) && genericArgumentCount == 0;

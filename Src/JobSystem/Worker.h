@@ -69,6 +69,8 @@ namespace Alchemy::Jobs {
 
         }
 
+        struct EmptyJob : IJobBase {};
+
         struct JobContainer : IJobBase {
 
             CheckedArray<JobHandle> jobs;
@@ -132,6 +134,17 @@ namespace Alchemy::Jobs {
 
                     if (batchSize < 0) batchSize = 1;
                     if (batchSize > itemCount) batchSize = itemCount;
+
+                    if(batchSize == 0 || itemCount == 0) {
+                        EmptyJob jobContainer;
+                        IJobBase* container = AllocateJob(&jobContainer);
+                        container->worker = nullptr;
+                        container->state = IJobBase::State::Completed;
+                        container->jobType = JobType::Single;
+                        container->start = 0;
+                        container->end = 0;
+                        return JobHandle(container);
+                    }
 
                     int32 batchCount = CalculateBatches(itemCount, batchSize);
 

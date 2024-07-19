@@ -37,6 +37,7 @@ list(APPEND Sources
         Src/FileSystem/VirtualFileSystem.cpp
         Src/Util/StringTable.cpp
         Src/Util/StringUtil.cpp
+        Src/Util/File.cpp
 
         Generated/FindSkippedTokens.generated.cpp
         Generated/GetFirstToken.generated.cpp

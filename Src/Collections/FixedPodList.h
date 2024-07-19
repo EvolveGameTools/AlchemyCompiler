@@ -108,6 +108,12 @@ namespace Alchemy {
             return retn;
         }
 
+        void AddRange(T * item, int32 count) {
+            for(int32 i = 0; i < count; i++) {
+                Add(item[i]);
+            }
+        }
+
     };
 
 }

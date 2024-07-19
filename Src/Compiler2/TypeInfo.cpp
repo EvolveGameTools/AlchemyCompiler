@@ -1,6 +1,7 @@
 #include "./TypeInfo.h"
 #include "./ResolvedType.h"
 #include "./FieldInfo.h"
+#include "./SourceFileInfo.h"
 
 namespace Alchemy::Compilation {
 
@@ -22,6 +23,10 @@ namespace Alchemy::Compilation {
 
     CheckedArray<ConstructorInfo> TypeInfo::GetConstructors() {
         return CheckedArray<ConstructorInfo>(constructors, constructorCount);
+    }
+
+    FixedCharSpan TypeInfo::DeclaringFileName() {
+        return declaringFile->path;
     }
 
     const char* TypeClassToString(TypeClass typeClass) {
@@ -52,5 +57,21 @@ namespace Alchemy::Compilation {
                 return "invalid";
         }
 
+    }
+
+    FixedCharSpan TypeVisibilityToString(TypeVisibility visibility) {
+        switch (visibility) {
+
+            case TypeVisibility::Public:
+                return FixedCharSpan("public");
+            case TypeVisibility::Private:
+                return FixedCharSpan("private");
+            case TypeVisibility::Internal:
+                return FixedCharSpan("internal");
+            case TypeVisibility::Export:
+                return FixedCharSpan("export");
+            default:
+                return FixedCharSpan("invalid");
+        }
     }
 }
