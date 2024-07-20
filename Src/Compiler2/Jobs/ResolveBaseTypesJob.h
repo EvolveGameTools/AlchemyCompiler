@@ -4,121 +4,9 @@
 #include "../FullyQualifiedName.h"
 #include "../ResolvedType.h"
 #include "../TypeResolver.h"
-#include "../FieldInfo.h"
+#include "../MemberInfo.h"
 
 namespace Alchemy::Compilation {
-
-    struct ResolveMemberTypesJob : Jobs::IJob {
-
-        TypeResolutionMap* resolutionMap;
-        CheckedArray<SourceFileInfo*> files;
-
-        ResolveMemberTypesJob(CheckedArray<SourceFileInfo*> files, TypeResolutionMap* resolutionMap)
-            : files(files)
-            , resolutionMap(resolutionMap) {}
-
-        // do we need members before base types?
-        // generics will clone field infos etc
-        // so maybe we do these are part of gather type info, otherwise there's nothing to copy when instantiating
-
-        void Execute(int32 index) override {
-
-            SourceFileInfo* file = files.Get(index);
-            TypeResolver typeResolver(file, resolutionMap);
-
-            TypeInfo ** tempTypeInfos = GetThreadLocalAllocator()->AllocateUncleared<TypeInfo*>(64);
-            FixedPodList<TypeInfo*> genericArgumentStack(tempTypeInfos, 64);
-
-            for(int32 typeIndex = 0; typeIndex < file->declaredTypes.size; typeIndex++) {
-
-                TypeInfo * typeInfo = file->declaredTypes[typeIndex];
-
-                genericArgumentStack.size = 0;
-                typeResolver.inputGenericArguments = genericArgumentStack.ToCheckedArray();
-
-                switch (typeInfo->typeClass) {
-                    case TypeClass::Class: {
-                        ClassDeclarationSyntax* classDeclarationSyntax = (ClassDeclarationSyntax*) typeInfo->syntaxNode;
-                        SyntaxList<MemberDeclarationSyntax> * members = classDeclarationSyntax->members;
-
-                        int32 genStackSize = genericArgumentStack.size;
-                        for (int32 a = 0; a < typeInfo->genericArgumentCount; a++) {
-                            genericArgumentStack.Add(typeInfo->genericArguments[a].typeInfo);
-                        }
-                        typeResolver.inputGenericArguments = genericArgumentStack.ToCheckedArray();
-
-                        int32 fieldIndex = 0;
-                        for(int32 m = 0; m < members->size; m++) {
-                            MemberDeclarationSyntax * member = members->array[m];
-                            switch(member->GetKind()) {
-                                case SyntaxKind::FieldDeclaration: {
-
-                                    FieldDeclarationSyntax * fieldDeclarationSyntax = (FieldDeclarationSyntax*)member;
-
-                                    //HandleFieldModifiers(fieldDeclarationSyntax->modifiers);
-
-                                    ResolvedType fieldType;
-                                    if(typeResolver.TryResolveType(fieldDeclarationSyntax->declaration->type, &fieldType)) {
-                                        fieldType = typeResolver.Unresolved();
-                                    }
-
-                                    VariableDeclaratorSyntax ** variables = fieldDeclarationSyntax->declaration->variables->items;
-
-                                    for(int32 f = 0; f < fieldDeclarationSyntax->declaration->variables->itemCount; f++) {
-                                        FieldInfo * fieldInfo = &typeInfo->fields[fieldIndex++];
-                                        fieldInfo->type = fieldType;
-                                        fieldInfo->declaringType = typeInfo;
-                                        fieldInfo->identifier = file->GetText(variables[f]->identifier);
-                                        fieldInfo->syntaxNode = variables[f];
-                                        // variables[f]->initializer;
-                                    }
-
-                                    break;
-                                }
-                                case SyntaxKind::PropertyDeclaration: {
-                                    break;
-                                }
-                                case SyntaxKind::MethodDeclaration: {
-                                    break;
-                                }
-                                case SyntaxKind::IndexerDeclaration: {
-                                    break;
-                                }
-                                case SyntaxKind::ConstructorDeclaration: {
-                                    break;
-                                }
-                                default:{
-                                    NOT_IMPLEMENTED(SyntaxKindToString(member->GetKind()));
-                                    break;
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-                    case TypeClass::Struct:
-                        break;
-                    case TypeClass::Interface:
-                        break;
-                    case TypeClass::Enum:
-                        break;
-                    case TypeClass::Delegate:
-                        break;
-                    case TypeClass::Widget:
-                        break;
-                    case TypeClass::GenericArgument:
-                        break;
-                    case TypeClass::Unresolved:
-                        break;
-                    case TypeClass::Void:
-                        break;
-                }
-
-            }
-
-        }
-
-    };
 
     struct ResolveBaseTypesJob : Jobs::IJob {
 
@@ -311,7 +199,7 @@ namespace Alchemy::Compilation {
 
             TypeResolver typeResolver(file, resolutionMap);
 
-            FixedPodList<TypeInfo*> inheritStack(GetThreadLocalAllocator()->Allocate<TypeInfo*>(64), 64);
+            CheckedArray<TypeInfo*> inheritStack(GetThreadLocalAllocator()->Allocate<TypeInfo*>(64), 64);
             FixedPodList<FixedCharSpan> cyclePath(GetThreadLocalAllocator()->Allocate<FixedCharSpan>(64), 64);
 
             for (int32 i = 0; i < file->declaredTypes.size; i++) {
@@ -328,7 +216,7 @@ namespace Alchemy::Compilation {
                         ValidateGenericArgs(typeParameterList, file, &typeResolver);
                         HandleBaseList(typeInfo, classDeclarationSyntax->baseList, &typeResolver);
 
-                        ValidateBaseList(typeInfo, inheritStack.ToCheckedArray(), cyclePath, classDeclarationSyntax->baseList);
+                        ValidateBaseList(typeInfo, inheritStack, cyclePath, classDeclarationSyntax->baseList);
 
                         break;
                     }
@@ -338,7 +226,7 @@ namespace Alchemy::Compilation {
                         ValidateGenericArgs(typeParameterList, file, &typeResolver);
                         HandleBaseList(typeInfo, structDeclarationSyntax->baseList, &typeResolver);
 
-                        ValidateBaseList(typeInfo, inheritStack.ToCheckedArray(), cyclePath, structDeclarationSyntax->baseList);
+                        ValidateBaseList(typeInfo, inheritStack, cyclePath, structDeclarationSyntax->baseList);
 
                         break;
                     }

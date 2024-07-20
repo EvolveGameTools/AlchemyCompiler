@@ -1,7 +1,7 @@
 #include "./TypeResolutionMap.h"
 # include "../Util/MathUtil.h"
 #include "../Allocation/ThreadLocalTemp.h"
-#include "./FieldInfo.h"
+#include "./MemberInfo.h"
 #include "../Collections/PodList.h"
 #include "../Collections/Sort.h"
 #include "./SourceFileInfo.h"
@@ -103,6 +103,44 @@ namespace Alchemy::Compilation {
         return AddInternal(typeInfo);
     }
 
+    CheckedArray<TypeInfo*> TypeResolutionMap::GetConcreteTypes(Allocator alloc) {
+        int32 total = 1 << exponent;
+        int32 write = 0;
+        int32 cnt = 0;
+        constexpr TypeInfoFlags exclusions = TypeInfoFlags::IsGenericArgumentDefinition | TypeInfoFlags::IsGenericTypeDefinition;
+        for (int32 i = 0; i < total; i++) {
+
+            TypeInfo* typeInfo = values[i];
+            if (typeInfo == nullptr) {
+                continue;
+            }
+
+            if ((typeInfo->flags & exclusions) != 0) {
+                continue;
+            }
+
+            cnt++;
+        }
+
+        TypeInfo** retn = alloc.AllocateUncleared<TypeInfo*>(cnt);
+
+        for (int32 i = 0; i < total; i++) {
+
+            TypeInfo* typeInfo = values[i];
+            if (typeInfo == nullptr) {
+                continue;
+            }
+
+            if ((typeInfo->flags & exclusions) != 0) {
+                continue;
+            }
+
+            retn[write++] = typeInfo;
+        }
+
+        return CheckedArray<TypeInfo*>(retn, write);
+    }
+
     CheckedArray<TypeInfo*> TypeResolutionMap::GetValues(Allocator alloc) {
         TypeInfo** retn = alloc.AllocateUncleared<TypeInfo*>(size);
         int32 total = 1 << exponent;
@@ -179,6 +217,12 @@ namespace Alchemy::Compilation {
             return input;
         }
 
+        // check for `List<T> values`
+//        if ((input.typeInfo->flags & TypeInfoFlags::IsGenericTypeDefinition) != 0) {
+//            puts("yep");
+//        }
+
+        // handles the `TValue item` case
         if ((input.typeInfo->flags & TypeInfoFlags::IsGenericArgumentDefinition) != 0) {
             FixedCharSpan typeName = input.typeInfo->GetTypeName();
             for (int32 i = 0; i < replacements.size; i++) {
@@ -189,7 +233,7 @@ namespace Alchemy::Compilation {
             UNREACHABLE("RecursiveResolveGenerics");
         }
 
-        if ((input.typeInfo->flags & TypeInfoFlags::ContainsOpenGenericTypes) != 0) {
+        if ((input.typeInfo->flags & TypeInfoFlags::IsGenericTypeDefinition) != 0) {
 
             int32 cnt = input.typeInfo->genericArgumentCount;
 
@@ -224,8 +268,22 @@ namespace Alchemy::Compilation {
 
         FixedCharSpan fullyQualifiedName = openType->GetFullyQualifiedTypeName(); // returns typename`genericCount w/o <types>
 
-        size_t nameSize = fullyQualifiedName.size + 2; // 2 for < >
+//        size_t nameSize = fullyQualifiedName.size + 2; // 2 for < >
 
+        // namespace + typename + <generics>
+        size_t nameIdx = -1;
+        for (int32 i = 0; i < fullyQualifiedName.size; i++) {
+            if (fullyQualifiedName.ptr[i] == '<') {
+                nameIdx = i;
+                break;
+            }
+        }
+
+        if (nameIdx == -1) {
+            nameIdx = fullyQualifiedName.size;
+        }
+
+        size_t nameSize = nameIdx + 2;  // 2 for < >
         for (int32 i = 0; i < typeArguments.size; i++) {
             nameSize += typeArguments[i].typeInfo->fullyQualifiedNameLength;
             if (i != typeArguments.size - 1) {
@@ -238,8 +296,8 @@ namespace Alchemy::Compilation {
         char* p = tempAllocator->Allocate<char>(nameSize + 1);
         char* tempNameLookup = p;
 
-        memcpy(p, fullyQualifiedName.ptr, fullyQualifiedName.size);
-        p += fullyQualifiedName.size;
+        memcpy(p, fullyQualifiedName.ptr, nameIdx);
+        p += nameIdx;
         *p++ = '<';
         for (int32 i = 0; i < typeArguments.size; i++) {
             TypeInfo* arg = typeArguments[i].typeInfo;
@@ -330,8 +388,18 @@ namespace Alchemy::Compilation {
         }
 
         // todo -- not sure this is true, we may need to check that all of our type args are actually concrete now
-        newType->flags &= ~TypeInfoFlags::IsGenericTypeDefinition;
-        newType->flags |= TypeInfoFlags::InstantiatedGeneric;
+        bool isFullyConcrete = true;
+        for (int32 i = 0; i < newType->genericArgumentCount; i++) {
+            if ((newType->genericArguments[i].typeInfo->flags & TypeInfoFlags::IsGenericArgumentDefinition) != 0) {
+                isFullyConcrete = false;
+                break;
+            }
+        }
+
+        if (isFullyConcrete) {
+            newType->flags &= ~TypeInfoFlags::IsGenericTypeDefinition;
+            newType->flags |= TypeInfoFlags::InstantiatedGeneric;
+        }
 
         {
             std::unique_lock lock(mutex);
@@ -375,6 +443,12 @@ namespace Alchemy::Compilation {
             PrintInline((char*) str, strlen(str));
         }
 
+        void PrintInline(size_t value) {
+            int32 cnt = IntToAsciiCount(value);
+            char* c = buffer.Reserve(cnt);
+            IntToAscii(value, c);
+        }
+
         void PrintInline(FixedCharSpan span) {
             PrintInline(span.ptr, span.size);
         }
@@ -389,16 +463,13 @@ namespace Alchemy::Compilation {
             buffer.Add('\n');
         }
 
-        void PrintTypes(TypeInfo * typeInfo, int32 cnt, ResolvedType * array) {
-            PrintInline("[");
-            PrintLine();
-            indent++;
+        typedef void (* printFn)(TypeInfoPrinter* printer, void* cookie);
+
+        void PrintTypes(int32 cnt, ResolvedType* array, printFn fn = nullptr, void* cookie = nullptr) {
+
             for (int32 i = 0; i < cnt; i++) {
                 ResolvedType resolvedType = array[i];
                 PrintIndent();
-                if (resolvedType.builtInTypeName != BuiltInTypeName::Invalid) {
-                    PrintInline(BuiltInTypeNameToString(resolvedType.builtInTypeName));
-                }
                 if (resolvedType.IsUnresolved()) {
                     PrintInline("UNRESOLVED");
                 }
@@ -406,19 +477,62 @@ namespace Alchemy::Compilation {
                     PrintInline("void");
                 }
                 else if (resolvedType.typeInfo != nullptr) {
-                    PrintInline(resolvedType.typeInfo->GetFullyQualifiedTypeName());
+                    FixedCharSpan fqn = resolvedType.typeInfo->GetFullyQualifiedTypeName();
+                    PrintInline(fqn);
                 }
                 else {
                     PrintInline("UNRESOLVED");
                 }
+                if (fn != nullptr) {
+                    fn(this, cookie);
+                }
                 PrintLine();
             }
-            indent--;
-            PrintIndent();
-            PrintInline("]");
+
+        }
+
+        void PrintTypeInline(ResolvedType resolvedType) {
+
+            if (resolvedType.IsUnresolved()) {
+                PrintInline("UNRESOLVED");
+            }
+            else if (resolvedType.IsVoid()) {
+                PrintInline("void");
+            }
+            else if (resolvedType.typeInfo != nullptr) {
+                if (resolvedType.typeInfo->IsBuiltIn()) {
+                    PrintInline(resolvedType.typeInfo->GetSimpleTypeName());
+                }
+                else {
+                    PrintInline(resolvedType.typeInfo->GetFullyQualifiedTypeName());
+                }
+            }
+            else {
+                PrintInline("UNRESOLVED");
+            }
+
+        }
+
+        void RecurseBaseTypeFields(TypeInfo* pInfo) {
+
+            if (pInfo->baseTypeCount > 0 && pInfo->baseTypes[0].IsClass()) {
+                TypeInfo* base = pInfo->baseTypes[0].typeInfo;
+                for (int32 i = 0; i < base->fieldCount; i++) {
+                    FieldInfo* fieldInfo = &base->fields[i];
+                    PrintTypes(1, &fieldInfo->type, [](TypeInfoPrinter* printer, void* cookie) {
+                        FieldInfo* fieldInfo = (FieldInfo*) cookie;
+                        printer->PrintInline(" ");
+                        printer->PrintInline(fieldInfo->identifier);
+                    }, fieldInfo);
+                }
+                RecurseBaseTypeFields(base);
+            }
         }
 
         void Print(TypeInfo* typeInfo) {
+
+            TEMP_ALLOC_SCOPE_MARKER
+
             buffer.AddRange(typeInfo->fullyQualifiedName, typeInfo->fullyQualifiedNameLength);
             buffer.Add('\n');
             indent++;
@@ -438,23 +552,6 @@ namespace Alchemy::Compilation {
             PrintInline(typeInfo->GetTypeName());
             PrintLine();
 
-            if(typeInfo->genericArgumentCount != 0) {
-                PrintIndent();
-                PrintInline("generics = ");
-                PrintTypes(typeInfo, typeInfo->genericArgumentCount, typeInfo->genericArguments);
-                PrintLine();
-            }
-
-            PrintIndent();
-            PrintInline("baseTypes = ");
-            if (typeInfo->baseTypeCount == 0) {
-                PrintInline("[]");
-            }
-            else {
-                PrintTypes(typeInfo, typeInfo->baseTypeCount, typeInfo->baseTypes);
-            }
-            PrintLine();
-
             PrintIndent();
             PrintInline("flags = ");
             size_t cnt = TypeInfoFlagsToString(typeInfo->flags, nullptr);
@@ -462,8 +559,107 @@ namespace Alchemy::Compilation {
             TypeInfoFlagsToString(typeInfo->flags, c);
             PrintLine();
 
-            indent--;
+            if (typeInfo->genericArgumentCount != 0) {
+                PrintIndent();
+                PrintInline("generics = [\n");
+                indent++;
+                PrintTypes(typeInfo->genericArgumentCount, typeInfo->genericArguments);
+                indent--;
+                PrintIndent();
+                PrintInline("]\n");
+            }
+
+            PrintIndent();
+            PrintInline("baseTypes = ");
+            if (typeInfo->baseTypeCount == 0) {
+                PrintInline("[]\n");
+            }
+            else {
+                PrintInline("[\n");
+                indent++;
+                PrintTypes(typeInfo->baseTypeCount, typeInfo->baseTypes);
+                indent--;
+                PrintIndent();
+                PrintInline("]\n");
+            }
+
+            PrintIndent();
+            PrintInline("fields = ");
+
+            CheckedArray<FieldInfo*> fieldInfos = typeInfo->GatherFieldInfos(GetThreadLocalAllocator()->MakeAllocator());
+
+            if (fieldInfos.size == 0) {
+                PrintInline("[]\n");
+            }
+            else {
+                PrintInline("[\n");
+                indent++;
+
+                for (int32 i = 0; i < fieldInfos.size; i++) {
+                    FieldInfo* fieldInfo = fieldInfos.Get(i);
+                    PrintIndent();
+                    PrintTypeInline(fieldInfo->type);
+                    PrintInline(" ");
+                    PrintInline(fieldInfo->identifier);
+                    PrintLine();
+                }
+
+                indent--;
+                PrintIndent();
+                PrintInline("]\n");
+            }
+
+            PrintIndent();
+            PrintInline("methods = [");
+            if (typeInfo->methodCount == 0) {
+                PrintInline("]\n");
+            }
+            else {
+                PrintLine();
+                indent++;
+                for (int32 m = 0; m < typeInfo->methodCount; m++) {
+                    PrintIndent();
+                    MethodInfo* method = &typeInfo->methods[m];
+                    PrintInline(MemberVisibilityToString(method->visibility));
+                    PrintInline(" ");
+                    size_t modCount = MethodModifiersToString(method->modifiers, nullptr);
+                    char* modBuffer = buffer.Reserve(modCount);
+                    if (MethodModifiersToString(method->modifiers, modBuffer) != 0) {
+                        PrintInline(" ");
+                    }
+                    PrintTypeInline(method->returnType);
+                    PrintInline(" ");
+                    PrintInline(method->name);
+                    PrintInline("(");
+                    for (int32 p = 0; p < method->parameterCount; p++) {
+                        ParameterInfo parameterInfo = method->parameters[p];
+                        modCount = ParameterModifiersToString(parameterInfo.modifiers, nullptr);
+                        modBuffer = buffer.Reserve(modCount);
+                        if (ParameterModifiersToString(parameterInfo.modifiers, modBuffer) != 0) {
+                            PrintInline(" ");
+                        }
+                        PrintTypeInline(parameterInfo.type);
+                        PrintInline(" ");
+                        PrintInline(parameterInfo.name);
+                        if (p != method->parameterCount - 1) {
+                            PrintInline(", ");
+                        }
+                    }
+                    PrintInline(")");
+
+                    if (method->isDefaultParameterOverload) {
+                        PrintInline(" [DefaultParameterOverload]");
+                    }
+
+                    PrintLine();
+                }
+                indent--;
+                PrintIndent();
+                PrintInline("]\n");
+            }
+
             PrintLine();
+            indent--;
 
         }
 
@@ -490,6 +686,11 @@ namespace Alchemy::Compilation {
         });
 
         TypeInfoPrinter printer;
+
+        printer.PrintInline("Type count = ");
+        printer.PrintInline(typeInfos.size);
+        printer.PrintLine();
+        printer.PrintLine();
 
         for (int32 i = 0; i < typeInfos.size; i++) {
             printer.Print(typeInfos[i]);

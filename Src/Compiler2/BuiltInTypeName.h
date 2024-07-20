@@ -49,6 +49,7 @@ namespace Alchemy::Compilation {
         UInt32 = Uint,
         UInt64 = Ulong,
 
+
     };
 
     constexpr int32 kBuiltInTypeCount = (int32) ((BuiltInTypeName::Void)) + 1;

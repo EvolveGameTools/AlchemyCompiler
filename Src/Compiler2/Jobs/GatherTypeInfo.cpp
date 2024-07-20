@@ -1,7 +1,7 @@
 #include "./GatherTypeInfoJob.h"
 #include "../TypeInfo.h"
 #include "../FullyQualifiedName.h"
-#include "../FieldInfo.h"
+#include "../MemberInfo.h"
 
 namespace Alchemy::Compilation {
 
@@ -341,7 +341,7 @@ namespace Alchemy::Compilation {
                     }
 
                     if (firstDefault != -1) {
-                        methodCount += (parameterList->itemCount - firstDefault + 1);
+                        methodCount += (parameterList->itemCount - firstDefault);
                     }
 
                     break;

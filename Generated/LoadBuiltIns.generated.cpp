@@ -3,7 +3,19 @@
 namespace Alchemy::Compilation {
 
 void LoadBuiltIns(PodList<SourceFileInfo*> * files, PoolAllocator<SourceFileInfo>* fileAllocator) {
-files->Add(MakeBuiltInFile(fileAllocator, "bool", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:array.wyx", R"xyz(
+namespace BuiltIn;
+
+public sealed class Array<T> {
+
+    // public int size {
+    //     get |v| => return v;
+    //     private set |v, newValue| => v = newValue;
+    // }
+
+}
+)xyz"));
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:bool.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Bool {
@@ -19,7 +31,7 @@ public struct Bool {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "byte", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:byte.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct UInt8 {
@@ -35,7 +47,7 @@ public struct UInt8 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "char", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:char.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Char {
@@ -51,7 +63,7 @@ public struct Char {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "double", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:double.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Double {
@@ -67,7 +79,14 @@ public struct Double {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "float", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:extern.wyx", R"xyz(
+namespace BuiltIn;
+
+// public extern void Print(string value);
+// public delegate void Action();
+// public delegate void Action<T0>(T0 value);
+// public delegate void Action<T0, T1>(T0 value, T1 value);)xyz"));
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:float.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Float {
@@ -79,7 +98,7 @@ public struct Float {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "int", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:int.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Int32 {
@@ -95,7 +114,7 @@ public struct Int32 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "long", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:long.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Int64 {
@@ -111,7 +130,7 @@ public struct Int64 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "object", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:object.wyx", R"xyz(
 namespace BuiltIn;
 
 public class Object {
@@ -127,7 +146,7 @@ public class Object {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "sbyte", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:sbyte.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Int8 {
@@ -143,7 +162,7 @@ public struct Int8 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "short", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:short.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct Int16 {
@@ -159,7 +178,7 @@ public struct Int16 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "string", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:string.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct String {
@@ -172,7 +191,7 @@ public struct String {
 
 }
 )xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "uint", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:uint.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct UInt32 {
@@ -188,7 +207,7 @@ public struct UInt32 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "ulong", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:ulong.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct UInt64 {
@@ -204,12 +223,12 @@ public struct UInt64 {
     }
 
 })xyz"));
-files->Add(MakeBuiltInFile(fileAllocator, "ushort", R"xyz(
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:ushort.wyx", R"xyz(
 namespace BuiltIn;
 
 public struct UInt16 {
 
-    private uint16 value;
+    private ushort value;
 
     public override int GetHashCode() {
         return value;
@@ -220,6 +239,10 @@ public struct UInt16 {
     }
 
 })xyz"));
+files->Add(MakeBuiltInFile(fileAllocator, "builtin:void.wyx", R"xyz(
+namespace BuiltIn;
+
+public struct Void {})xyz"));
  
 }
 }

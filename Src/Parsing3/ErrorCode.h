@@ -92,6 +92,47 @@ namespace Alchemy::Compilation {
         ERR_BaseTypeCannotBeTuple,
         ERR_CycleDetectedInClassHierarchy,
         ERR_BaseTypeAppearsMultipleTimes,
+        ERR_MultipleVisibilityModifiers,
+        ERR_MultipleModifiers,
+        ERR_StaticIsExclusiveWithConst,
+        ERR_ReadOnlyIsExclusiveWithConst,
+
+        ERR_InvalidModifierForFieldDeclaration,
+
+        ERR_OverrideIsExclusiveWithSealed,
+        ERR_OverrideIsExclusiveWithVirtual,
+        ERR_OverrideIsExclusiveWithStatic,
+        ERR_OverrideIsExclusiveWithAbstract,
+
+        ERR_StaticIsExclusiveWithSealed,
+        ERR_StaticIsExclusiveWithVirtual,
+        ERR_StaticIsExclusiveWithAbstract,
+        ERR_StaticIsExclusiveWithOverride,
+
+        ERR_SealedIsExclusiveWithStatic,
+        ERR_SealedIsExclusiveWithVirtual,
+        ERR_SealedIsExclusiveWithAbstract,
+        ERR_SealedIsExclusiveWithOverride,
+
+        ERR_AbstractIsExclusiveWithSealed,
+        ERR_AbstractIsExclusiveWithVirtual,
+        ERR_AbstractIsExclusiveWithOverride,
+        ERR_AbstractIsExclusiveWithStatic,
+
+        ERR_VirtualIsExclusiveWithSealed,
+        ERR_VirtualIsExclusiveWithAbstract,
+        ERR_VirtualIsExclusiveWithOverride,
+        ERR_VirtualIsExclusiveWithStatic,
+
+        ERR_ReadOnlyIsExclusiveWithOutAndRef,
+        ERR_RefIsExclusiveWithOutAndReadonly,
+        ERR_OutIsExclusiveWithRefAndReadonly,
+        ERR_InvalidModifierForParameterDeclaration,
+        ERR_InvalidModifierForMethodDeclaration,
+        ERR_DuplicateParameterName,
+
+
+        ERR_ExpectedReturnType,
     };
 
 }

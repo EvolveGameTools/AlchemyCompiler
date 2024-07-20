@@ -22,6 +22,10 @@ namespace Alchemy::Compilation {
         TypeInfo* value = nullptr;
         bool found = false;
 
+        if(name == "Array" && genericCount == 1 && resolutionMap->TryResolve(MakeFullyQualifiedName(FixedCharSpan("BuiltIn"), name, genericCount, buffer), &value)) {
+            found = true;
+        }
+
         // we need to look in all the usings in case of an ambiguous match
         // the file's namespace is the first entry in usingDirectives
         for (int32 u = 0; u < file->usingDirectives.size; u++) {
@@ -85,9 +89,13 @@ namespace Alchemy::Compilation {
         TypeInfo* value = nullptr;
         bool found = false;
 
-        // check against our input generics, maybe we have a match
+        // check against our input generics, maybe we have a match. We've already ensured the generic args type names
+        // do not conflict with any other type names that are in scope.
         for (int32 g = 0; g < inputGenericArguments.size; g++) {
-            if (identifierName == inputGenericArguments[g]->typeName) {
+            // safe since we know this is a generic arg name
+            TypeParameterSyntax * typeSyntax = (TypeParameterSyntax*)inputGenericArguments[g]->syntaxNode;
+            FixedCharSpan id = file->GetText(typeSyntax->identifier);
+            if (identifierName == id) {
                 *resolvedType = ResolvedType(inputGenericArguments[g]);
                 return true;
             }
@@ -142,7 +150,6 @@ namespace Alchemy::Compilation {
                 ResolvedType r;
                 if (TryResolveType(refTypeSyntax->type, &r)) {
                     *resolvedType = ResolvedType(r.typeInfo, ResolvedTypeFlags::IsRef | r.resolvedTypeFlags);
-                    resolvedType->builtInTypeName = r.builtInTypeName;
                     return true;
                 }
                 return false;
@@ -153,7 +160,6 @@ namespace Alchemy::Compilation {
 
                 if (TryResolveType(pNullableTypeSyntax->elementType, &r)) {
                     *resolvedType = ResolvedType(r.typeInfo, ResolvedTypeFlags::IsNullable | r.resolvedTypeFlags);
-                    resolvedType->builtInTypeName = r.builtInTypeName;
                     return true;
                 }
 

@@ -1,10 +1,12 @@
 #include <filesystem>
 #include "./Compiler.h"
 #include "../Allocation/ThreadLocalTemp.h"
-#include "../Collections/FixedPodList.h"
 #include "./Jobs/ParseFilesJob.h"
 #include "./Jobs/GatherTypeInfoJob.h"
 #include "./Jobs/ResolveBaseTypesJob.h"
+#include "./Jobs/ResolveMemberTypes.h"
+#include "./Jobs/IntrospectScopesJob.h"
+#include "./Jobs/ScheduleIntrospectJobs.h"
 #include "./LoadBuiltIns.h"
 
 namespace Alchemy::Compilation {
@@ -24,11 +26,15 @@ namespace Alchemy::Compilation {
 
     }
 
-    void Compiler::AssignPrimitiveType(const char* name, BuiltInTypeName builtInTypeName) {
-        TypeInfo* primitive = nullptr;
-        assert(resolveMap.TryResolve(FixedCharSpan(name), &primitive));
-        resolveMap.builtInTypeInfos[(int32) builtInTypeName] = primitive;
-        primitive->flags |= TypeInfoFlags::IsPrimitive;
+    void Compiler::AssignBuiltInType(const char* name, BuiltInTypeName builtInTypeName) {
+        TypeInfo* pTypeInfo = nullptr;
+        assert(resolveMap.TryResolve(FixedCharSpan(name), &pTypeInfo));
+        resolveMap.builtInTypeInfos[(int32) builtInTypeName] = pTypeInfo;
+        pTypeInfo->builtInTypeName = builtInTypeName;
+        if(IsPrimitiveTypeName(builtInTypeName)) {
+            pTypeInfo->flags |= TypeInfoFlags::IsPrimitive;
+        }
+
     }
 
     Compiler::Compiler(int32 workerCount, FileSystemType fileSystemType)
@@ -126,28 +132,64 @@ namespace Alchemy::Compilation {
 //        AssignPrimitiveType("BuiltIn::Float3", BuiltInTypeName::Float3);
 //        AssignPrimitiveType("BuiltIn::Float4", BuiltInTypeName::Float4);
 
-        AssignPrimitiveType("BuiltIn::Int64", BuiltInTypeName::Int64);
-        AssignPrimitiveType("BuiltIn::Int32", BuiltInTypeName::Int32);
-        AssignPrimitiveType("BuiltIn::Int16", BuiltInTypeName::Int16);
-        AssignPrimitiveType("BuiltIn::Int8", BuiltInTypeName::Int8);
+        AssignBuiltInType("BuiltIn::Int64", BuiltInTypeName::Int64);
+        AssignBuiltInType("BuiltIn::Int32", BuiltInTypeName::Int32);
+        AssignBuiltInType("BuiltIn::Int16", BuiltInTypeName::Int16);
+        AssignBuiltInType("BuiltIn::Int8", BuiltInTypeName::Int8);
 
-        AssignPrimitiveType("BuiltIn::UInt64", BuiltInTypeName::UInt64);
-        AssignPrimitiveType("BuiltIn::UInt32", BuiltInTypeName::UInt32);
-        AssignPrimitiveType("BuiltIn::UInt16", BuiltInTypeName::UInt16);
-        AssignPrimitiveType("BuiltIn::UInt8", BuiltInTypeName::UInt8);
+        AssignBuiltInType("BuiltIn::UInt64", BuiltInTypeName::UInt64);
+        AssignBuiltInType("BuiltIn::UInt32", BuiltInTypeName::UInt32);
+        AssignBuiltInType("BuiltIn::UInt16", BuiltInTypeName::UInt16);
+        AssignBuiltInType("BuiltIn::UInt8", BuiltInTypeName::UInt8);
 
-        AssignPrimitiveType("BuiltIn::Double", BuiltInTypeName::Double);
-        AssignPrimitiveType("BuiltIn::Float", BuiltInTypeName::Float);
-        AssignPrimitiveType("BuiltIn::Bool", BuiltInTypeName::Bool);
-        AssignPrimitiveType("BuiltIn::Char", BuiltInTypeName::Char);
-        AssignPrimitiveType("BuiltIn::String", BuiltInTypeName::String);
-        AssignPrimitiveType("BuiltIn::Object", BuiltInTypeName::Object);
+        AssignBuiltInType("BuiltIn::Double", BuiltInTypeName::Double);
+        AssignBuiltInType("BuiltIn::Float", BuiltInTypeName::Float);
+        AssignBuiltInType("BuiltIn::Bool", BuiltInTypeName::Bool);
+        AssignBuiltInType("BuiltIn::Char", BuiltInTypeName::Char);
+        AssignBuiltInType("BuiltIn::String", BuiltInTypeName::String);
+        AssignBuiltInType("BuiltIn::Object", BuiltInTypeName::Object);
+        AssignBuiltInType("BuiltIn::Void", BuiltInTypeName::Void);
 
         // we've got an initial symbol table now
         // we can go ahead and try to resolve base types now
         // we should only need to do this for changed files
 
+        jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), ResolveMemberTypesJob(changedFiles, &resolveMap));
         jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), ResolveBaseTypesJob(changedFiles, &resolveMap));
+
+        // here we start branching I think
+        // if we are serving as an lsp we want to introspect files in a given priority w/o codegen
+        // if we are compiling with full reflection we want to visit every method
+        // if we are compiling without reflection we want to visit starting at the entry points
+
+        // during compilation we're very likely to create additional types for state/closures/etc
+        // where do we keep those? do we keep them around or assume we create fresh ones per-pass?
+        // if ephemeral we can have each thread handle its own data and we'll just diff them before emitting for selection
+//        jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), IntrospectScopesJob(changedFiles, &resolveMap));
+
+
+        // foreach file
+            // get a list of it's instantiated generics
+            // pump into a master list (file*, typeInfo*)
+            // go through the list
+            // remove any type infos that were in a file marked as changed or not touched
+            // get all remaining type infos
+            // remove duplicates
+            // foreach typeinfo in generic cache
+            // if not in final de-dup list, remove it / delete it
+
+        // assuming we're just compiling right now and only care about what is reachable from the list of entry points
+
+        // if we compile for full reflection, where we start doesn't matter
+        // CheckedArray<TypeInfo*> typeInfos = resolveMap.GetExportedTypes(GetThreadLocalAllocator()->MakeAllocator());
+
+        CheckedArray<TypeInfo*> typeInfos = resolveMap.GetConcreteTypes(GetThreadLocalAllocator()->MakeAllocator());
+
+        // foreach type
+            // foreach method
+                // introspect & codegen  & write to output somewhere
+
+        jobSystem.Execute(Jobs::Parallel::Batch(typeInfos.size, 3), ScheduleIntrospectScopesJob(typeInfos, &resolveMap));
 
     }
 

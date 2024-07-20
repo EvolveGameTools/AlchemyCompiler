@@ -4,6 +4,7 @@
 #include "../Util/FixedCharSpan.h"
 #include "../Parsing3/Diagnostics.h"
 #include "../Parsing3/Tokenizer.h"
+#include "../Parsing3/SyntaxBase.h"
 #include <mutex>
 
 namespace Alchemy::Compilation {
@@ -48,6 +49,8 @@ namespace Alchemy::Compilation {
         Allocator GetLockedAllocator();
 
         FixedCharSpan GetText(SyntaxToken token);
+
+        FixedCharSpan GetText(SyntaxBase* syntaxNode);
     };
 
 

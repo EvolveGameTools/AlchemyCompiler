@@ -42,6 +42,9 @@ namespace Alchemy::Compilation {
 
         void AddError(Diagnostic error);
 
+        void AddError(ErrorCode error, FixedCharSpan sourceSpan);
+        void AddError(ErrorCode error, FixedCharSpan sourceSpan, FixedCharSpan message);
+
     };
 
 }

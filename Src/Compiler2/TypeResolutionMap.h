@@ -38,6 +38,8 @@ namespace Alchemy::Compilation {
         FixedCharSpan DumpTypeTable(Allocator dumpAllocator);
 
 
+        CheckedArray<TypeInfo*> GetConcreteTypes(Allocator alloc);
+
     private:
 
         Allocator allocator;

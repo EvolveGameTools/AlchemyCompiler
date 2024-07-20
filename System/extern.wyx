@@ -1,0 +1,6 @@
+namespace BuiltIn;
+
+// public extern void Print(string value);
+// public delegate void Action();
+// public delegate void Action<T0>(T0 value);
+// public delegate void Action<T0, T1>(T0 value, T1 value);

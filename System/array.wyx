@@ -1,0 +1,10 @@
+namespace BuiltIn;
+
+public sealed class Array<T> {
+
+    // public int size {
+    //     get |v| => return v;
+    //     private set |v, newValue| => v = newValue;
+    // }
+
+}

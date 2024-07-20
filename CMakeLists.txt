@@ -24,7 +24,7 @@ function(include_builtin_sources input_dir output_file)
         set(delim "xyz")
 
         # Create the C string
-        set(file_content "files->Add(MakeBuiltInFile(fileAllocator, \"${name}\", R\"${delim}(\n${content})${delim}\"));\n")
+        set(file_content "files->Add(MakeBuiltInFile(fileAllocator, \"builtin:${name}.wyx\", R\"${delim}(\n${content})${delim}\"));\n")
         # Append to the accumulated content
         set(all_contents "${all_contents}${file_content}")
 
@@ -45,6 +45,7 @@ list(APPEND Sources
         Src/Allocation/ThreadLocalTemp.cpp
 
         Src/JobSystem/Job.cpp
+        Src/JobSystem/JobSystem.cpp
 
         Src/Panic.cpp
 
@@ -65,6 +66,7 @@ list(APPEND Sources
         Src/Compiler2/FullyQualifiedName.cpp
         Src/Compiler2/SourceFileInfo.cpp
         Src/Compiler2/LoadBuiltIns.cpp
+        Src/Compiler2/MemberInfo.cpp
 
         Src/Compiler2/Jobs/ParseFilesJob.cpp
         Src/Compiler2/Jobs/GatherTypeInfo.cpp

@@ -1,6 +1,6 @@
 #include "./TypeInfo.h"
 #include "./ResolvedType.h"
-#include "./FieldInfo.h"
+#include "./MemberInfo.h"
 #include "./SourceFileInfo.h"
 
 namespace Alchemy::Compilation {
@@ -68,6 +68,65 @@ namespace Alchemy::Compilation {
         return declaringFile->namespaceName.size == 0
             ? FixedCharSpan("global")
             : declaringFile->namespaceName;
+    }
+
+    TypeInfo* TypeInfo::GetBaseClass() {
+        return typeClass != TypeClass::Class || baseTypeCount == 0
+            ? nullptr
+            : baseTypes[0].IsClass()
+                ? baseTypes[0].typeInfo
+                : nullptr;
+    }
+
+    CheckedArray<FieldInfo*> TypeInfo::GatherFieldInfos(Allocator allocator) {
+        if (typeClass == TypeClass::Struct) {
+            CheckedArray<FieldInfo*> retn = CheckedArray<FieldInfo*>(allocator.AllocateUncleared<FieldInfo*>(fieldCount), fieldCount);
+            for(int32 i = 0; i < fieldCount; i++) {
+                retn[i] = &fields[i];
+            }
+            return retn;
+        }
+        else if (typeClass == TypeClass::Class) {
+
+            int32 cnt = 0;
+            TypeInfo* ptr = this;
+
+            while (ptr != nullptr) {
+                cnt += ptr->fieldCount;
+                ptr = ptr->GetBaseClass();
+            }
+
+            CheckedArray<FieldInfo*> retn(allocator.AllocateUncleared<FieldInfo*>(cnt), cnt);
+            int32 writeIdx = cnt - 1; // return fields in reverse order
+            ptr = this;
+
+            while (ptr != nullptr) {
+                for (int32 i = 0; i < ptr->fieldCount; i++) {
+                    retn[writeIdx--] = &ptr->fields[i];
+                }
+                ptr = ptr->GetBaseClass();
+            }
+
+            assert(writeIdx == -1);
+
+            return retn;
+
+        }
+
+        return CheckedArray<FieldInfo*>();
+    }
+
+    bool TypeInfo::IsBuiltIn() {
+        return declaringFile->isBuiltIn;
+    }
+
+    FixedCharSpan TypeInfo::GetSimpleTypeName() {
+
+        if(builtInTypeName == BuiltInTypeName::Invalid) {
+            return GetTypeName();
+        }
+
+        return FixedCharSpan(BuiltInTypeNameToString(builtInTypeName));
     }
 
     const char* TypeClassToString(TypeClass typeClass) {

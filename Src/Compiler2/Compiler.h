@@ -40,7 +40,7 @@ namespace Alchemy::Compilation {
 
         void Compile(CheckedArray<PackageInfo> compiledPackages);
 
-        void AssignPrimitiveType(const char* name, BuiltInTypeName builtInTypeName);
+        void AssignBuiltInType(const char* name, BuiltInTypeName builtInTypeName);
     };
 
 

@@ -43,4 +43,12 @@ namespace Alchemy::Compilation {
         array[size++] = ptr;
     }
 
+    void Diagnostics::AddError(ErrorCode error, FixedCharSpan sourceSpan) {
+        AddError(Diagnostic(error, sourceSpan));
+    }
+
+    void Diagnostics::AddError(ErrorCode error, FixedCharSpan sourceSpan, FixedCharSpan message) {
+        AddError(Diagnostic(error, sourceSpan ,message));
+    }
+
 }

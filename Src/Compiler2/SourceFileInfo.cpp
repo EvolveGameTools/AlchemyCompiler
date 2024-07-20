@@ -1,4 +1,5 @@
 #include "./SourceFileInfo.h"
+#include "../Parsing3/SyntaxBase.h"
 
 namespace Alchemy::Compilation {
 
@@ -27,6 +28,10 @@ namespace Alchemy::Compilation {
 
     Allocator SourceFileInfo::GetLockedAllocator() {
         return Allocator(this, AllocateLocked);
+    }
+
+    FixedCharSpan SourceFileInfo::GetText(SyntaxBase * syntaxNode) {
+        return syntaxNode->GetText(tokenizerResult);
     }
 
     FixedCharSpan SourceFileInfo::GetText(SyntaxToken token) {

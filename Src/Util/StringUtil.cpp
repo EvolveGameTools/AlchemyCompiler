@@ -87,4 +87,28 @@ namespace Alchemy {
 
     }
 
+    size_t CountAndMaybeWriteLower(const char* str, char** buffer, size_t offset) {
+        size_t len = strlen(str);
+        if (*buffer != nullptr) {
+            char * c = *buffer + offset;
+            for(int32 i = 0; i < len; i++) {
+                if (str[i] >= 'A' && str[i] <= 'Z') {
+                    c[i] = str[i] + ('a' - 'A');
+                }
+                else {
+                    c[i] = str[i];
+                }
+            }
+        }
+        return len;
+    }
+
+    size_t CountAndMaybeWrite(const char* str, char** buffer, size_t offset) {
+        size_t len = strlen(str);
+        if (*buffer != nullptr) {
+            memcpy(*buffer + offset, str, len);
+        }
+        return len;
+    }
+
 }

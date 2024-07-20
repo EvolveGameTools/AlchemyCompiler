@@ -4,22 +4,21 @@
 #include "../Util/FixedCharSpan.h"
 #include "../Collections/CheckedArray.h"
 #include "../Collections/FixedPodList.h"
+#include "../Allocation/LinearAllocator.h"
+#include "../Util/StringUtil.h"
+#include "BuiltInTypeName.h"
 
 namespace Alchemy::Compilation {
 
     struct TypeInfo;
     struct CompilationUnitSyntax;
     struct SourceFileInfo;
-    struct GenericArgument;
-    struct GenericConstraint {
-    };
-
+    struct GenericConstraint {};
     struct FieldInfo;
     struct MethodInfo;
     struct IndexerInfo;
     struct PropertyInfo;
     struct ConstructorInfo;
-    struct MethodGroup;
     struct ResolvedType;
     struct SyntaxBase;
 
@@ -45,43 +44,25 @@ namespace Alchemy::Compilation {
         Sealed = 1 << 3,
         RequiresInitConstructor = 1 << 4,
         InstantiatedGeneric = 1 << 5,
-        ContainsOpenGenericTypes = 1 << 6,
-        IsPrimitive = 1 << 7,
-        Abstract = 1 << 8,
+        IsPrimitive = 1 << 6,
+        Abstract = 1 << 7,
     })
 
-    inline size_t CountAndMaybeWrite(const char* str, char** buffer) {
-        size_t len = strlen(str);
-        if (*buffer != nullptr) {
-            memcpy(*buffer, str, len);
-        }
-        return len;
-    }
-
-
     inline size_t TypeInfoFlagsToString(TypeInfoFlags flags, char* buffer) {
-        char* c = buffer;
-        size_t len = 0;
-        if (flags == TypeInfoFlags::None) {
-            len += CountAndMaybeWrite("None", &c);
-            return len;
-        }
 
-#define PrintFlag(x) if((flags & TypeInfoFlags::x) != 0) len += CountAndMaybeWrite("\"" #x "\" ", &c)
+        PrintFlagVars(buffer);
 
-        PrintFlag(IsGenericArgumentDefinition);
-        PrintFlag(IsGenericTypeDefinition);
-        PrintFlag(IsNullable);
-        PrintFlag(Sealed);
-        PrintFlag(RequiresInitConstructor);
-        PrintFlag(InstantiatedGeneric);
-        PrintFlag(ContainsOpenGenericTypes);
-        PrintFlag(IsPrimitive);
-        PrintFlag(Abstract);
+        PrintFlagZero(TypeInfoFlags, None)
+        PrintFlag(TypeInfoFlags, IsGenericArgumentDefinition)
+        PrintFlag(TypeInfoFlags, IsGenericTypeDefinition)
+        PrintFlag(TypeInfoFlags, IsNullable)
+        PrintFlag(TypeInfoFlags, Sealed)
+        PrintFlag(TypeInfoFlags, RequiresInitConstructor)
+        PrintFlag(TypeInfoFlags, InstantiatedGeneric)
+        PrintFlag(TypeInfoFlags, IsPrimitive)
+        PrintFlag(TypeInfoFlags, Abstract)
 
-#undef PrintFlag
-
-        return len;
+        return PrintFlagLength;
 
     }
 
@@ -112,6 +93,7 @@ namespace Alchemy::Compilation {
         TypeClass typeClass {};
         TypeInfoFlags flags {};
         TypeVisibility visibility {};
+        BuiltInTypeName builtInTypeName {};
 
         uint16 fieldCount {};
         uint16 methodCount {};
@@ -134,6 +116,7 @@ namespace Alchemy::Compilation {
 
         FixedCharSpan DeclaringFileName();
 
+
         bool IsExported() {
             return typeClass == TypeClass::Class && (visibility == TypeVisibility::Export) && genericArgumentCount == 0;
         }
@@ -142,19 +125,19 @@ namespace Alchemy::Compilation {
             return typeClass == TypeClass::Enum;
         }
 
-        bool IsGenericArgumentDefinition() {
+        inline bool IsGenericArgumentDefinition() {
             return (flags & TypeInfoFlags::IsGenericArgumentDefinition) != 0;
         }
 
-        bool IsVoid() {
+        inline bool IsVoid() {
             return typeClass == TypeClass::Void;
         }
 
-        bool IsUnresolved() {
+        inline bool IsUnresolved() {
             return typeClass == TypeClass::Unresolved;
         }
 
-        bool IsGenericTypeDefinition() {
+        inline bool IsGenericTypeDefinition() {
             return (flags & TypeInfoFlags::IsGenericTypeDefinition) != 0;
         }
 
@@ -173,6 +156,14 @@ namespace Alchemy::Compilation {
         CheckedArray<ConstructorInfo> GetConstructors();
 
         FixedCharSpan GetNamespaceName();
+
+        CheckedArray<FieldInfo*> GatherFieldInfos(Allocator allocator);
+
+        TypeInfo* GetBaseClass();
+
+        bool IsBuiltIn();
+
+        FixedCharSpan GetSimpleTypeName();
     };
 
 

@@ -39,12 +39,25 @@ TEST_CASE("xyz") {
 
     compiler.vfs.AddFile(f1, FixedCharSpan(R"(
 
-        public class Thing<T> {}
+        public class Thing<T> {
+            T value;
+            Array<T> items;
+        }
 
-        public struct OtherThing : Thing<float> {}
+        public class Xyz : Thing<object> {
 
-        public struct OtherThing2 : Thing<string> {}
+            public string someStringValue;
 
+        }
+
+        public class OtherThing : Thing<float> {}
+
+        public class OtherThing2 : Xyz {
+            char someChar;
+
+            public void Abc(int x, int y = 1) {}
+
+        }
 
     )"));
 

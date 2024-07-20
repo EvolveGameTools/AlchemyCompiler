@@ -2,6 +2,7 @@
 
 #include "../PrimitiveTypes.h"
 #include "./BuiltInTypeName.h"
+#include "./TypeInfo.h"
 
 namespace Alchemy::Compilation {
 
@@ -24,17 +25,14 @@ namespace Alchemy::Compilation {
 
         TypeInfo* typeInfo;
         ResolvedTypeFlags resolvedTypeFlags;
-        BuiltInTypeName builtInTypeName;
 
         ResolvedType()
             : typeInfo(nullptr)
-            , resolvedTypeFlags(ResolvedTypeFlags::IsUnresolved)
-            , builtInTypeName(BuiltInTypeName::Invalid) {}
+            , resolvedTypeFlags(ResolvedTypeFlags::IsUnresolved) {}
 
         explicit ResolvedType(TypeInfo* typeInfo, ResolvedTypeFlags flags = ResolvedTypeFlags::None)
             : typeInfo(typeInfo)
-            , resolvedTypeFlags(flags)
-            , builtInTypeName(BuiltInTypeName::Invalid) {}
+            , resolvedTypeFlags(flags) {}
 
         inline bool IsVoid() {
             return ((resolvedTypeFlags & ResolvedTypeFlags::IsVoid) != 0);
@@ -49,25 +47,17 @@ namespace Alchemy::Compilation {
         }
 
         bool operator ==(ResolvedType other) {
-            return other.typeInfo == typeInfo && other.resolvedTypeFlags == resolvedTypeFlags && other.builtInTypeName == builtInTypeName;
+            return other.typeInfo == typeInfo && other.resolvedTypeFlags == resolvedTypeFlags;
         }
 
         bool operator !=(ResolvedType other) {
-            return other.typeInfo != typeInfo || other.resolvedTypeFlags != resolvedTypeFlags || other.builtInTypeName != builtInTypeName;
+            return other.typeInfo != typeInfo || other.resolvedTypeFlags != resolvedTypeFlags;
         }
 
         inline bool IsClass() {
 
             if (typeInfo != nullptr) {
                 return typeInfo->typeClass == TypeClass::Class;
-            }
-
-            if (builtInTypeName == BuiltInTypeName::String) {
-                return true;
-            }
-
-            if (builtInTypeName == BuiltInTypeName::Dynamic) {
-                return true;
             }
 
             return false;
@@ -82,18 +72,6 @@ namespace Alchemy::Compilation {
 
             if (typeInfo != nullptr) {
                 return (typeInfo->flags & TypeInfoFlags::Sealed) != 0;
-            }
-
-            if (builtInTypeName == BuiltInTypeName::Void) {
-                return true;
-            }
-
-            if (builtInTypeName == BuiltInTypeName::String) {
-                return true;
-            }
-
-            if (builtInTypeName == BuiltInTypeName::Dynamic) {
-                return true;
             }
 
             return false;

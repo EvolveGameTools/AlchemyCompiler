@@ -1,153 +1,352 @@
+Type count = 26
+
+BuiltIn::Array$1
+    declaringFile = builtin:array.wyx
+    visibility = public
+    typeName = Array$1
+    flags = IsGenericTypeDefinitionSealed
+    generics = [
+        BuiltIn::Object
+    ]
+    baseTypes = []
+    fields = []
+    methods = []
+
+BuiltIn::Array$1<BuiltIn::Object>
+    declaringFile = builtin:array.wyx
+    visibility = public
+    typeName = Array$1<BuiltIn::Object>
+    flags = SealedInstantiatedGeneric
+    generics = [
+        BuiltIn::Object
+    ]
+    baseTypes = []
+    fields = []
+    methods = []
+
+BuiltIn::Array$1<global::Thing$1_T[0]>
+    declaringFile = builtin:array.wyx
+    visibility = public
+    typeName = Array$1<global::Thing$1_T[0]>
+    flags = IsGenericTypeDefinitionSealed
+    generics = [
+        BuiltIn::Object
+    ]
+    baseTypes = []
+    fields = []
+    methods = []
+
+BuiltIn::Array$1_T[0]
+    declaringFile = builtin:array.wyx
+    visibility = public
+    typeName = Array$1_T[0]
+    flags = IsGenericArgumentDefinition
+    baseTypes = []
+    fields = []
+    methods = []
+
 BuiltIn::Bool
-    declaringFile = bool
+    declaringFile = builtin:bool.wyx
     visibility = public
     typeName = Bool
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        bool value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Char
-    declaringFile = char
+    declaringFile = builtin:char.wyx
     visibility = public
     typeName = Char
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        char value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Double
-    declaringFile = double
+    declaringFile = builtin:double.wyx
     visibility = public
     typeName = Double
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        double value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Float
-    declaringFile = float
+    declaringFile = builtin:float.wyx
     visibility = public
     typeName = Float
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        float value
+    ]
+    methods = [
+        public string ToString()
+    ]
 
 BuiltIn::Int16
-    declaringFile = short
+    declaringFile = builtin:short.wyx
     visibility = public
     typeName = Int16
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        short value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Int32
-    declaringFile = int
+    declaringFile = builtin:int.wyx
     visibility = public
     typeName = Int32
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        int value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Int64
-    declaringFile = long
+    declaringFile = builtin:long.wyx
     visibility = public
     typeName = Int64
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        long value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Int8
-    declaringFile = sbyte
+    declaringFile = builtin:sbyte.wyx
     visibility = public
     typeName = Int8
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        sbyte value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::Object
-    declaringFile = object
+    declaringFile = builtin:object.wyx
     visibility = public
     typeName = Object
+    flags = None
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        object value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::String
-    declaringFile = string
+    declaringFile = builtin:string.wyx
     visibility = public
     typeName = String
+    flags = None
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        string value
+    ]
+    methods = [
+        public string ToString()
+    ]
 
 BuiltIn::UInt16
-    declaringFile = ushort
+    declaringFile = builtin:ushort.wyx
     visibility = public
     typeName = UInt16
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        ushort value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::UInt32
-    declaringFile = uint
+    declaringFile = builtin:uint.wyx
     visibility = public
     typeName = UInt32
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        uint value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::UInt64
-    declaringFile = ulong
+    declaringFile = builtin:ulong.wyx
     visibility = public
     typeName = UInt64
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        ulong value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
 
 BuiltIn::UInt8
-    declaringFile = byte
+    declaringFile = builtin:byte.wyx
     visibility = public
     typeName = UInt8
+    flags = IsPrimitive
     baseTypes = []
-    flags = "IsPrimitive" 
+    fields = [
+        byte value
+    ]
+    methods = [
+        public override int GetHashCode()
+        public override string ToString()
+    ]
+
+BuiltIn::Void
+    declaringFile = builtin:void.wyx
+    visibility = public
+    typeName = Void
+    flags = None
+    baseTypes = []
+    fields = []
+    methods = []
 
 global::OtherThing
     declaringFile = path/one.wyx
     visibility = public
     typeName = OtherThing
+    flags = None
     baseTypes = [
         global::Thing$1<BuiltIn::Float>
     ]
-    flags = None
+    fields = [
+        Array$1<BuiltIn::Object> items
+        object value
+    ]
+    methods = []
 
 global::OtherThing2
     declaringFile = path/one.wyx
     visibility = public
     typeName = OtherThing2
-    baseTypes = [
-        global::Thing$1<BuiltIn::String>
-    ]
     flags = None
+    baseTypes = [
+        global::Xyz
+    ]
+    fields = [
+        Array$1<BuiltIn::Object> items
+        object value
+        string someStringValue
+        char someChar
+    ]
+    methods = [
+        public void Abc(int x, int y)
+        public void Abc(int x) [DefaultParameterOverload]
+    ]
 
 global::Thing$1
     declaringFile = path/one.wyx
     visibility = public
     typeName = Thing$1
+    flags = IsGenericTypeDefinition
     generics = [
-        BuiltIn::String
+        BuiltIn::Float
     ]
     baseTypes = []
-    flags = "IsGenericTypeDefinition" 
+    fields = [
+        Array$1<BuiltIn::Object> items
+        object value
+    ]
+    methods = []
 
 global::Thing$1<BuiltIn::Float>
     declaringFile = path/one.wyx
     visibility = public
     typeName = Thing$1<BuiltIn::Float>
+    flags = InstantiatedGeneric
     generics = [
-        BuiltIn::String
+        BuiltIn::Float
     ]
     baseTypes = []
-    flags = "InstantiatedGeneric" 
+    fields = [
+        Array$1<BuiltIn::Object> items
+        object value
+    ]
+    methods = []
 
-global::Thing$1<BuiltIn::String>
+global::Thing$1<BuiltIn::Object>
     declaringFile = path/one.wyx
     visibility = public
-    typeName = Thing$1<BuiltIn::String>
+    typeName = Thing$1<BuiltIn::Object>
+    flags = InstantiatedGeneric
     generics = [
-        BuiltIn::String
+        BuiltIn::Float
     ]
     baseTypes = []
-    flags = "InstantiatedGeneric" 
+    fields = [
+        Array$1<BuiltIn::Object> items
+        object value
+    ]
+    methods = []
 
 global::Thing$1_T[0]
     declaringFile = path/one.wyx
     visibility = public
     typeName = Thing$1_T[0]
+    flags = IsGenericArgumentDefinition
     baseTypes = []
-    flags = "IsGenericArgumentDefinition" 
+    fields = []
+    methods = []
+
+global::Xyz
+    declaringFile = path/one.wyx
+    visibility = public
+    typeName = Xyz
+    flags = None
+    baseTypes = [
+        global::Thing$1<BuiltIn::Object>
+    ]
+    fields = [
+        Array$1<BuiltIn::Object> items
+        object value
+        string someStringValue
+    ]
+    methods = []
 

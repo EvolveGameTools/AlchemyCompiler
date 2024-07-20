@@ -2,7 +2,7 @@ namespace BuiltIn;
 
 public struct UInt16 {
 
-    private uint16 value;
+    private ushort value;
 
     public override int GetHashCode() {
         return value;

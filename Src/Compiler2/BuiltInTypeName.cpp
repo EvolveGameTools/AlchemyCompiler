@@ -81,7 +81,6 @@ namespace Alchemy::Compilation {
                 return BuiltInTypeName::Double;
             case TokenKind::VoidKeyword:
                 return BuiltInTypeName::Void;
-
 //            case TokenKind::Single:
 //                return BuiltInTypeName::Single;
 //            case TokenKind::Int8:
@@ -110,61 +109,61 @@ namespace Alchemy::Compilation {
     const char* BuiltInTypeNameToFullyQualifiedName(BuiltInTypeName typeName) {
         switch (typeName) {
             case BuiltInTypeName::Int:
-                return "System::Int32";
+                return "BuiltIn::Int32";
             case BuiltInTypeName::Int2:
-                return "System::Int2";
+                return "BuiltIn::Int2";
             case BuiltInTypeName::Int3:
-                return "System::Int3";
+                return "BuiltIn::Int3";
             case BuiltInTypeName::Int4:
-                return "System::Int4";
+                return "BuiltIn::Int4";
             case BuiltInTypeName::Uint:
-                return "System::UInt";
+                return "BuiltIn::UInt";
             case BuiltInTypeName::Uint2:
-                return "System::UInt2";
+                return "BuiltIn::UInt2";
             case BuiltInTypeName::Uint3:
-                return "System::UInt3";
+                return "BuiltIn::UInt3";
             case BuiltInTypeName::Uint4:
-                return "System::UInt4";
+                return "BuiltIn::UInt4";
             case BuiltInTypeName::Float:
-                return "System::Float";
+                return "BuiltIn::Float";
             case BuiltInTypeName::Float2:
-                return "System::Float2";
+                return "BuiltIn::Float2";
             case BuiltInTypeName::Float3:
-                return "System::Float3";
+                return "BuiltIn::Float3";
             case BuiltInTypeName::Float4:
-                return "System::Float4";
+                return "BuiltIn::Float4";
             case BuiltInTypeName::Bool:
-                return "System::Bool";
+                return "BuiltIn::Bool";
             case BuiltInTypeName::Char:
-                return "System::Char";
+                return "BuiltIn::Char";
             case BuiltInTypeName::Color:
-                return "System::Color";
+                return "BuiltIn::Color";
             case BuiltInTypeName::Color32:
-                return "System::Color32";
+                return "BuiltIn::Color32";
             case BuiltInTypeName::Color64:
-                return "System::Color64";
+                return "BuiltIn::Color64";
             case BuiltInTypeName::Byte:
-                return "System::Byte";
+                return "BuiltIn::Byte";
             case BuiltInTypeName::Sbyte:
-                return "System::SByte";
+                return "BuiltIn::SByte";
             case BuiltInTypeName::Short:
-                return "System::Int16";
+                return "BuiltIn::Int16";
             case BuiltInTypeName::Ushort:
-                return "System::UInt16";
+                return "BuiltIn::UInt16";
             case BuiltInTypeName::Long:
-                return "System::Int64";
+                return "BuiltIn::Int64";
             case BuiltInTypeName::Ulong:
-                return "System::UInt64";
+                return "BuiltIn::UInt64";
             case BuiltInTypeName::Dynamic:
-                return "System::Dynamic";
+                return "BuiltIn::Dynamic";
             case BuiltInTypeName::String:
-                return "System::String";
+                return "BuiltIn::String";
             case BuiltInTypeName::Object:
-                return "System:Object";
+                return "BuiltIn:Object";
             case BuiltInTypeName::Double:
-                return "System::Double";
+                return "BuiltIn::Double";
             case BuiltInTypeName::Void:
-                return "System::Void";
+                return "BuiltIn::Void";
             case BuiltInTypeName::Invalid:
             default: {
                 return "";

@@ -14,32 +14,9 @@ namespace Alchemy::Jobs {
         std::condition_variable workCV;
 
     public:
-        explicit JobSystem(int32 workerCount) {
+        explicit JobSystem(int32 workerCount);
 
-            uint32 threadMax = std::thread::hardware_concurrency();
-
-            workerCount++;
-
-            if(workerCount >= threadMax) {
-                workerCount = (int32)(threadMax) - 1;
-            }
-
-            workers.EnsureCapacity(workerCount);
-            workers.size = workerCount;
-
-            for (int32 i = 0; i < workerCount; i++) {
-                workers[i] = new Worker(i, workers.ToCheckedArray(), workMutex, workCV);
-            }
-
-            for (int32 i = 0; i < workerCount - 1; i++) {
-                threads.Add(new std::thread(&WorkerLoop, workers[i]));
-            }
-
-        }
-
-        static void WorkerLoop(Worker * worker) {
-            worker->WorkerLoop();
-        }
+        static void WorkerLoop(Worker * worker);
 
         template<class T>
         void Execute(ParallelParams parallelParams, const T & job) {
@@ -85,21 +62,7 @@ namespace Alchemy::Jobs {
 
         }
 
-        void Shutdown() {
-            for (int32 i = 0; i < workers.size; i++) {
-                workers[i]->shuttingDown = true;
-            }
-
-            for (int i = 0; i < threads.size; i++) {
-                threads[i]->join();
-                delete threads[i];
-            }
-
-            for (int32 i = 0; i < workers.size; i++) {
-                delete workers[i];
-            }
-
-        }
+        void Shutdown();
 
     };
 
