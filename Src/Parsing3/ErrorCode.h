@@ -133,6 +133,7 @@ namespace Alchemy::Compilation {
 
 
         ERR_ExpectedReturnType,
+        ERR_DuplicateIdentifierInScope,
     };
 
 }
