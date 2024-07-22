@@ -13,22 +13,44 @@ namespace Alchemy::Compilation {
 
     thread_local uint8* allocPtr;
 
+    struct GenericMethodHandler {
+        std::mutex * schedulingMutex;
+        std::mutex * allocatorMutex;
+        LinearAllocator * allocator;
+        PagedList<TypeInfo*> createdTypes;
+        PagedList<MethodInfo*> createdMethods;
+    };
+
     struct IntrospectScopesJob : Jobs::IJob {
 
         TypeResolutionMap* resolutionMap;
         CheckedArray<SourceFileInfo*> files;
 
+        ResolvedType returnType;
+        Diagnostics * diagnostics;
+        SourceFileInfo * file;
+        std::mutex * schedulingMutex;
+        GenericMethodHandler* genericMethodHandler;
+
         IntrospectScopesJob(CheckedArray<SourceFileInfo*> files, TypeResolutionMap* resolutionMap)
             : files(files)
             , resolutionMap(resolutionMap) {}
 
-        ResolvedType returnType;
-        Diagnostics * diagnostics;
-        SourceFileInfo * file;
+
+        void Execute(int32 index) override {
+
+            MethodInfo* methodInfo;
+
+            if (methodInfo->syntaxNode->expressionBody != nullptr) {
+
+            }
+            else if (methodInfo->syntaxNode->body != nullptr) {
+                Visit(methodInfo->syntaxNode->body);
+            }
+        }
 
         // PodList<Scope> scopeStack;
         // PodList<BlockExpression> blockStack;
-
 
         #define BlitPointerField(x, y) int32 y##_offset {}; \
         x * Get##y() {                                      \
@@ -39,13 +61,12 @@ namespace Alchemy::Compilation {
             else y##_offset = (uint8*)value - allocPtr;     \
         }                                                   \
 
-        struct Rec {};
-
         struct Expression {
 
             BlitPointerField(Expression, Name);
+            LineColumn location;
 
-            explicit Expression(Expression * a) {
+            explicit Expression(Expression * a, LineColumn location) {
                 SetName(a);
             }
 
@@ -80,21 +101,29 @@ namespace Alchemy::Compilation {
             // referenced member infos // probably needed for indexing, won't store when compiling just when doing lsp?
         };
 
-        // this pass does all desugaring, definite assignment analys
-        Expression* Visit(ExpressionSyntax * expressionSyntax) {
+        // this pass does all desugaring, definite assignment
+
+        Expression* Visit(ResolvedType * targetType, ExpressionSyntax * expressionSyntax) {
 
             switch(expressionSyntax->GetKind()) {
                 case SyntaxKind::LocalDeclarationStatement: {
-
                     break;
                 }
                 case SyntaxKind::InvocationExpression: {
                     InvocationExpressionSyntax * invocationExpressionSyntax = (InvocationExpressionSyntax*)expressionSyntax;
-                    Expression * target = Visit(invocationExpressionSyntax->expression);
+                    Expression * target = Visit(nullptr, invocationExpressionSyntax->expression);
 
                     for(int32 i = 0; i < invocationExpressionSyntax->argumentList->arguments->itemCount; i++) {
                         ArgumentSyntax * argument = invocationExpressionSyntax->argumentList->arguments->items[i];
-                        ArgumentExpression arg = Visit(argument);
+                    }
+
+                    MethodInfo * methodInfo = nullptr;
+
+                    bool expected = false;
+                    if (methodInfo->isEnqueued.compare_exchange_strong(expected, true)) {
+                        std::unique_lock<std::mutex> scheduleLock(*schedulingMutex);
+                        // probably one point of allocation here
+                        // Schedule();
                     }
 
                     // ResolveMethodToCall()
@@ -110,7 +139,7 @@ namespace Alchemy::Compilation {
                 }
             }
 
-            return Expression();
+            return nullptr;
         }
 
         void Visit(BlockSyntax* pSyntax) {
@@ -141,7 +170,7 @@ namespace Alchemy::Compilation {
                     }
                     case SyntaxKind::ExpressionStatement: {
                         ExpressionStatementSyntax * expressionStatementSyntax = (ExpressionStatementSyntax*)statementSyntax;
-                        Visit(expressionStatementSyntax->expression);
+                        Visit(nullptr, expressionStatementSyntax->expression);
                         break;
                     }
                     default: {
@@ -153,17 +182,7 @@ namespace Alchemy::Compilation {
 
         }
 
-        void Execute() override {
 
-            MethodInfo* methodInfo;
-
-            if (methodInfo->syntaxNode->expressionBody != nullptr) {
-
-            }
-            else if (methodInfo->syntaxNode->body != nullptr) {
-                Visit(methodInfo->syntaxNode->body);
-            }
-        }
 
     };
 

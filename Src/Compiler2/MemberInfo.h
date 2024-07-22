@@ -2,7 +2,8 @@
 
 #include "./ResolvedType.h"
 #include "../Util/FixedCharSpan.h"
-#include "TypeInfo.h"
+#include "./TypeInfo.h"
+#include <atomic>
 
 namespace Alchemy::Compilation {
 
@@ -77,15 +78,19 @@ namespace Alchemy::Compilation {
 
     const char * MemberVisibilityToString(MemberVisibility visibility);
 
+    struct MethodIntrospection {};
+
     struct MethodInfo {
         TypeInfo* declaringType {};
         ParameterInfo* parameters {};
         MethodDeclarationSyntax* syntaxNode {};
+        MethodIntrospection * introspection {};
         ResolvedType returnType;
-        FixedCharSpan fullyQualifiedName; // may be able to remove this, lets see if it ends up being used
+        // FixedCharSpan fullyQualifiedName; // may be able to remove this, lets see if it ends up being used
         FixedCharSpan name;
         int32 parameterCount {};
         bool isDefaultParameterOverload {};
+        std::atomic<bool> isEnqueued;
         MemberVisibility visibility;
         MethodModifiers modifiers;
     };
