@@ -487,7 +487,7 @@ namespace Alchemy::Compilation {
                                         methodInfo->returnType = returnType;
                                         methodInfo->declaringType = typeInfo;
                                         methodInfo->name = methodName;
-                                        methodInfo->fullyQualifiedName = FixedCharSpan("TODO -- DO WE NEED THIS?");
+                                        // methodInfo->fullyQualifiedName = FixedCharSpan("TODO -- DO WE NEED THIS?");
                                         methodInfo->modifiers = modifiers;
                                         methodInfo->visibility = visibility;
                                     }

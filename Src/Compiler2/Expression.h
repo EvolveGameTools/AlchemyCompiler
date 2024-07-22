@@ -17,9 +17,13 @@ namespace Alchemy::Compilation {
     thread_local uint8* ts_LocalExpressionBase;
 
 
-    enum class ExpressionKind {
+    enum class ExpressionKind : uint8 {
+
         Invalid,
-        Binary
+        Binary,
+        FieldAccess,
+        PropertyAccess,
+
     };
 
     enum class BinaryExpressionOp {
@@ -36,9 +40,12 @@ namespace Alchemy::Compilation {
     struct Expression {
 
         ExpressionKind kind;
+        // 3 bytes padding
+        LineColumn location;
 
-        Expression(ExpressionKind kind)
-            : kind(kind) {}
+        Expression(ExpressionKind kind, LineColumn location)
+            : kind(kind)
+            , location(location) {}
 
     };
 
@@ -48,11 +55,39 @@ namespace Alchemy::Compilation {
         BlitPointerField(Expression, Right);
         BinaryExpressionOp op;
 
-        BinaryExpression(Expression* left, BinaryExpressionOp op, Expression* right)
-            : Expression(ExpressionKind::Binary)
+        BinaryExpression(Expression* left, BinaryExpressionOp op, Expression* right, LineColumn location)
+            : Expression(ExpressionKind::Binary, location)
             , op(op) {
             SetLeft(left);
             SetRight(right);
+        }
+
+    };
+
+    struct PropertyAccessExpression : Expression {
+
+        BlitPointerField(Expression, Instance);
+        PropertyInfo* propertyInfo;
+
+        PropertyAccessExpression(Expression* instance, PropertyInfo* propertyInfo, LineColumn location)
+            : Expression(ExpressionKind::PropertyAccess, location)
+            , Instance_offset(0)
+            , propertyInfo(propertyInfo) {
+            SetInstance(instance);
+        }
+
+    };
+
+    struct FieldAccessExpression : Expression {
+
+        BlitPointerField(Expression, Instance);
+        FieldInfo* fieldInfo;
+
+        FieldAccessExpression(Expression* instance, FieldInfo* fieldInfo, LineColumn location)
+            : Expression(ExpressionKind::FieldAccess, location)
+            , Instance_offset(0)
+            , fieldInfo(fieldInfo) {
+            SetInstance(instance);
         }
 
     };

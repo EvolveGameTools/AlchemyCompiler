@@ -19,6 +19,13 @@ namespace Alchemy::Compilation {
         // maybe signature, might be encoded elsewhere
     };
 
+    struct GenericMethodHandler {
+        std::mutex * schedulingMutex;
+        std::mutex * allocatorMutex;
+        LinearAllocator * allocator;
+        PagedList<TypeInfo*> createdTypes;
+        PagedList<MethodInfo*> createdMethods;
+    };
     struct Scope;
 
     struct LocalValue {
@@ -67,7 +74,6 @@ namespace Alchemy::Compilation {
 
     };
 
-
     struct IntrospectionDiagnostic {
         Diagnostic diagnostic;
         BlitPointerField(Diagnostic, next);
@@ -107,6 +113,9 @@ namespace Alchemy::Compilation {
         int32 internalVarId;
         Diagnostics * diagnostics;
         SourceFileInfo * file;
+        TypeInfo * typeInfo;
+        MethodInfo * methodInfo;
+        Expression * thisInstance;
 
         template<class T, typename... Args>
         T* CreateExpression(Args &&... args) {
@@ -166,7 +175,7 @@ namespace Alchemy::Compilation {
             return value;
         }
 
-        LocalValue* ResolveIdentifier(FixedCharSpan identifier) {
+        Expression* ResolveIdentifier(FixedCharSpan identifier) {
             Scope* currentScope = scopeStack->Peek();
 
             Range32 values = declarationsByScopeDepth[currentScope->depth];
@@ -176,7 +185,7 @@ namespace Alchemy::Compilation {
                 LocalValue * value = valueBuffer.Get(i);
                 // got it, it's local
                 if (value->name == identifier) {
-                    return value;
+                    return value->GetExpression();
                 }
             }
 
@@ -197,13 +206,73 @@ namespace Alchemy::Compilation {
                 for (int32 i = values.start; i < end; i++) {
                     LocalValue* value = valueBuffer.Get(i);
                     if (value->name == identifier) {
-                        return value;
+                        return value->GetExpression();
                     }
                 }
                 scope = scope->GetParent();
             }
 
-            // search fields
+            // todo -- profile here, this is likely kind of a hot code section & does a lot of searching / pointer tracking
+
+            TypeInfo * ptr = typeInfo;
+
+            bool isStatic = thisInstance == nullptr;
+
+            while (ptr != nullptr) {
+
+                for (int32 i = 0; i < ptr->fieldCount; i++) {
+
+                    FieldInfo * fieldInfo = &ptr->fields[i];
+
+                    if (fieldInfo->identifier != identifier) {
+                        continue;
+                    }
+
+                    // todo -- const
+                    if((fieldInfo->modifiers & FieldModifiers::Static) == 0) {
+                        if(isStatic) {
+                            AddError(ErrorCode::ERR_InstanceFieldAccessInStaticContext, identifier, FixedCharSpan());
+                        }
+                        return CreateExpression<FieldAccessExpression>(thisInstance, fieldInfo);
+                    }
+                    else {
+                        return CreateExpression<FieldAccessExpression>(nullptr, fieldInfo);
+                    }
+                }
+
+                if(!isStatic) {
+                    ptr = ptr->GetBaseClass();
+                }
+
+            }
+
+            ptr = typeInfo;
+            while(ptr != nullptr) {
+
+                for(int32 i = 0; i < ptr->propertyCount; i++) {
+                    PropertyInfo * propertyInfo = &ptr->properties[i];
+                    if(propertyInfo->name != identifier) {
+                        continue;
+                    }
+
+                    if((propertyInfo->modifiers & PropertyModifiers::Static) == 0) {
+                        if(isStatic) {
+                            AddError(ErrorCode::ERR_InstanceFieldAccessInStaticContext, identifier, FixedCharSpan());
+                        }
+                        return CreateExpression<FieldAccessExpression>(thisInstance, propertyInfo);
+                    }
+                    else {
+                        return CreateExpression<FieldAccessExpression>(nullptr, propertyInfo);
+                    }
+
+                }
+
+
+                if(!isStatic) {
+                    ptr = ptr->GetBaseClass();
+                }
+
+            }
             // search properties
             // search methods
 
@@ -276,7 +345,7 @@ namespace Alchemy::Compilation {
 
                     bool expected = false;
                     if (methodInfo->isEnqueued.compare_exchange_strong(expected, true)) {
-                        std::unique_lock<std::mutex> scheduleLock(*schedulingMutex);
+                        std::unique_lock<std::mutex> scheduleLock();
                         // probably one point of allocation here
                         // Schedule();
                     }

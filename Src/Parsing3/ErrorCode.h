@@ -134,6 +134,7 @@ namespace Alchemy::Compilation {
 
         ERR_ExpectedReturnType,
         ERR_DuplicateIdentifierInScope,
+        ERR_InstanceFieldAccessInStaticContext,
     };
 
 }

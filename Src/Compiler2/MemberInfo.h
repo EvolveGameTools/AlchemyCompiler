@@ -40,6 +40,7 @@ namespace Alchemy::Compilation {
     struct PropertyInfo {
         TypeInfo* declaringType {};
         ResolvedType type;
+        FixedCharSpan name;
     };
 
     struct IndexerInfo {};
