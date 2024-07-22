@@ -17,7 +17,7 @@ void SetThreadName(std::thread* thread, const char* name) {
 #if defined(_WIN32) || defined(_WIN64)
     SetThreadDescription(thread->native_handle(), std::wstring(name, name + strlen(name)).c_str());
 #elif defined(__linux__) || defined(__APPLE__) && defined(__MACH__)
-    pthread_setname_np(thread->native_handle(), name);
+    //pthread_setname_np(thread->native_handle(), name);
 #endif
 }
 

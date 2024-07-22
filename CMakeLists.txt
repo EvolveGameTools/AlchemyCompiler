@@ -150,6 +150,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(tests
     Tests/Test2.cpp
     ${Sources}
+        Src/Compiler2/Expression.h
 )
 
 add_custom_command(

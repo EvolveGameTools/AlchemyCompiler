@@ -191,6 +191,7 @@ namespace Alchemy::Compilation {
 
         jobSystem.Execute(Jobs::Parallel::Batch(typeInfos.size, 3), ScheduleIntrospectScopesJob(typeInfos, &resolveMap));
 
+        IntrospectScopesJob j;
     }
 
     void Compiler::SetupCompilationRun(TempAllocator* tempAllocator, CheckedArray<VirtualFileInfo> includedSourceFiles) {
