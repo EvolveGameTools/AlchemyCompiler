@@ -119,7 +119,6 @@ namespace Alchemy::Compilation {
                 typeInfo->declaringFile->diagnostics.AddError(diagnostic);
             }
 
-
             // check for duplicates
             for (int32 b = 0; b < typeInfo->baseTypeCount; b++) {
 

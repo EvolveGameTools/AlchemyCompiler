@@ -750,6 +750,7 @@ generateSyntaxKindKeywordMatchingCode('Src/Parsing3/TokenKind.h', 'Generated/Mat
 
 enumToStringFn("Src/Parsing3/SyntaxKind.h", "Generated/SyntaxKind.generated.cpp", "SyntaxKind", [], "Alchemy::Compilation", ["../Src/Parsing3/SyntaxKind.h"]);
 enumToStringFn("Src/Parsing3/TokenKind.h", "Generated/TokenKind.generated.cpp", "TokenKind", [], "Alchemy::Compilation", ["../Src/Parsing3/TokenKind.h"]);
+enumToStringFn("Src/Parsing3/ErrorCode.h", "Generated/ErrorCode.generated.cpp", "ErrorCode", [], "Alchemy::Compilation", ["../Src/Parsing3/ErrorCode.h"]);
 
 fs.writeFile("Generated/GetFirstToken.generated.cpp", astgen.makeFirstTokenSource(), report("GenFirstToken"));
 fs.writeFile("Generated/NodePrinter.generated.cpp", astgen.makeNodePrinter(), report("NodePrinter"));

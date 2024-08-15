@@ -104,6 +104,8 @@ namespace Alchemy {
 
     uint8* LinearAllocator::AllocateBytesUncleared(size_t size, size_t alignment) {
 
+        assert(offset + size + alignment < reserved && "out of memory in allocator");
+
         if ((alignment & (alignment - 1)) != 0) {
             alignment = Ceilpow2(alignment);
         }

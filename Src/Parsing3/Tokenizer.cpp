@@ -328,7 +328,7 @@ namespace Alchemy::Compilation {
 
         PendingSyntaxTokenList tokens(GetThreadLocalAllocator(), 64);
 
-        int32 diagnosticCount = diagnostics->size;
+        int32 diagnosticCount = diagnostics->diagnostics.size;
 
         char* start = textWindow->ptr;
 
@@ -391,7 +391,7 @@ namespace Alchemy::Compilation {
         }
 
         end:
-        diagnostics->size = diagnosticCount;
+        diagnostics->diagnostics.size = diagnosticCount;
 
         // we are pointing at } or \0
 

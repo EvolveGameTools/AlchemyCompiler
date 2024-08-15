@@ -81,12 +81,13 @@ list(APPEND Sources
         Generated/MatchKeyword.generated.cpp
         Generated/NodePrinter.generated.cpp
         Generated/SyntaxKind.generated.cpp
+        Generated/ErrorCode.generated.cpp
         Generated/TokenKind.generated.cpp
         Generated/LoadBuiltIns.generated.cpp
 )
 
 add_executable(AlchemyCompiler
-#        main.cpp
+        main.cpp
         ${Sources}
 )
 
@@ -111,7 +112,7 @@ if(WIN32)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(AlchemyCompiler PUBLIC ALCHEMY_DEBUG=1 ALCHEMY_MALLOC_DEBUG=1 USE_STACKTRACE=1)
+    target_compile_definitions(AlchemyCompiler PUBLIC ALCHEMY_DEBUG=1 ALCHEMY_MALLOC_DEBUG=0 USE_STACKTRACE=1)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

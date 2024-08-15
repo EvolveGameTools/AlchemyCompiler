@@ -859,6 +859,7 @@ namespace Alchemy::Compilation::SyntaxFacts {
             case TokenKind::ProtectedKeyword:
             case TokenKind::PublicKeyword:
             case TokenKind::SealedKeyword:
+            case TokenKind::ExportKeyword:
             case TokenKind::StaticKeyword:
                 return true;
             default:
@@ -872,6 +873,7 @@ namespace Alchemy::Compilation::SyntaxFacts {
             case TokenKind::InternalKeyword:
             case TokenKind::ProtectedKeyword:
             case TokenKind::PrivateKeyword:
+            case TokenKind::ExportKeyword:
                 return true;
 
             default:

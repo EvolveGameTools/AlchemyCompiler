@@ -4,6 +4,7 @@
 #include "../PrimitiveTypes.h"
 #include "../Allocation/LinearAllocator.h"
 #include "../Util/FixedCharSpan.h"
+#include "../Collections/PodList.h"
 
 namespace Alchemy::Compilation {
 
@@ -32,16 +33,11 @@ namespace Alchemy::Compilation {
 
     struct Diagnostics {
 
-        Allocator allocator;
+        PodList<Diagnostic> diagnostics;
 
-        int32 size;
-        int32 capacity;
-        Diagnostic** array;
-
-        explicit Diagnostics(Allocator allocator);
+        explicit Diagnostics();
 
         void AddError(Diagnostic error);
-
         void AddError(ErrorCode error, FixedCharSpan sourceSpan);
         void AddError(ErrorCode error, FixedCharSpan sourceSpan, FixedCharSpan message);
 

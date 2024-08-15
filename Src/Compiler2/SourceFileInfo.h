@@ -40,7 +40,7 @@ namespace Alchemy::Compilation {
 
         SourceFileInfo()
             : allocator(MEGABYTES(128), KILOBYTES(32))
-            , diagnostics(allocator.MakeAllocator()) {}
+            , diagnostics() {}
 
         void Invalidate();
 

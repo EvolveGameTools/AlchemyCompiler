@@ -121,6 +121,7 @@ namespace Alchemy::Compilation {
                     case TokenKind::PublicKeyword:
                     case TokenKind::ProtectedKeyword:
                     case TokenKind::InternalKeyword:
+                    case TokenKind::ExportKeyword:
                     case TokenKind::PrivateKeyword: {
                         if (visCount == 0) {
                             if (token.kind == TokenKind::PublicKeyword) {
@@ -134,6 +135,9 @@ namespace Alchemy::Compilation {
                             }
                             else if (token.kind == TokenKind::PrivateKeyword) {
                                 *pVisibility = MemberVisibility::Private;
+                            }
+                            else if (token.kind == TokenKind::ExportKeyword) {
+                                *pVisibility = MemberVisibility::Export;
                             }
                         }
                         else if (visCount == 1) {

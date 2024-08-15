@@ -15,13 +15,14 @@ namespace Alchemy::Compilation {
         Parser* originalParser;
         Parser copyParser;
         Diagnostics diagnosticsCopy;
+        int32 diagCount;
 
         explicit ResetPoint(Parser* parser, bool resetOnDispose = true)
             : originalParser(parser)
             , copyParser(*parser)
             , allocatorOffset(parser->allocator->offset)
             , tempAllocatorOffset(parser->tempAllocator->offset)
-            , diagnosticsCopy(*parser->diagnostics)
+            , diagCount(parser->diagnostics->diagnostics.size)
             , resetOnDispose(resetOnDispose) {}
 
         ~ResetPoint() {
@@ -32,7 +33,7 @@ namespace Alchemy::Compilation {
 
         void Reset() {
             *originalParser = copyParser;
-            *originalParser->diagnostics = diagnosticsCopy;
+            originalParser->diagnostics->diagnostics.size = diagCount;
             originalParser->tempAllocator->offset = tempAllocatorOffset;
             originalParser->allocator->offset = allocatorOffset;
         }
@@ -268,6 +269,7 @@ namespace Alchemy::Compilation {
             case TokenKind::PrivateKeyword:
             case TokenKind::ProtectedKeyword:
             case TokenKind::PublicKeyword:
+            case TokenKind::ExportKeyword:
             case TokenKind::ReadOnlyKeyword:
             case TokenKind::StaticKeyword:
             case TokenKind::VirtualKeyword:
@@ -794,6 +796,7 @@ namespace Alchemy::Compilation {
         Internal,
         Protected,
         Private,
+        Export,
         Sealed,
         Abstract,
 
@@ -821,6 +824,8 @@ namespace Alchemy::Compilation {
                 return DeclarationModifiers::Abstract;
             case TokenKind::StaticKeyword:
                 return DeclarationModifiers::Static;
+            case TokenKind::ExportKeyword:
+                return DeclarationModifiers::Export;
             case TokenKind::VirtualKeyword:
                 return DeclarationModifiers::Virtual;
             case TokenKind::OverrideKeyword:
@@ -2502,7 +2507,7 @@ namespace Alchemy::Compilation {
 
         tk = parser->currentToken.contextualKind;
 
-        bool isPossibleModifier = SyntaxFacts::IsAdditionalLocalFunctionModifier(tk) || ShouldContextualKeywordBeTreatedAsModifier(parser, true);
+        bool isPossibleModifier = SyntaxFacts::IsAdditionalLocalFunctionModifier(tk) || (GetModifier(parser->currentToken) != DeclarationModifiers::None && ShouldContextualKeywordBeTreatedAsModifier(parser, true));
 
         if (isPossibleModifier) {
             return true;
@@ -4122,7 +4127,7 @@ namespace Alchemy::Compilation {
                     expr = parser->CreateNode<MemberAccessExpressionSyntax>(SyntaxKind::PointerMemberAccessExpression, expr, parser->EatToken(), ParseSimpleName(parser, NameOptions::InExpression));
                     continue;
 
-                case TokenKind::DotToken:
+                case TokenKind::DotToken: {
                     // if we have the error situation:
                     //
                     //      expr.
@@ -4147,8 +4152,11 @@ namespace Alchemy::Compilation {
                         );
                     }
 
-                    expr = parser->CreateNode<MemberAccessExpressionSyntax>(SyntaxKind::SimpleMemberAccessExpression, expr, parser->EatToken(), ParseSimpleName(parser, NameOptions::InExpression));
+                    SyntaxToken token = parser->EatToken();
+                    SimpleNameSyntax_Abstract* simpleName = ParseSimpleName(parser, NameOptions::InExpression);
+                    expr = parser->CreateNode<MemberAccessExpressionSyntax>(SyntaxKind::SimpleMemberAccessExpression, expr, token, simpleName);
                     continue;
+                }
 
                 case TokenKind::QuestionToken:
                     if (CanStartConsequenceExpression(parser)) {
@@ -5311,7 +5319,7 @@ namespace Alchemy::Compilation {
             parser->AddError(openBrace, ErrorCode::ERR_SemiOrLBraceOrArrowExpected);
         }
         else {
-            parser->EatToken(TokenKind::OpenBraceToken);
+            openBrace = parser->EatToken(TokenKind::OpenBraceToken);
         }
 
         TempAllocator::ScopedMarker m(parser->tempAllocator);

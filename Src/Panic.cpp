@@ -68,7 +68,7 @@ namespace Alchemy {
         }
 
         if (!frame.is_inline) {
-            snprintf(hexBuffer, 18, "%p", frame.raw_address);
+            snprintf(hexBuffer, 18, "%llu", frame.raw_address);
             frameAddress = hexBuffer;
         }
 

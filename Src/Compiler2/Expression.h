@@ -23,7 +23,7 @@ namespace Alchemy::Compilation {
         Binary,
         FieldAccess,
         PropertyAccess,
-
+        Parameter,
     };
 
     enum class BinaryExpressionOp {
@@ -40,12 +40,20 @@ namespace Alchemy::Compilation {
     struct Expression {
 
         ExpressionKind kind;
-        // 3 bytes padding
-        LineColumn location;
 
-        Expression(ExpressionKind kind, LineColumn location)
-            : kind(kind)
-            , location(location) {}
+        explicit Expression(ExpressionKind kind)
+            : kind(kind) {}
+
+    };
+
+    struct ParameterExpression : Expression {
+
+        ParameterInfo * parameterInfo;
+
+        explicit ParameterExpression(ParameterInfo * parameterInfo)
+            : Expression(ExpressionKind::Parameter)
+            , parameterInfo(parameterInfo)
+        {}
 
     };
 
@@ -55,8 +63,8 @@ namespace Alchemy::Compilation {
         BlitPointerField(Expression, Right);
         BinaryExpressionOp op;
 
-        BinaryExpression(Expression* left, BinaryExpressionOp op, Expression* right, LineColumn location)
-            : Expression(ExpressionKind::Binary, location)
+        BinaryExpression(Expression* left, BinaryExpressionOp op, Expression* right)
+            : Expression(ExpressionKind::Binary)
             , op(op) {
             SetLeft(left);
             SetRight(right);
@@ -69,8 +77,8 @@ namespace Alchemy::Compilation {
         BlitPointerField(Expression, Instance);
         PropertyInfo* propertyInfo;
 
-        PropertyAccessExpression(Expression* instance, PropertyInfo* propertyInfo, LineColumn location)
-            : Expression(ExpressionKind::PropertyAccess, location)
+        PropertyAccessExpression(Expression* instance, PropertyInfo* propertyInfo)
+            : Expression(ExpressionKind::PropertyAccess)
             , Instance_offset(0)
             , propertyInfo(propertyInfo) {
             SetInstance(instance);
@@ -83,8 +91,8 @@ namespace Alchemy::Compilation {
         BlitPointerField(Expression, Instance);
         FieldInfo* fieldInfo;
 
-        FieldAccessExpression(Expression* instance, FieldInfo* fieldInfo, LineColumn location)
-            : Expression(ExpressionKind::FieldAccess, location)
+        FieldAccessExpression(Expression* instance, FieldInfo* fieldInfo)
+            : Expression(ExpressionKind::FieldAccess)
             , Instance_offset(0)
             , fieldInfo(fieldInfo) {
             SetInstance(instance);

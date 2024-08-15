@@ -1,0 +1,7 @@
+export class AppRoot {
+
+    export void Main(float x, float y) {
+        system.Print("${x + y} were provided to Main()");
+    }
+
+}

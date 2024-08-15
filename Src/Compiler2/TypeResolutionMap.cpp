@@ -375,7 +375,7 @@ namespace Alchemy::Compilation {
         }
 
         for (int32 i = 0; i < openType->methodCount; i++) {
-            newType->methods[i] = openType->methods[i];
+            memcpy(&newType->methods[i], &openType->methods[i], sizeof(MethodInfo));
             MethodInfo* methodInfo = &newType->methods[i];
             methodInfo->declaringType = newType;
             methodInfo->returnType = RecursiveResolveGenerics(openType->methods[i].returnType, replacements, typeAllocator);

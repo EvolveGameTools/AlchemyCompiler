@@ -5,7 +5,7 @@ namespace Alchemy::Compilation {
 
     void SourceFileInfo::Invalidate() {
         allocator.Clear();
-        diagnostics.size = 0;
+        diagnostics.diagnostics.size = 0;
         wasChanged = true;
         wasTouched = true;
         dependantsVisited = true;

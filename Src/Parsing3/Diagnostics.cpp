@@ -24,23 +24,14 @@ namespace Alchemy::Compilation {
         , messageLength(message.size)
         , message(message.ptr) {}
 
-    Diagnostics::Diagnostics(Alchemy::Allocator allocator)
-        : allocator(allocator)
-        , capacity(16)
-        , size(0)
-        , array(allocator.AllocateUncleared<Diagnostic*>(capacity)) {}
+    Diagnostics::Diagnostics()
+        : diagnostics() {}
 
     void Diagnostics::AddError(Diagnostic error) {
-        if (size + 1 > capacity) {
-            Diagnostic** newList = allocator.AllocateUncleared<Diagnostic*>(capacity * 2);
-            memcpy(newList, array, sizeof(Diagnostic*) * size);
-            allocator.Free(array, capacity);
-            array = newList;
-            capacity *= 2;
+        diagnostics.Add(error);
+        if(error.errorCode == ErrorCode::ERR_IdentifierExpected) {
+            puts("bad");
         }
-        Diagnostic* ptr = allocator.AllocateUncleared<Diagnostic>(1);
-        memcpy(ptr, &error, sizeof(Diagnostic));
-        array[size++] = ptr;
     }
 
     void Diagnostics::AddError(ErrorCode error, FixedCharSpan sourceSpan) {

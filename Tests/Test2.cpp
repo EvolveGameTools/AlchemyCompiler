@@ -74,6 +74,35 @@ TEST_CASE("xyz") {
 
 }
 
+TEST_CASE("working program", "[parser]") {
+    FixedCharSpan package("Package");
+
+    VirtualFileInfo f1(package, FixedCharSpan("path/one.wyx"));
+
+    Compiler compiler(0, FileSystemType::Virtual);
+
+    compiler.vfs.AddFile(f1, FixedCharSpan(R"xyz(
+
+        export class AppRoot {
+
+            export void Main(float x, float y) {
+                system.Print("${x + y} were provided to Main()");
+            }
+
+        }
+
+    )xyz"
+    ));
+
+/*
+ AppRoot::Main(float x, float y)
+    CallInstance(ThisExpr, syscall::Print, StringConcat(
+        ToString(AddFloat(x, y)),
+        " were provided to Main()"
+    )));
+ */
+}
+
 TEST_CASE("compilation unit", "[parser]") {
 
     INITIALIZE_PARSER_TEST

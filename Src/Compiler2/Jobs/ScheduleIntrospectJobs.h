@@ -1,39 +1,24 @@
 #pragma once
 
 #include "../../JobSystem/JobSystem.h"
+#include "../Introspector.h"
 
 namespace Alchemy::Compilation {
 
-    struct ScheduleIntrospectScopesJob : Jobs::IJob {
+    struct IntrospectionJob : Jobs::IJob {
 
-        CheckedArray<TypeInfo*> typeInfos;
+        CheckedArray<SourceFileInfo*> fileInfos;
         TypeResolutionMap* typeResolutionMap;
 
-        ScheduleIntrospectScopesJob(CheckedArray<TypeInfo*> typeInfos, TypeResolutionMap* typeResolutionMap)
-            : typeInfos(typeInfos)
+        IntrospectionJob(CheckedArray<SourceFileInfo*> fileInfos, TypeResolutionMap* typeResolutionMap)
+            : fileInfos(fileInfos)
             , typeResolutionMap(typeResolutionMap) {}
 
-        void Execute(int32 start, int32 end) override {
+        void Execute(int32 index) override {
 
-            for (int32 i = start; i < end; i++) {
+            Introspector introspector(fileInfos[index], typeResolutionMap);
 
-                TypeInfo* typeInfo = typeInfos[i];
-
-                if((typeInfo->flags & TypeInfoFlags::InstantiatedGeneric) != 0) {
-                    // we only want to directly process types that are concrete or generic templates
-                    // for actual generic methods we'll process them as we encounter them
-                    // we do this so we:
-                    // a. don't process a bunch of unused generic methods
-                    // b. allocate concrete methods ephemerally
-                    // c. don't duplicate a ton of diagnostic errors
-                    continue;
-                }
-
-                for (int32 m = 0; m < typeInfo->methodCount; m++) {
-                    Schedule(Jobs::Parallel::Foreach(5), IntrospectScopesJob(typeInfo, &typeInfo->methods[m], typeResolutionMap));
-                }
-
-            }
+//            introspector.Introspect();
 
         }
 

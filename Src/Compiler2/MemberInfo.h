@@ -37,10 +37,20 @@ namespace Alchemy::Compilation {
 
     };
 
+    DEFINE_ENUM_FLAGS(PropertyModifiers, uint8, {
+        None = 0,
+        Override = 1 << 0,
+        Sealed = 1 << 1,
+        Abstract = 1 << 2,
+        Virtual = 1 << 3,
+        Static = 1 << 4
+    });
+
     struct PropertyInfo {
         TypeInfo* declaringType {};
         ResolvedType type;
         FixedCharSpan name;
+        PropertyModifiers modifiers;
     };
 
     struct IndexerInfo {};

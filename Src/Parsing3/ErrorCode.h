@@ -137,4 +137,6 @@ namespace Alchemy::Compilation {
         ERR_InstanceFieldAccessInStaticContext,
     };
 
+    const char* ErrorCodeToString(ErrorCode errorCode);
+
 }

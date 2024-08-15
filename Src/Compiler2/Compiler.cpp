@@ -1,4 +1,3 @@
-#include <filesystem>
 #include "./Compiler.h"
 #include "../Allocation/ThreadLocalTemp.h"
 #include "./Jobs/ParseFilesJob.h"
@@ -8,6 +7,7 @@
 #include "./Jobs/IntrospectScopesJob.h"
 #include "./Jobs/ScheduleIntrospectJobs.h"
 #include "./LoadBuiltIns.h"
+#include "../Parsing3/NodePrinter.h"
 
 namespace Alchemy::Compilation {
 
@@ -38,7 +38,7 @@ namespace Alchemy::Compilation {
     }
 
     Compiler::Compiler(int32 workerCount, FileSystemType fileSystemType)
-        : diagnostics(Allocator::MakeMallocator())
+        : diagnostics()
         , jobSystem(workerCount)
         , resolveMap(Allocator::MakeMallocator())
         , vfs(fileSystemType)
@@ -162,11 +162,12 @@ namespace Alchemy::Compilation {
         // if we are compiling with full reflection we want to visit every method
         // if we are compiling without reflection we want to visit starting at the entry points
 
+        // wyxc src --options -noreflect, -fullreflect  --entries = qualified::typename, qualified::typename
+
         // during compilation we're very likely to create additional types for state/closures/etc
         // where do we keep those? do we keep them around or assume we create fresh ones per-pass?
         // if ephemeral we can have each thread handle its own data and we'll just diff them before emitting for selection
-//        jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), IntrospectScopesJob(changedFiles, &resolveMap));
-
+        // jobSystem.Execute(Jobs::Parallel::Foreach(changedFiles.size), IntrospectScopesJob(changedFiles, &resolveMap));
 
         // foreach file
             // get a list of it's instantiated generics
@@ -183,13 +184,36 @@ namespace Alchemy::Compilation {
         // if we compile for full reflection, where we start doesn't matter
         // CheckedArray<TypeInfo*> typeInfos = resolveMap.GetExportedTypes(GetThreadLocalAllocator()->MakeAllocator());
 
-        CheckedArray<TypeInfo*> typeInfos = resolveMap.GetConcreteTypes(GetThreadLocalAllocator()->MakeAllocator());
+//        CheckedArray<TypeInfo*> typeInfos = resolveMap.GetConcreteTypes(GetThreadLocalAllocator()->MakeAllocator());
+//        for(int32 i = 0; i < typeInfos.size; i++) {
+//            TypeInfo * pTypeInfo = typeInfos[i];
+//            printf("%.*s\n", pTypeInfo->fullyQualifiedNameLength, pTypeInfo->fullyQualifiedName);
+//            if(pTypeInfo->GetTypeName() == "AppRoot") {
+//                NodePrinter p(pTypeInfo->declaringFile->tokenizerResult);
+//                p.PrintTree(pTypeInfo->syntaxNode);
+//                printf("%.*s", p.buffer.size, p.buffer.array);
+//            }
+//        }
 
-        // foreach type
-            // foreach method
-                // introspect & codegen  & write to output somewhere
+        // im thinking processing file by file makes the most sense now, easy allocator solution, easy caching solution
+        // generics + generic methods live elsewhere, invalidated when their base file changes
+        // hyper optimizing this is probably a waste of time
 
-        jobSystem.Execute(Jobs::Parallel::Batch(typeInfos.size, 3), ScheduleIntrospectScopesJob(typeInfos, &resolveMap));
+        jobSystem.Execute(Jobs::Parallel::Foreach(fileInfos.size, 1), IntrospectionJob(fileInfos.ToCheckedArray(), &resolveMap));
+
+        // we'll do another pass for any generics we've generated now, we'll continue until there aren't any left
+
+        for(int32 i = 0; i < fileInfos.size; i++) {
+            SourceFileInfo * fileInfo = fileInfos[i];
+            if(fileInfo->diagnostics.diagnostics.size > 0) {
+                for(int32 d = 0; d < fileInfo->diagnostics.diagnostics.size; d++) {
+                    Diagnostic * diag = &fileInfo->diagnostics.diagnostics[d];
+                    FixedCharSpan span = FixedCharSpan(diag->start, diag->end - diag->start);
+                    printf("[Error] %.*s, %s\n", (int32)fileInfo->path.size, fileInfo->path.ptr, ErrorCodeToString(diag->errorCode));
+                    printf("%.*s\n", (int32)span.size, span.ptr);
+                }
+            }
+        }
 
     }
 

@@ -1,5 +1,4 @@
 #include "./ParseFilesJob.h"
-#include "../../Parsing3/Tokenizer.h"
 #include "../../Parsing3/Parsing.h"
 #include "../../Parsing3/TextWindow.h"
 #include "../../Parsing3/Parser.h"
@@ -20,6 +19,9 @@ namespace Alchemy::Compilation {
 
         TextWindow window(fileInfo->contents.ptr, fileInfo->contents.size);
 
+        if(idx == 17) {
+            puts("found it");
+        }
         TokenizerResult result = Tokenize(window, &fileInfo->diagnostics, &fileInfo->allocator);
 
         Parser parser(result, &fileInfo->diagnostics, &fileInfo->allocator);

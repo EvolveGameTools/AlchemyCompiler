@@ -97,7 +97,7 @@ namespace Alchemy {
             T* newArray = MallocateTypedUncleared(T, newCapacity);
             if (array != nullptr) {
                 std::memcpy(newArray, array, sizeof(T) * size);
-                Mfree(array, capacity);
+                MfreeTyped(array, capacity);
             }
             array = newArray;
             capacity = newCapacity;
@@ -187,7 +187,7 @@ namespace Alchemy {
 
         void Dispose() {
             if (array != nullptr) {
-                Mfree(array, capacity * sizeof(T));
+                MfreeTyped(array, capacity);
                 array = nullptr;
             }
         }
